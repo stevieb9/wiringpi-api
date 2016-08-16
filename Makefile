@@ -61,11 +61,11 @@ DIRFILESEP = /
 DFSEP = $(DIRFILESEP)
 NAME = WiringPi::API
 NAME_SYM = WiringPi_API
-VERSION = 1.00
+VERSION = 1.01
 VERSION_MACRO = VERSION
-VERSION_SYM = 1_00
+VERSION_SYM = 1_01
 DEFINE_VERSION = -D$(VERSION_MACRO)=\"$(VERSION)\"
-XS_VERSION = 1.00
+XS_VERSION = 1.01
 XS_VERSION_MACRO = XS_VERSION
 XS_DEFINE_VERSION = -D$(XS_VERSION_MACRO)=\"$(XS_VERSION)\"
 INST_ARCHLIB = blib/arch
@@ -213,7 +213,7 @@ XSUBPP = "$(XSUBPPDIR)$(DFSEP)xsubpp"
 XSUBPPRUN = $(PERLRUN) $(XSUBPP)
 XSPROTOARG = 
 XSUBPPDEPS = /usr/share/perl/5.18/ExtUtils/typemap typemap /usr/share/perl/5.18/ExtUtils$(DFSEP)xsubpp
-XSUBPPARGS = -typemap '/usr/share/perl/5.18/ExtUtils/typemap' -typemap '/home/steve02/devel/repos/rpi-wiringpi-core/typemap'
+XSUBPPARGS = -typemap '/usr/share/perl/5.18/ExtUtils/typemap' -typemap '/home/steve02/devel/repos/wiringpi-api/typemap'
 XSUBPP_EXTRA_ARGS =
 
 
@@ -270,7 +270,7 @@ RCS_LABEL = rcs -Nv$(VERSION_SYM): -q
 DIST_CP = best
 DIST_DEFAULT = tardist
 DISTNAME = WiringPi-API
-DISTVNAME = WiringPi-API-1.00
+DISTVNAME = WiringPi-API-1.01
 
 
 # --- MakeMaker macro section:
@@ -607,7 +607,7 @@ metafile : create_distdir
 	$(NOECHO) $(ECHO) 'resources:' >> META_new.yml
 	$(NOECHO) $(ECHO) '  bugtracker: https://github.com/stevieb9/wiringpi-api/issues' >> META_new.yml
 	$(NOECHO) $(ECHO) '  repository: https://github.com/stevieb9/wiringpi-api.git' >> META_new.yml
-	$(NOECHO) $(ECHO) 'version: '\''1.00'\''' >> META_new.yml
+	$(NOECHO) $(ECHO) 'version: '\''1.01'\''' >> META_new.yml
 	-$(NOECHO) $(MV) META_new.yml $(DISTVNAME)/META.yml
 	$(NOECHO) $(ECHO) Generating META.json
 	$(NOECHO) $(ECHO) '{' > META_new.json
@@ -657,7 +657,7 @@ metafile : create_distdir
 	$(NOECHO) $(ECHO) '         "web" : "https://github.com/stevieb9/wiringpi-api"' >> META_new.json
 	$(NOECHO) $(ECHO) '      }' >> META_new.json
 	$(NOECHO) $(ECHO) '   },' >> META_new.json
-	$(NOECHO) $(ECHO) '   "version" : "1.00"' >> META_new.json
+	$(NOECHO) $(ECHO) '   "version" : "1.01"' >> META_new.json
 	$(NOECHO) $(ECHO) '}' >> META_new.json
 	-$(NOECHO) $(MV) META_new.json $(DISTVNAME)/META.json
 
@@ -1036,17 +1036,17 @@ testdb_dynamic :: dynamic pure_all
 subdirs-test_static :: static pure_all
 
 test_static :: subdirs-test_static $(MAP_TARGET)
-	PERL_DL_NONLAZY=1 "/home/steve02/devel/repos/rpi-wiringpi-core/$(MAP_TARGET)" $(MAP_PERLINC) "-MExtUtils::Command::MM" "-MTest::Harness" "-e" "undef *Test::Harness::Switches; test_harness($(TEST_VERBOSE), '$(INST_LIB)', '$(INST_ARCHLIB)')" $(TEST_FILES)
+	PERL_DL_NONLAZY=1 "/home/steve02/devel/repos/wiringpi-api/$(MAP_TARGET)" $(MAP_PERLINC) "-MExtUtils::Command::MM" "-MTest::Harness" "-e" "undef *Test::Harness::Switches; test_harness($(TEST_VERBOSE), '$(INST_LIB)', '$(INST_ARCHLIB)')" $(TEST_FILES)
 
 testdb_static :: static pure_all $(MAP_TARGET)
-	PERL_DL_NONLAZY=1 "/home/steve02/devel/repos/rpi-wiringpi-core/$(MAP_TARGET)" $(MAP_PERLINC) "-I$(INST_LIB)" "-I$(INST_ARCHLIB)" $(TEST_FILE)
+	PERL_DL_NONLAZY=1 "/home/steve02/devel/repos/wiringpi-api/$(MAP_TARGET)" $(MAP_PERLINC) "-I$(INST_LIB)" "-I$(INST_ARCHLIB)" $(TEST_FILE)
 
 
 
 # --- MakeMaker ppd section:
 # Creates a PPD (Perl Package Description) for a binary distribution.
 ppd :
-	$(NOECHO) $(ECHO) '<SOFTPKG NAME="WiringPi-API" VERSION="1.00">' > WiringPi-API.ppd
+	$(NOECHO) $(ECHO) '<SOFTPKG NAME="WiringPi-API" VERSION="1.01">' > WiringPi-API.ppd
 	$(NOECHO) $(ECHO) '    <ABSTRACT>Direct access to Raspberry Pi'\''s wiringPi API, with optional Perl OO access</ABSTRACT>' >> WiringPi-API.ppd
 	$(NOECHO) $(ECHO) '    <AUTHOR>Steve Bertrand &lt;steveb@cpan.org&gt;</AUTHOR>' >> WiringPi-API.ppd
 	$(NOECHO) $(ECHO) '    <IMPLEMENTATION>' >> WiringPi-API.ppd

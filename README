@@ -74,7 +74,7 @@ EXPORT_TAGS
 
     See EXPORT_OK
 
-    head2= :all
+ :all
 
     Exports all available exportable functions.
 
@@ -482,7 +482,13 @@ LCD METHODS
 
     Mandatory: A string to display.
 
+INTERRUPT METHODS
+
  set_interrupt($pin, $edge, $callback)
+
+    IMPORTANT: The interrupt functionality requires that your Perl can be
+    used in pthreads. If you do not have a threaded Perl, the program will
+    cause a segmentation fault.
 
     Wrapper around wiringPi's wiringPiISR() that allows you to send in the
     name of a Perl sub in your own code that will be called if an interrupt

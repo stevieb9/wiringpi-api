@@ -3,7 +3,7 @@ package WiringPi::API;
 use strict;
 use warnings;
 
-our $VERSION = '1.01';
+our $VERSION = '1.02';
 
 require XSLoader;
 XSLoader::load('WiringPi::API', $VERSION);
@@ -678,6 +678,8 @@ Mandatory: The file descriptor integer returned by C<lcd_init()>.
     $string
 
 Mandatory: A string to display.
+
+=head1 INTERRUPT METHODS
 
 =head2 set_interrupt($pin, $edge, $callback)
 
