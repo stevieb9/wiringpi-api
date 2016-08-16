@@ -1,8 +1,8 @@
 Revision history for Perl extension WiringPi::API.
 
-1.02 UNREL
+1.02    2016-08-16
         - removed references to wiringPi pin numbering scheme being the default
-
+        - added clarification in setup*() routine POD
 
 1.00    2016-08-16
         - new export tags, :wiringPi exports the originally named wiringPi

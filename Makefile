@@ -61,11 +61,11 @@ DIRFILESEP = /
 DFSEP = $(DIRFILESEP)
 NAME = WiringPi::API
 NAME_SYM = WiringPi_API
-VERSION = 1.01
+VERSION = 1.02
 VERSION_MACRO = VERSION
-VERSION_SYM = 1_01
+VERSION_SYM = 1_02
 DEFINE_VERSION = -D$(VERSION_MACRO)=\"$(VERSION)\"
-XS_VERSION = 1.01
+XS_VERSION = 1.02
 XS_VERSION_MACRO = XS_VERSION
 XS_DEFINE_VERSION = -D$(XS_VERSION_MACRO)=\"$(XS_VERSION)\"
 INST_ARCHLIB = blib/arch
@@ -270,7 +270,7 @@ RCS_LABEL = rcs -Nv$(VERSION_SYM): -q
 DIST_CP = best
 DIST_DEFAULT = tardist
 DISTNAME = WiringPi-API
-DISTVNAME = WiringPi-API-1.01
+DISTVNAME = WiringPi-API-1.02
 
 
 # --- MakeMaker macro section:
@@ -607,7 +607,7 @@ metafile : create_distdir
 	$(NOECHO) $(ECHO) 'resources:' >> META_new.yml
 	$(NOECHO) $(ECHO) '  bugtracker: https://github.com/stevieb9/wiringpi-api/issues' >> META_new.yml
 	$(NOECHO) $(ECHO) '  repository: https://github.com/stevieb9/wiringpi-api.git' >> META_new.yml
-	$(NOECHO) $(ECHO) 'version: '\''1.01'\''' >> META_new.yml
+	$(NOECHO) $(ECHO) 'version: '\''1.02'\''' >> META_new.yml
 	-$(NOECHO) $(MV) META_new.yml $(DISTVNAME)/META.yml
 	$(NOECHO) $(ECHO) Generating META.json
 	$(NOECHO) $(ECHO) '{' > META_new.json
@@ -657,7 +657,7 @@ metafile : create_distdir
 	$(NOECHO) $(ECHO) '         "web" : "https://github.com/stevieb9/wiringpi-api"' >> META_new.json
 	$(NOECHO) $(ECHO) '      }' >> META_new.json
 	$(NOECHO) $(ECHO) '   },' >> META_new.json
-	$(NOECHO) $(ECHO) '   "version" : "1.01"' >> META_new.json
+	$(NOECHO) $(ECHO) '   "version" : "1.02"' >> META_new.json
 	$(NOECHO) $(ECHO) '}' >> META_new.json
 	-$(NOECHO) $(MV) META_new.json $(DISTVNAME)/META.json
 
@@ -1046,7 +1046,7 @@ testdb_static :: static pure_all $(MAP_TARGET)
 # --- MakeMaker ppd section:
 # Creates a PPD (Perl Package Description) for a binary distribution.
 ppd :
-	$(NOECHO) $(ECHO) '<SOFTPKG NAME="WiringPi-API" VERSION="1.01">' > WiringPi-API.ppd
+	$(NOECHO) $(ECHO) '<SOFTPKG NAME="WiringPi-API" VERSION="1.02">' > WiringPi-API.ppd
 	$(NOECHO) $(ECHO) '    <ABSTRACT>Direct access to Raspberry Pi'\''s wiringPi API, with optional Perl OO access</ABSTRACT>' >> WiringPi-API.ppd
 	$(NOECHO) $(ECHO) '    <AUTHOR>Steve Bertrand &lt;steveb@cpan.org&gt;</AUTHOR>' >> WiringPi-API.ppd
 	$(NOECHO) $(ECHO) '    <IMPLEMENTATION>' >> WiringPi-API.ppd

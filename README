@@ -30,8 +30,15 @@ SYNOPSIS
         # !!!
         # regardless of using OO or functional style, one of the C<setup*()>
         # functions MUST be called prior to doing anything
+        # !!!
+    
+        # OO
     
         $api->setup;
+    
+        # functional
+    
+        setup();
 
 DESCRIPTION
 
@@ -565,7 +572,7 @@ POD ERRORS
     Hey! The above document had some coding errors, which are explained
     below:
 
-    Around line 458:
+    Around line 465:
 
       Non-ASCII character seen before =encoding in '5×8,'. Assuming UTF-8
 

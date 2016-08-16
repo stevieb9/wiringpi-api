@@ -3,7 +3,7 @@ package WiringPi::API;
 use strict;
 use warnings;
 
-our $VERSION = '1.02';
+our $VERSION = '1.03';
 
 require XSLoader;
 XSLoader::load('WiringPi::API', $VERSION);
@@ -237,8 +237,15 @@ Perl OO access
     # !!!
     # regardless of using OO or functional style, one of the C<setup*()>
     # functions MUST be called prior to doing anything
+    # !!!
+
+    # OO
 
     $api->setup;
+
+    # functional
+
+    setup();
 
 =head1 DESCRIPTION
 
