@@ -234,8 +234,11 @@ Perl OO access
 
     my $api = WiringPi::API->new;
 
-    # if you're using functional, you MUST call one of the C<setup*()> calls
-    # before anything will work properly
+    # !!!
+    # regardless of using OO or functional style, one of the C<setup*()>
+    # functions MUST be called prior to doing anything
+
+    $api->setup;
 
 =head1 DESCRIPTION
 
@@ -292,8 +295,7 @@ Exports all available exportable functions.
 =head2 new()
 
 NOTE: After an object is created, one of the C<setup*> methods must be called
-to initialize the Pi board. By default, we use C<setup_sys()>, which sets the
-pin numbering scheme to C<BCM>.
+to initialize the Pi board.
 
 Returns a new C<WiringPi::API> object.
 

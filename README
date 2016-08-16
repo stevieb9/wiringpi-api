@@ -27,8 +27,9 @@ SYNOPSIS
     
         my $api = WiringPi::API->new;
     
-        # if you're using functional, you MUST call one of the C<setup*()> calls
-        # before anything will work properly
+        # !!!
+        # regardless of using OO or functional style, one of the C<setup*()>
+        # functions MUST be called prior to doing anything
 
 DESCRIPTION
 
@@ -86,8 +87,7 @@ CORE METHODS
  new()
 
     NOTE: After an object is created, one of the setup* methods must be
-    called to initialize the Pi board. By default, we use setup_sys(),
-    which sets the pin numbering scheme to BCM.
+    called to initialize the Pi board.
 
     Returns a new WiringPi::API object.
 
