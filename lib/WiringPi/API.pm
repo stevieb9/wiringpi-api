@@ -234,6 +234,9 @@ Perl OO access
 
     my $api = WiringPi::API->new;
 
+    # if you're using functional, you MUST call one of the C<setup*()> calls
+    # before anything will work properly
+
 =head1 DESCRIPTION
 
 This is an XS-based module, and requires L<wiringPi|http://wiringpi.com> to be
@@ -288,11 +291,17 @@ Exports all available exportable functions.
 
 =head2 new()
 
+NOTE: After an object is created, one of the C<setup*> methods must be called
+to initialize the Pi board. By default, we use C<setup_sys()>, which sets the
+pin numbering scheme to C<BCM>.
+
 Returns a new C<WiringPi::API> object.
 
 =head2 setup()
 
 Maps to C<int wiringPiSetup()>
+
+Sets the pin numbering scheme to C<WPI> (wiringPi numbers).
 
 See L<wiringPi setup functions|http://wiringpi.com/reference/setup> for
 for information on this method.
@@ -303,6 +312,8 @@ Note that only one of the C<setup*()> methods can be called per program run.
 
 Maps to C<int wiringPiSetupSys()>
 
+Sets the pin numbering scheme to C<BCM> (Broadcom numbers).
+
 See L<wiringPi setup functions|http://wiringpi.com/reference/setup> for
 for information on this method.
 
@@ -312,6 +323,8 @@ Note that only one of the C<setup*()> methods can be called per program run.
 
 Maps to C<int wiringPiSetupPhys()>
 
+Sets the pin numbering scheme to C<PHYS> (physical board numbers).
+
 See L<wiringPi setup functions|http://wiringpi.com/reference/setup> for
 for information on this method.
 
@@ -320,6 +333,8 @@ Note that only one of the C<setup*()> methods can be called per program run.
 =head2 setup_gpio()
 
 Maps to C<int wiringPiSetupGpio()>
+
+Sets the pin numbering scheme to C<BCM> (Broadcom numbers).
 
 See L<wiringPi setup functions|http://wiringpi.com/reference/setup> for
 for information on this method.
@@ -336,7 +351,8 @@ Parameters:
 
     $pin
 
-Mandatory: The GPIO pin number, using wiringPi's pin number representation.
+Mandatory: The GPIO pin number, using your currently in-use numbering scheme
+(C<BCM> aka GPIO by default).
 
     $mode
 
@@ -352,7 +368,8 @@ Parameters:
     
     $pin
 
-Mandatory: The wiringPi number representation of the GPIO pin.
+Mandatory: The GPIO pin number, using your currently in-use numbering scheme
+(C<BCM> aka GPIO by default).
 
 =head2 write_pin($pin, $state)
 
@@ -364,7 +381,8 @@ Parameters:
 
     $pin
 
-Mandatory: The wiringPi number representation of the GPIO pin.
+Mandatory: The GPIO pin number, using your currently in-use numbering scheme
+(C<BCM> aka GPIO by default).
 
     $state
 
@@ -380,7 +398,8 @@ Parameters:
 
     $pin
 
-Mandatory: The wiringPi number representation of the GPIO pin.
+Mandatory: The GPIO pin number, using your currently in-use numbering scheme
+(C<BCM> aka GPIO by default).
 
     $direction
 
@@ -396,7 +415,8 @@ Parameters:
 
     $pin
 
-Mandatory: The wiringPi number representation of the GPIO pin.
+Mandatory: The GPIO pin number, using your currently in-use numbering scheme
+(C<BCM> aka GPIO by default).
 
     $value
 
@@ -413,7 +433,8 @@ Parameters:
     
     $pin
 
-Mandatory: The wiringPi number representation of the GPIO pin.
+Mandatory: The GPIO pin number, using your currently in-use numbering scheme
+(C<BCM> aka GPIO by default).
 
 =head1 BOARD METHODS
 
@@ -434,7 +455,8 @@ Parameters:
 
     $pin_num
 
-Mandatory: The C<wiringPi> representation of a pin number.        
+Mandatory: The GPIO pin number, using your currently in-use numbering scheme
+(C<BCM> aka GPIO by default).
 
 =head2 phys_to_gpio($pin_num)
 

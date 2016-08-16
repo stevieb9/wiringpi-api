@@ -26,6 +26,9 @@ SYNOPSIS
         use WiringPi::API;
     
         my $api = WiringPi::API->new;
+    
+        # if you're using functional, you MUST call one of the C<setup*()> calls
+        # before anything will work properly
 
 DESCRIPTION
 
@@ -82,11 +85,17 @@ CORE METHODS
 
  new()
 
+    NOTE: After an object is created, one of the setup* methods must be
+    called to initialize the Pi board. By default, we use setup_sys(),
+    which sets the pin numbering scheme to BCM.
+
     Returns a new WiringPi::API object.
 
  setup()
 
     Maps to int wiringPiSetup()
+
+    Sets the pin numbering scheme to WPI (wiringPi numbers).
 
     See wiringPi setup functions <http://wiringpi.com/reference/setup> for
     for information on this method.
@@ -98,6 +107,8 @@ CORE METHODS
 
     Maps to int wiringPiSetupSys()
 
+    Sets the pin numbering scheme to BCM (Broadcom numbers).
+
     See wiringPi setup functions <http://wiringpi.com/reference/setup> for
     for information on this method.
 
@@ -108,6 +119,8 @@ CORE METHODS
 
     Maps to int wiringPiSetupPhys()
 
+    Sets the pin numbering scheme to PHYS (physical board numbers).
+
     See wiringPi setup functions <http://wiringpi.com/reference/setup> for
     for information on this method.
 
@@ -117,6 +130,8 @@ CORE METHODS
  setup_gpio()
 
     Maps to int wiringPiSetupGpio()
+
+    Sets the pin numbering scheme to BCM (Broadcom numbers).
 
     See wiringPi setup functions <http://wiringpi.com/reference/setup> for
     for information on this method.
@@ -134,8 +149,8 @@ CORE METHODS
 
         $pin
 
-    Mandatory: The GPIO pin number, using wiringPi's pin number
-    representation.
+    Mandatory: The GPIO pin number, using your currently in-use numbering
+    scheme (BCM aka GPIO by default).
 
         $mode
 
@@ -151,7 +166,8 @@ CORE METHODS
 
         $pin
 
-    Mandatory: The wiringPi number representation of the GPIO pin.
+    Mandatory: The GPIO pin number, using your currently in-use numbering
+    scheme (BCM aka GPIO by default).
 
  write_pin($pin, $state)
 
@@ -163,7 +179,8 @@ CORE METHODS
 
         $pin
 
-    Mandatory: The wiringPi number representation of the GPIO pin.
+    Mandatory: The GPIO pin number, using your currently in-use numbering
+    scheme (BCM aka GPIO by default).
 
         $state
 
@@ -179,7 +196,8 @@ CORE METHODS
 
         $pin
 
-    Mandatory: The wiringPi number representation of the GPIO pin.
+    Mandatory: The GPIO pin number, using your currently in-use numbering
+    scheme (BCM aka GPIO by default).
 
         $direction
 
@@ -195,7 +213,8 @@ CORE METHODS
 
         $pin
 
-    Mandatory: The wiringPi number representation of the GPIO pin.
+    Mandatory: The GPIO pin number, using your currently in-use numbering
+    scheme (BCM aka GPIO by default).
 
         $value
 
@@ -212,7 +231,8 @@ CORE METHODS
 
         $pin
 
-    Mandatory: The wiringPi number representation of the GPIO pin.
+    Mandatory: The GPIO pin number, using your currently in-use numbering
+    scheme (BCM aka GPIO by default).
 
 BOARD METHODS
 
@@ -233,7 +253,8 @@ BOARD METHODS
 
         $pin_num
 
-    Mandatory: The wiringPi representation of a pin number.
+    Mandatory: The GPIO pin number, using your currently in-use numbering
+    scheme (BCM aka GPIO by default).
 
  phys_to_gpio($pin_num)
 
@@ -528,7 +549,7 @@ POD ERRORS
     Hey! The above document had some coding errors, which are explained
     below:
 
-    Around line 424:
+    Around line 446:
 
       Non-ASCII character seen before =encoding in '5×8,'. Assuming UTF-8
 
