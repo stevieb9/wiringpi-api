@@ -3,7 +3,7 @@ package WiringPi::API;
 use strict;
 use warnings;
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 require XSLoader;
 XSLoader::load('WiringPi::API', $VERSION);
@@ -280,7 +280,7 @@ See L<EXPORT_OK>
 
 See L<EXPORT_OK>
 
-head2= :all
+=head2 :all
 
 Exports all available exportable functions.
 
@@ -680,6 +680,10 @@ Mandatory: The file descriptor integer returned by C<lcd_init()>.
 Mandatory: A string to display.
 
 =head2 set_interrupt($pin, $edge, $callback)
+
+IMPORTANT: The interrupt functionality requires that your Perl can be used
+in pthreads. If you do not have a threaded Perl, the program will cause a
+segmentation fault.
 
 Wrapper around wiringPi's C<wiringPiISR()> that allows you to send in the name
 of a Perl sub in your own code that will be called if an interrupt is
