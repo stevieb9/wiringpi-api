@@ -1,0 +1,37 @@
+Revision history for Perl extension RPi::WiringPi::Core.
+
+0.06 UNRELEASED
+        - moved arg validation out of Core and into upper-layer client
+          software. The idea is to keep this module as close to the C code
+          as possible, so if this module is used directly, C will handle the
+          problem
+        - wrote custom physPinToWpi() C function, and added a phys_to_wpi()
+          caller
+        - we now shift off the object or class name if it is present in all
+          sub calls
+        - all parameter error handling out, and put it into the upper layers...
+          we now pretty much call the C functions directly with little overhead
+
+0.05    2016-08-11
+        - added all of the wiringPiDev shared library LCD functions, and
+          mapped them in ::Core
+
+0.04    2016-08-10
+        - wiringPiSetupPhys() has been implemented
+        - added piBoardRev(), wpiPinToGpio(), physPinToGpio() and pwmSetRange()
+          functions
+        - added Perl->C mappings in POD
+
+0.03    2016-08-10
+        - added repo info to Makefile.PL
+        - added get_alt(), maps to C getAlt(). This returns the current mode
+          of a pin. Why it's not called getMode() is beyond me ;)
+
+0.02    2016-08-10
+        - added notices to POD
+        - added POD for pwm_write()
+
+0.01    2016-08-10
+        - separated out from RPi::WiringPi
+        - most core and system functions implemented
+

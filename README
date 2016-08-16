@@ -1,0 +1,449 @@
+NAME
+
+    RPi::WiringPi::Core - Perl wrapper for Raspberry Pi's wiringPi Core and
+    System functions
+
+DESCRIPTION
+
+    WARNING: Until version 1.00 has been released, the API along with
+    functionality may change at any time without any notice. If you happen
+    to be testing with this software and find something broken, please
+    contact me.
+
+    This is an XS-based module, and requires wiringPi <http://wiringpi.com>
+    to be installed. The wiringPiDev shared library is also required (for
+    the LCD functionality), but it's installed by default with wiringPi.
+
+    It provides Perl method access to (at this time, most of) the wiringPi
+    Core <http://wiringpi.com/reference/core-functions> along with a few of
+    its system functions.
+
+    Although this module can be used directly, it's generally used as a
+    base class for other modules. You may want to use the RPi::WiringPi
+    module instead of this one.
+
+CORE METHODS
+
+ new()
+
+    Returns a new RPi::WiringPi::Core object.
+
+ setup()
+
+    Maps to int wiringPiSetup()
+
+    See wiringPi setup functions <http://wiringpi.com/reference/setup> for
+    for information on this method.
+
+    Note that only one of the setup*() methods can be called per program
+    run.
+
+ setup_sys()
+
+    Maps to int wiringPiSetupSys()
+
+    See wiringPi setup functions <http://wiringpi.com/reference/setup> for
+    for information on this method.
+
+    Note that only one of the setup*() methods can be called per program
+    run.
+
+ setup_phys()
+
+    Maps to int wiringPiSetupPhys()
+
+    See wiringPi setup functions <http://wiringpi.com/reference/setup> for
+    for information on this method.
+
+    Note that only one of the setup*() methods can be called per program
+    run.
+
+ setup_gpio()
+
+    Maps to int wiringPiSetupGpio()
+
+    See wiringPi setup functions <http://wiringpi.com/reference/setup> for
+    for information on this method.
+
+    Note that only one of the setup*() methods can be called per program
+    run.
+
+ pin_mode($pin, $mode)
+
+    Maps to void pinMode(int pin, int mode)
+
+    Puts the GPIO pin in either INPUT or OUTPUT mode.
+
+    Parameters:
+
+        $pin
+
+    Mandatory: The GPIO pin number, using wiringPi's pin number
+    representation.
+
+        $mode
+
+    Mandatory: 0 for INPUT, 1 OUTPUT, 2 PWM_OUTPUT and 3 GPIO_CLOCK.
+
+ read_pin($pin);
+
+    Maps to int digitalRead(int pin)
+
+    Returns the current state (HIGH/on, LOW/off) of a given pin.
+
+    Parameters:
+
+        $pin
+
+    Mandatory: The wiringPi number representation of the GPIO pin.
+
+ write_pin($pin, $state)
+
+    Maps to void digitalWrite(int pin)
+
+    Sets the state (HIGH/on, LOW/off) of a given pin.
+
+    Parameters:
+
+        $pin
+
+    Mandatory: The wiringPi number representation of the GPIO pin.
+
+        $state
+
+    Mandatory: 1 to turn the pin on (HIGH), and 0 to turn it LOW (off).
+
+ pull_up_down($pin, $direction)
+
+    Maps to void pullUpDnControl(int pin, int pud)
+
+    Enable/disable the built-in pull up/down resistors for a specified pin.
+
+    Parameters:
+
+        $pin
+
+    Mandatory: The wiringPi number representation of the GPIO pin.
+
+        $direction
+
+    Mandatory: 2 for UP, 1 for DOWN and 0 to disable the resistor.
+
+ pwm_write($pin, $value)
+
+    Maps to void pwmWrite(int pin, int value)
+
+    Sets the Pulse Width Modulation duty cycle (on-time) of the pin.
+
+    Parameters:
+
+        $pin
+
+    Mandatory: The wiringPi number representation of the GPIO pin.
+
+        $value
+
+    Mandatory: 0 to 1023. 0 is 0% (off) and 1023 is 100% (fully on).
+
+ get_alt($pin)
+
+    Maps to int getAlt(int pin)
+
+    This returns the current mode of the pin (using getAlt() C call). Modes
+    are INPUT 0, OUTPUT 1, PWM 2 and CLOCK 3.
+
+    Parameters:
+
+        $pin
+
+    Mandatory: The wiringPi number representation of the GPIO pin.
+
+BOARD METHODS
+
+ board_rev()
+
+    Maps to int piBoardRev()
+
+    Returns the Raspberry Pi board's revision.
+
+ wpi_to_gpio($pin_num)
+
+    Maps to int wpiPinToGpio(int pin)
+
+    Converts a wiringPi pin number to the Broadcom (BCM) representation,
+    and returns it.
+
+    Parameters:
+
+        $pin_num
+
+    Mandatory: The wiringPi representation of a pin number.
+
+ phys_to_gpio($pin_num)
+
+    Maps to int physPinToGpio(int pin)
+
+    Converts the pin number on the physical board to the Broadcom (BCM)
+    representation, and returns it.
+
+    Parameters:
+
+        $pin_num
+
+    Mandatory: The pin number on the physical Raspberry Pi board.
+
+ pwm_set_range($range);
+
+    Maps to void pwmSetRange(int range)
+
+    Sets the range register of the Pulse Width Modulation (PWM)
+    functionality. It defaults to 1024 (0-1023).
+
+    Parameters:
+
+        $range
+
+    Mandatory: An integer between 0 and 1023.
+
+LCD METHODS
+
+    There are several methods to drive standard Liquid Crystal Displays.
+    See wiringPiDev LCD page <http://wiringpi.com/dev-lib/lcd-library/> for
+    full details.
+
+ lcd_init(%args)
+
+    Maps to:
+
+        int lcdInit(
+            rows, cols, bits, rs, strb,
+            d0, d1, d2, d3, d4, d5, d6, d7
+        );
+
+    Initializes the LCD library, and returns an integer representing the
+    handle handle (file descriptor) of the device. The return is supposed
+    to be constant, so DON'T change it.
+
+    Parameters:
+
+        %args = (
+            rows => $num,       # number of rows. eg: 16 or 20
+            cols => $num,       # number of columns. eg: 2 or 4
+            bits => 4|8,        # width of the interface (4 or 8)
+            rs => $pin_num,     # pin number of the LCD's RS pin
+            strb => $pin_num,   # pin number of the LCD's strobe (E) pin
+            d0 => $pin_num,     # pin number for LCD data pin 1
+            ...
+            d7 => $pin_num,     # pin number for LCD data pin 8
+        );
+
+    Mandatory: All entries must have a value. If you're only using four (4)
+    bit width, d4 through d7 must be set to 0.
+
+ lcd_home($fd)
+
+    Maps to void lcdHome(int fd)
+
+    Moves the LCD cursor to the home position (top row, leftmost column).
+
+    Parameters:
+
+        $fd
+
+    Mandatory: The file descriptor integer returned by lcd_init().
+
+ lcd_clear($fd)
+
+    Maps to void lcdClear(int fd)
+
+    Clears the LCD display.
+
+    Parameters:
+
+        $fd
+
+    Mandatory: The file descriptor integer returned by lcd_init().
+
+ lcd_display($fd, $state)
+
+    Maps to void lcdDisplay(int fd, int state)
+
+    Turns the LCD display on and off.
+
+    Parameters:
+
+        $fd
+
+    Mandatory: The file descriptor integer returned by lcd_init().
+
+        $state
+
+    Mandatory: 0 to turn the display off, and 1 for on.
+
+ lcd_cursor($fd, $state)
+
+    Maps to void lcdCursor(int fd, int state)
+
+    Turns the LCD cursor on and off.
+
+    Parameters:
+
+        $fd
+
+    Mandatory: The file descriptor integer returned by lcd_init().=head2
+    lcd_clear($fd)
+
+        $state
+
+    Mandatory: 0 to turn the cursor off, 1 for on.
+
+ lcd_cursor_blink($fd, $state)
+
+    Maps to void lcdCursorBlink(int fd, int state)
+
+    Allows you to enable/disable a blinking cursor.
+
+    Parameters:
+
+        $fd
+
+    Mandatory: The file descriptor integer returned by lcd_init().=head2
+    lcd_clear($fd)
+
+        $state
+
+    Mandatory: 0 to stop blinking, 1 to enable.
+
+ lcd_send_cmd($fd, $command)
+
+    Maps to void lcdSendCommand(int fd, char command)
+
+    Sends any arbitrary command to the LCD.
+
+    Parameters:
+
+        $fd
+
+    Mandatory: The file descriptor integer returned by lcd_init().=head2
+    lcd_clear($fd)
+
+        $command
+
+    Mandatory: A command to submit to the LCD.
+
+ lcd_position($fd, $x, $y)
+
+    Maps to void lcdPosition(int fd, int x, int y)
+
+    Moves the cursor to the specified position on the LCD display.
+
+    Parameters:
+
+        $fd
+
+    Mandatory: The file descriptor integer returned by lcd_init().
+
+        $x
+
+    Mandatory: Column position. 0 is the left-most edge.
+
+        $y
+
+    Mandatory: Row position. 0 is the top row.
+
+ lcd_char_def($fd, $index, $data)
+
+    Maps to void lcdCharDef(int fd, unsigned char data [8])
+
+    This allows you to re-define one of the 8 user-definable characters in
+    the display. The data array is 8 bytes which represent the character
+    from the top-line to the bottom line. Note that the characters are
+    actually 5×8, so only the lower 5 bits are used. The index is from 0 to
+    7 and you can subsequently print the character defined using the
+    lcdPutchar() call.
+
+    Parameters:
+
+        $fd
+
+    Mandatory: The file descriptor integer returned by lcd_init().
+
+        $index
+
+    Mandatory: Index of the display character. Values are 0-7.
+
+        $data
+
+    Mandatory: See above description.
+
+ lcd_put_char($fd, $char)
+
+    Maps to void lcdPutChar(int fd, unsigned char data)
+
+    Writes a single ASCII character to the LCD display, at the current
+    cursor position.
+
+    Parameters:
+
+        $fd
+
+    Mandatory: The file descriptor integer returned by lcd_init().
+
+        $char
+
+    Mandatory: A single ASCII character.
+
+ lcd_puts($fd, $string)
+
+    Maps to void lcdPuts(int fd, char *string)
+
+    Writes a string to the LCD display, at the current cursor position.
+
+    Parameters:
+
+        $fd
+
+    Mandatory: The file descriptor integer returned by lcd_init().
+
+        $string
+
+    Mandatory: A string to display.
+
+ lcd_printf($fd, $string)
+
+    Maps to void lcdPrintf(int fd, char *message)
+
+    Displays a standard printf() string to the LCD display, at the current
+    cursor position.
+
+    Parameters:
+
+        $fd
+
+    Mandatory: The file descriptor integer returned by lcd_init().
+
+        $string
+
+    Mandatory: A string, optionally with printf() formatting tags.
+
+AUTHOR
+
+    Steve Bertrand, <steveb@cpan.org>
+
+COPYRIGHT AND LICENSE
+
+    Copyright (C) 2016 by Steve Bertrand
+
+    This library is free software; you can redistribute it and/or modify it
+    under the same terms as Perl itself, either Perl version 5.18.2 or, at
+    your option, any later version of Perl 5 you may have available.
+
+POD ERRORS
+
+    Hey! The above document had some coding errors, which are explained
+    below:
+
+    Around line 352:
+
+      Non-ASCII character seen before =encoding in '5×8,'. Assuming UTF-8
+

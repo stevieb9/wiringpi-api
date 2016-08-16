@@ -1,0 +1,13 @@
+Changes
+Core.xs
+examples/call_perl_sub_from_c/a.out
+lib/RPi/WiringPi/Core.pm
+Makefile.PL
+MANIFEST
+MANIFEST.SKIP
+ppport.h
+README
+t/00-load.t
+t/05-phys_to_wpi.t
+t/10-phys-to-gpio.t
+typemap
