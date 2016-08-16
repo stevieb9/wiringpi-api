@@ -1,6 +1,15 @@
-Revision history for Perl extension RPi::WiringPi::Core.
+Revision history for Perl extension WiringPi::API.
 
-0.06 UNRELEASED
+1.00    2016-08-16
+        - new export tags, :wiringPi exports the originally named wiringPi
+          functions directly from XS. :perl exports the Perl representation
+          of the functions, and :all exports them all
+        - setup_sys() now exports all BCM pins with a system call with sudo,
+          which alleviates the need to run as user root
+        - interrupt code now implemented and working
+        - renamed to WiringPi::API
+
+0.06    2016-08-13
         - moved arg validation out of Core and into upper-layer client
           software. The idea is to keep this module as close to the C code
           as possible, so if this module is used directly, C will handle the

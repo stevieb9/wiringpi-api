@@ -1,5 +1,5 @@
 {
-   "abstract" : "Tight Perl wrapper for Rasperry Pi's wiringPi C library functionality",
+   "abstract" : "Direct access to Raspberry Pi's wiringPi API, with optional Perl OO access",
    "author" : [
       "Steve Bertrand <steveb@cpan.org>"
    ],
@@ -12,7 +12,7 @@
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
       "version" : "2"
    },
-   "name" : "RPi-WiringPi-Core",
+   "name" : "WiringPi-API",
    "no_index" : {
       "directory" : [
          "t",
@@ -31,21 +31,19 @@
          }
       },
       "runtime" : {
-         "requires" : {
-            "RPi::WiringPi::Constant" : "0.01"
-         }
+         "requires" : {}
       }
    },
    "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
-         "web" : "https://github.com/stevieb9/p5-rpi-wiringpi-core/issues"
+         "web" : "https://github.com/stevieb9/wiringpi-api/issues"
       },
       "repository" : {
          "type" : "git",
-         "url" : "https://github.com/stevieb9/p5-rpi-wiringpi-core.git",
-         "web" : "https://github.com/stevieb9/p5-rpi-wiringpi-core"
+         "url" : "https://github.com/stevieb9/wiringpi-api.git",
+         "web" : "https://github.com/stevieb9/wiringpi-api"
       }
    },
-   "version" : "0.07"
+   "version" : "1.00"
 }

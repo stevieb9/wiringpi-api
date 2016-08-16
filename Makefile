@@ -1,4 +1,4 @@
-# This Makefile is for the RPi::WiringPi::Core extension to perl.
+# This Makefile is for the WiringPi::API extension to perl.
 #
 # It was generated automatically by MakeMaker version
 # 7.22 (Revision: 72200) from the contents of
@@ -11,18 +11,18 @@
 
 #   MakeMaker Parameters:
 
-#     ABSTRACT_FROM => q[lib/RPi/WiringPi/Core.pm]
+#     ABSTRACT_FROM => q[lib/WiringPi/API.pm]
 #     AUTHOR => [q[Steve Bertrand <steveb@cpan.org>]]
 #     BUILD_REQUIRES => {  }
 #     CONFIGURE_REQUIRES => {  }
 #     DEFINE => q[]
 #     INC => q[-I.]
 #     LIBS => [q[-lwiringPi -lwiringPiDev]]
-#     META_MERGE => { meta-spec=>{ version=>q[2] }, resources=>{ bugtracker=>{ web=>q[https://github.com/stevieb9/p5-rpi-wiringpi-core/issues] }, repository=>{ type=>q[git], url=>q[https://github.com/stevieb9/p5-rpi-wiringpi-core.git], web=>q[https://github.com/stevieb9/p5-rpi-wiringpi-core] } } }
-#     NAME => q[RPi::WiringPi::Core]
-#     PREREQ_PM => { RPi::WiringPi::Constant=>q[0.01] }
+#     META_MERGE => { meta-spec=>{ version=>q[2] }, resources=>{ bugtracker=>{ web=>q[https://github.com/stevieb9/wiringpi-api/issues] }, repository=>{ type=>q[git], url=>q[https://github.com/stevieb9/wiringpi-api.git], web=>q[https://github.com/stevieb9/wiringpi-api] } } }
+#     NAME => q[WiringPi::API]
+#     PREREQ_PM => {  }
 #     TEST_REQUIRES => {  }
-#     VERSION_FROM => q[lib/RPi/WiringPi/Core.pm]
+#     VERSION_FROM => q[lib/WiringPi/API.pm]
 
 # --- MakeMaker post_initialize section:
 
@@ -59,13 +59,13 @@ VENDORLIBEXP = /usr/share/perl5
 AR_STATIC_ARGS = cr
 DIRFILESEP = /
 DFSEP = $(DIRFILESEP)
-NAME = RPi::WiringPi::Core
-NAME_SYM = RPi_WiringPi_Core
-VERSION = 0.07
+NAME = WiringPi::API
+NAME_SYM = WiringPi_API
+VERSION = 1.00
 VERSION_MACRO = VERSION
-VERSION_SYM = 0_07
+VERSION_SYM = 1_00
 DEFINE_VERSION = -D$(VERSION_MACRO)=\"$(VERSION)\"
-XS_VERSION = 0.07
+XS_VERSION = 1.00
 XS_VERSION_MACRO = XS_VERSION
 XS_DEFINE_VERSION = -D$(XS_VERSION_MACRO)=\"$(XS_VERSION)\"
 INST_ARCHLIB = blib/arch
@@ -151,11 +151,11 @@ MM_REVISION = 72200
 # PARENT_NAME = NAME without BASEEXT and no trailing :: (eg Foo::Bar)
 # DLBASE  = Basename part of dynamic library. May be just equal BASEEXT.
 MAKE = make
-FULLEXT = RPi/WiringPi/Core
-BASEEXT = Core
-PARENT_NAME = RPi::WiringPi
+FULLEXT = WiringPi/API
+BASEEXT = API
+PARENT_NAME = WiringPi
 DLBASE = $(BASEEXT)
-VERSION_FROM = lib/RPi/WiringPi/Core.pm
+VERSION_FROM = lib/WiringPi/API.pm
 INC = -I.
 DEFINE = 
 OBJECT = $(BASEEXT)$(OBJ_EXT)
@@ -164,19 +164,19 @@ LINKTYPE = dynamic
 BOOTDEP = 
 
 # Handy lists of source code files:
-XS_FILES = Core.xs
-C_FILES  = Core.c
-O_FILES  = Core.o
+XS_FILES = API.xs
+C_FILES  = API.c
+O_FILES  = API.o
 H_FILES  = ppport.h
 MAN1PODS = 
-MAN3PODS = lib/RPi/WiringPi/Core.pm
+MAN3PODS = lib/WiringPi/API.pm
 
 # Where is the Config information that we are using/depend on
 CONFIGDEP = $(PERL_ARCHLIBDEP)$(DFSEP)Config.pm $(PERL_INCDEP)$(DFSEP)config.h
 
 # Where to build things
-INST_LIBDIR      = $(INST_LIB)/RPi/WiringPi
-INST_ARCHLIBDIR  = $(INST_ARCHLIB)/RPi/WiringPi
+INST_LIBDIR      = $(INST_LIB)/WiringPi
+INST_ARCHLIBDIR  = $(INST_ARCHLIB)/WiringPi
 
 INST_AUTODIR     = $(INST_LIB)/auto/$(FULLEXT)
 INST_ARCHAUTODIR = $(INST_ARCHLIB)/auto/$(FULLEXT)
@@ -192,7 +192,7 @@ PERL_ARCHIVEDEP    =
 PERL_ARCHIVE_AFTER = 
 
 
-TO_INST_PM = lib/RPi/WiringPi/Core.pm
+TO_INST_PM = lib/WiringPi/API.pm
 
 
 # --- MakeMaker platform_constants section:
@@ -213,7 +213,7 @@ XSUBPP = "$(XSUBPPDIR)$(DFSEP)xsubpp"
 XSUBPPRUN = $(PERLRUN) $(XSUBPP)
 XSPROTOARG = 
 XSUBPPDEPS = /usr/share/perl/5.18/ExtUtils/typemap typemap /usr/share/perl/5.18/ExtUtils$(DFSEP)xsubpp
-XSUBPPARGS = -typemap '/usr/share/perl/5.18/ExtUtils/typemap' -typemap '/home/steve02/devel/repos/p5-rpi-wiringpi-core/typemap'
+XSUBPPARGS = -typemap '/usr/share/perl/5.18/ExtUtils/typemap' -typemap '/home/steve02/devel/repos/rpi-wiringpi-core/typemap'
 XSUBPP_EXTRA_ARGS =
 
 
@@ -269,8 +269,8 @@ CI = ci -u
 RCS_LABEL = rcs -Nv$(VERSION_SYM): -q
 DIST_CP = best
 DIST_DEFAULT = tardist
-DISTNAME = RPi-WiringPi-Core
-DISTVNAME = RPi-WiringPi-Core-0.07
+DISTNAME = WiringPi-API
+DISTVNAME = WiringPi-API-1.00
 
 
 # --- MakeMaker macro section:
@@ -289,7 +289,7 @@ MPOLLUTE =
 
 # --- MakeMaker const_loadlibs section:
 
-# RPi::WiringPi::Core might depend on some other libraries:
+# WiringPi::API might depend on some other libraries:
 # See ExtUtils::Liblist for details
 #
 EXTRALIBS = -lwiringPi -lwiringPiDev
@@ -510,9 +510,9 @@ POD2MAN = $(POD2MAN_EXE)
 
 
 manifypods : pure_all config  \
-	lib/RPi/WiringPi/Core.pm
+	lib/WiringPi/API.pm
 	$(NOECHO) $(POD2MAN) --section=3 --perm_rw=$(PERM_RW) -u \
-	  lib/RPi/WiringPi/Core.pm $(INST_MAN3DIR)/RPi::WiringPi::Core.$(MAN3EXT) 
+	  lib/WiringPi/API.pm $(INST_MAN3DIR)/WiringPi::API.$(MAN3EXT) 
 
 
 
@@ -544,11 +544,11 @@ clean :: clean_subdirs
 	  $(BOOTSTRAP) $(INST_ARCHAUTODIR)/extralibs.all \
 	  $(INST_ARCHAUTODIR)/extralibs.ld $(MAKE_APERL_FILE) \
 	  *$(LIB_EXT) *$(OBJ_EXT) \
-	  *perl.core Core.base \
-	  Core.bs Core.bso \
-	  Core.c Core.def \
-	  Core.exp Core.o \
-	  Core_def.old MYMETA.json \
+	  *perl.core API.base \
+	  API.bs API.bso \
+	  API.c API.def \
+	  API.exp API.o \
+	  API_def.old MYMETA.json \
 	  MYMETA.yml blibdirs.ts \
 	  core core.*perl.*.? \
 	  core.[0-9] core.[0-9][0-9] \
@@ -585,7 +585,7 @@ realclean purge :: realclean_subdirs
 metafile : create_distdir
 	$(NOECHO) $(ECHO) Generating META.yml
 	$(NOECHO) $(ECHO) '---' > META_new.yml
-	$(NOECHO) $(ECHO) 'abstract: "Tight Perl wrapper for Rasperry Pi'\''s wiringPi C library functionality"' >> META_new.yml
+	$(NOECHO) $(ECHO) 'abstract: "Direct access to Raspberry Pi'\''s wiringPi API, with optional Perl OO access"' >> META_new.yml
 	$(NOECHO) $(ECHO) 'author:' >> META_new.yml
 	$(NOECHO) $(ECHO) '  - '\''Steve Bertrand <steveb@cpan.org>'\''' >> META_new.yml
 	$(NOECHO) $(ECHO) 'build_requires:' >> META_new.yml
@@ -598,21 +598,20 @@ metafile : create_distdir
 	$(NOECHO) $(ECHO) 'meta-spec:' >> META_new.yml
 	$(NOECHO) $(ECHO) '  url: http://module-build.sourceforge.net/META-spec-v1.4.html' >> META_new.yml
 	$(NOECHO) $(ECHO) '  version: '\''1.4'\''' >> META_new.yml
-	$(NOECHO) $(ECHO) 'name: RPi-WiringPi-Core' >> META_new.yml
+	$(NOECHO) $(ECHO) 'name: WiringPi-API' >> META_new.yml
 	$(NOECHO) $(ECHO) 'no_index:' >> META_new.yml
 	$(NOECHO) $(ECHO) '  directory:' >> META_new.yml
 	$(NOECHO) $(ECHO) '    - t' >> META_new.yml
 	$(NOECHO) $(ECHO) '    - inc' >> META_new.yml
-	$(NOECHO) $(ECHO) 'requires:' >> META_new.yml
-	$(NOECHO) $(ECHO) '  RPi::WiringPi::Constant: '\''0.01'\''' >> META_new.yml
+	$(NOECHO) $(ECHO) 'requires: {}' >> META_new.yml
 	$(NOECHO) $(ECHO) 'resources:' >> META_new.yml
-	$(NOECHO) $(ECHO) '  bugtracker: https://github.com/stevieb9/p5-rpi-wiringpi-core/issues' >> META_new.yml
-	$(NOECHO) $(ECHO) '  repository: https://github.com/stevieb9/p5-rpi-wiringpi-core.git' >> META_new.yml
-	$(NOECHO) $(ECHO) 'version: '\''0.07'\''' >> META_new.yml
+	$(NOECHO) $(ECHO) '  bugtracker: https://github.com/stevieb9/wiringpi-api/issues' >> META_new.yml
+	$(NOECHO) $(ECHO) '  repository: https://github.com/stevieb9/wiringpi-api.git' >> META_new.yml
+	$(NOECHO) $(ECHO) 'version: '\''1.00'\''' >> META_new.yml
 	-$(NOECHO) $(MV) META_new.yml $(DISTVNAME)/META.yml
 	$(NOECHO) $(ECHO) Generating META.json
 	$(NOECHO) $(ECHO) '{' > META_new.json
-	$(NOECHO) $(ECHO) '   "abstract" : "Tight Perl wrapper for Rasperry Pi'\''s wiringPi C library functionality",' >> META_new.json
+	$(NOECHO) $(ECHO) '   "abstract" : "Direct access to Raspberry Pi'\''s wiringPi API, with optional Perl OO access",' >> META_new.json
 	$(NOECHO) $(ECHO) '   "author" : [' >> META_new.json
 	$(NOECHO) $(ECHO) '      "Steve Bertrand <steveb@cpan.org>"' >> META_new.json
 	$(NOECHO) $(ECHO) '   ],' >> META_new.json
@@ -625,7 +624,7 @@ metafile : create_distdir
 	$(NOECHO) $(ECHO) '      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",' >> META_new.json
 	$(NOECHO) $(ECHO) '      "version" : "2"' >> META_new.json
 	$(NOECHO) $(ECHO) '   },' >> META_new.json
-	$(NOECHO) $(ECHO) '   "name" : "RPi-WiringPi-Core",' >> META_new.json
+	$(NOECHO) $(ECHO) '   "name" : "WiringPi-API",' >> META_new.json
 	$(NOECHO) $(ECHO) '   "no_index" : {' >> META_new.json
 	$(NOECHO) $(ECHO) '      "directory" : [' >> META_new.json
 	$(NOECHO) $(ECHO) '         "t",' >> META_new.json
@@ -644,23 +643,21 @@ metafile : create_distdir
 	$(NOECHO) $(ECHO) '         }' >> META_new.json
 	$(NOECHO) $(ECHO) '      },' >> META_new.json
 	$(NOECHO) $(ECHO) '      "runtime" : {' >> META_new.json
-	$(NOECHO) $(ECHO) '         "requires" : {' >> META_new.json
-	$(NOECHO) $(ECHO) '            "RPi::WiringPi::Constant" : "0.01"' >> META_new.json
-	$(NOECHO) $(ECHO) '         }' >> META_new.json
+	$(NOECHO) $(ECHO) '         "requires" : {}' >> META_new.json
 	$(NOECHO) $(ECHO) '      }' >> META_new.json
 	$(NOECHO) $(ECHO) '   },' >> META_new.json
 	$(NOECHO) $(ECHO) '   "release_status" : "stable",' >> META_new.json
 	$(NOECHO) $(ECHO) '   "resources" : {' >> META_new.json
 	$(NOECHO) $(ECHO) '      "bugtracker" : {' >> META_new.json
-	$(NOECHO) $(ECHO) '         "web" : "https://github.com/stevieb9/p5-rpi-wiringpi-core/issues"' >> META_new.json
+	$(NOECHO) $(ECHO) '         "web" : "https://github.com/stevieb9/wiringpi-api/issues"' >> META_new.json
 	$(NOECHO) $(ECHO) '      },' >> META_new.json
 	$(NOECHO) $(ECHO) '      "repository" : {' >> META_new.json
 	$(NOECHO) $(ECHO) '         "type" : "git",' >> META_new.json
-	$(NOECHO) $(ECHO) '         "url" : "https://github.com/stevieb9/p5-rpi-wiringpi-core.git",' >> META_new.json
-	$(NOECHO) $(ECHO) '         "web" : "https://github.com/stevieb9/p5-rpi-wiringpi-core"' >> META_new.json
+	$(NOECHO) $(ECHO) '         "url" : "https://github.com/stevieb9/wiringpi-api.git",' >> META_new.json
+	$(NOECHO) $(ECHO) '         "web" : "https://github.com/stevieb9/wiringpi-api"' >> META_new.json
 	$(NOECHO) $(ECHO) '      }' >> META_new.json
 	$(NOECHO) $(ECHO) '   },' >> META_new.json
-	$(NOECHO) $(ECHO) '   "version" : "0.07"' >> META_new.json
+	$(NOECHO) $(ECHO) '   "version" : "1.00"' >> META_new.json
 	$(NOECHO) $(ECHO) '}' >> META_new.json
 	-$(NOECHO) $(MV) META_new.json $(DISTVNAME)/META.json
 
@@ -971,7 +968,7 @@ PERL_HDRS = \
 
 $(OBJECT) : $(PERL_HDRS)
 
-Core.c : $(XSUBPPDEPS)
+API.c : $(XSUBPPDEPS)
 
 
 # --- MakeMaker makefile section:
@@ -1039,32 +1036,31 @@ testdb_dynamic :: dynamic pure_all
 subdirs-test_static :: static pure_all
 
 test_static :: subdirs-test_static $(MAP_TARGET)
-	PERL_DL_NONLAZY=1 "/home/steve02/devel/repos/p5-rpi-wiringpi-core/$(MAP_TARGET)" $(MAP_PERLINC) "-MExtUtils::Command::MM" "-MTest::Harness" "-e" "undef *Test::Harness::Switches; test_harness($(TEST_VERBOSE), '$(INST_LIB)', '$(INST_ARCHLIB)')" $(TEST_FILES)
+	PERL_DL_NONLAZY=1 "/home/steve02/devel/repos/rpi-wiringpi-core/$(MAP_TARGET)" $(MAP_PERLINC) "-MExtUtils::Command::MM" "-MTest::Harness" "-e" "undef *Test::Harness::Switches; test_harness($(TEST_VERBOSE), '$(INST_LIB)', '$(INST_ARCHLIB)')" $(TEST_FILES)
 
 testdb_static :: static pure_all $(MAP_TARGET)
-	PERL_DL_NONLAZY=1 "/home/steve02/devel/repos/p5-rpi-wiringpi-core/$(MAP_TARGET)" $(MAP_PERLINC) "-I$(INST_LIB)" "-I$(INST_ARCHLIB)" $(TEST_FILE)
+	PERL_DL_NONLAZY=1 "/home/steve02/devel/repos/rpi-wiringpi-core/$(MAP_TARGET)" $(MAP_PERLINC) "-I$(INST_LIB)" "-I$(INST_ARCHLIB)" $(TEST_FILE)
 
 
 
 # --- MakeMaker ppd section:
 # Creates a PPD (Perl Package Description) for a binary distribution.
 ppd :
-	$(NOECHO) $(ECHO) '<SOFTPKG NAME="RPi-WiringPi-Core" VERSION="0.07">' > RPi-WiringPi-Core.ppd
-	$(NOECHO) $(ECHO) '    <ABSTRACT>Tight Perl wrapper for Rasperry Pi'\''s wiringPi C library functionality</ABSTRACT>' >> RPi-WiringPi-Core.ppd
-	$(NOECHO) $(ECHO) '    <AUTHOR>Steve Bertrand &lt;steveb@cpan.org&gt;</AUTHOR>' >> RPi-WiringPi-Core.ppd
-	$(NOECHO) $(ECHO) '    <IMPLEMENTATION>' >> RPi-WiringPi-Core.ppd
-	$(NOECHO) $(ECHO) '        <REQUIRE NAME="RPi::WiringPi::Constant" VERSION="0.01" />' >> RPi-WiringPi-Core.ppd
-	$(NOECHO) $(ECHO) '        <ARCHITECTURE NAME="x86_64-linux-gnu-thread-multi-5.18" />' >> RPi-WiringPi-Core.ppd
-	$(NOECHO) $(ECHO) '        <CODEBASE HREF="" />' >> RPi-WiringPi-Core.ppd
-	$(NOECHO) $(ECHO) '    </IMPLEMENTATION>' >> RPi-WiringPi-Core.ppd
-	$(NOECHO) $(ECHO) '</SOFTPKG>' >> RPi-WiringPi-Core.ppd
+	$(NOECHO) $(ECHO) '<SOFTPKG NAME="WiringPi-API" VERSION="1.00">' > WiringPi-API.ppd
+	$(NOECHO) $(ECHO) '    <ABSTRACT>Direct access to Raspberry Pi'\''s wiringPi API, with optional Perl OO access</ABSTRACT>' >> WiringPi-API.ppd
+	$(NOECHO) $(ECHO) '    <AUTHOR>Steve Bertrand &lt;steveb@cpan.org&gt;</AUTHOR>' >> WiringPi-API.ppd
+	$(NOECHO) $(ECHO) '    <IMPLEMENTATION>' >> WiringPi-API.ppd
+	$(NOECHO) $(ECHO) '        <ARCHITECTURE NAME="x86_64-linux-gnu-thread-multi-5.18" />' >> WiringPi-API.ppd
+	$(NOECHO) $(ECHO) '        <CODEBASE HREF="" />' >> WiringPi-API.ppd
+	$(NOECHO) $(ECHO) '    </IMPLEMENTATION>' >> WiringPi-API.ppd
+	$(NOECHO) $(ECHO) '</SOFTPKG>' >> WiringPi-API.ppd
 
 
 # --- MakeMaker pm_to_blib section:
 
 pm_to_blib : $(FIRST_MAKEFILE) $(TO_INST_PM)
 	$(NOECHO) $(ABSPERLRUN) -MExtUtils::Install -e 'pm_to_blib({@ARGV}, '\''$(INST_LIB)/auto'\'', q[$(PM_FILTER)], '\''$(PERM_DIR)'\'')' -- \
-	  'lib/RPi/WiringPi/Core.pm' 'blib/lib/RPi/WiringPi/Core.pm' 
+	  'lib/WiringPi/API.pm' 'blib/lib/WiringPi/API.pm' 
 	$(NOECHO) $(TOUCH) pm_to_blib
 
 

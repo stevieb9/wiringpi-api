@@ -1,7 +1,6 @@
 Changes
-Core.xs
-examples/call_perl_sub_from_c/a.out
-lib/RPi/WiringPi/Core.pm
+API.xs
+lib/WiringPi/API.pm
 Makefile.PL
 MANIFEST
 MANIFEST.SKIP

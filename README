@@ -1,32 +1,88 @@
 NAME
 
-    RPi::WiringPi::Core - Perl wrapper for Raspberry Pi's wiringPi Core and
-    System functions
+    WiringPi::API - Direct access to Raspberry Pi's wiringPi API, with
+    optional Perl OO access
+
+SYNOPSIS
+
+        # import the API functions directly
+    
+        use WiringPi::API qw(:wiringPi)
+    
+        # import the Perl wrapped functions
+    
+        use WiringPi::API qw(:perl)
+    
+        # import both versions
+    
+        use WiringPi::API qw(:all)
+    
+        # use as a base class with OO functionality
+    
+        use parent 'WiringPi::API';
+    
+        # use in the traditional Perl OO way
+    
+        use WiringPi::API;
+    
+        my $api = WiringPi::API->new;
 
 DESCRIPTION
-
-    WARNING: Until version 1.00 has been released, the API along with
-    functionality may change at any time without any notice. If you happen
-    to be testing with this software and find something broken, please
-    contact me.
 
     This is an XS-based module, and requires wiringPi <http://wiringpi.com>
     to be installed. The wiringPiDev shared library is also required (for
     the LCD functionality), but it's installed by default with wiringPi.
 
-    It provides Perl method access to (at this time, most of) the wiringPi
-    Core <http://wiringpi.com/reference/core-functions> along with a few of
-    its system functions.
+    This module allows you to import the wiringPi's functions directly
+    as-is, use it as a Perl base class, export the Perl wrapped functions,
+    or use it in a traditional Perl OO way.
 
-    Although this module can be used directly, it's generally used as a
-    base class for other modules. You may want to use the RPi::WiringPi
-    module instead of this one.
+    See the documentation on the wiringPi <http://wiringpi.com> website for
+    a more in-depth description of most of the functions it provides. Some
+    of the functions we've wrapped are not documented, they were just
+    selectively plucked from the C code itself.
+
+EXPORT_OK
+
+    Exported with the :wiringPi tag, these XS functions map directly to the
+    wiringPi functions with their original names. Note that setInterrupt is
+    not a direct wrapper, it's a custom C wrapper for wiringPiISR() in
+    order to make it functional here.
+
+        wiringPiSetup wiringPiSetupSys wiringPiSetupGpio wiringPiSetupPhys
+        pinMode pullUpDnControl digitalRead digitalWrite digitalWriteByte
+        pwmWrite getAlt piBoardDev wpiToGpio physPinToGpio pwmSetRange lcdInit
+        lcdHome lcdClear lcdDisplay lcdCursor lcdCursorBlink lcdSendCommand
+        lcdPosition lcdCharDef lcdPutChar lcdPuts setInterrupt
+
+    Exported with the :perl tag. Perl wrapper functions for the XS
+    functions.
+
+        setup setup_sys setup_phys setup_gpio pin_mode pull_up_down read_pin
+        write_pin pwm_write get_alt board_rev wpi_to_gpio phys_to_gpio 
+        pwm_set_range lcd_init lcd_home lcd_clear lcd_display lcd_cursor
+        lcd_cursor_blink lcd_send_cmd lcd_position lcd_char_def lcd_put_char
+        lcd_puts set_interrupt
+
+EXPORT_TAGS
+
+ :wiringPi
+
+    See EXPORT_OK
+
+ :perl
+
+    See EXPORT_OK
+
+    head2= :all
+
+    Exports all available exportable functions.
 
 CORE METHODS
 
  new()
 
-    Returns a new RPi::WiringPi::Core object.
+    Returns a new WiringPi::API object.
 
  setup()
 
@@ -192,6 +248,19 @@ BOARD METHODS
 
     Mandatory: The pin number on the physical Raspberry Pi board.
 
+ phys_to_wpi($pin_num)
+
+    Maps to int physPinToWpi(int pin)
+
+    Converts the pin number on the physical board to the wiringPi numbering
+    representation, and returns it.
+
+    Parameters:
+
+        $pin_num
+
+    Mandatory: The pin number on the physical Raspberry Pi board.
+
  pwm_set_range($range);
 
     Maps to void pwmSetRange(int range)
@@ -239,6 +308,10 @@ LCD METHODS
 
     Mandatory: All entries must have a value. If you're only using four (4)
     bit width, d4 through d7 must be set to 0.
+
+    Note: When in 4-bit mode, the d0 through 3 parameters actually map to
+    pins d4 through d7 on the LCD board, so you need to connect those pins
+    to their respective selected GPIO pins.
 
  lcd_home($fd)
 
@@ -409,24 +482,30 @@ LCD METHODS
 
     Mandatory: A string to display.
 
- lcd_printf($fd, $string)
+ set_interrupt($pin, $edge, $callback)
 
-    Maps to void lcdPrintf(int fd, char *message)
-
-    Displays a standard printf() string to the LCD display, at the current
-    cursor position.
+    Wrapper around wiringPi's wiringPiISR() that allows you to send in the
+    name of a Perl sub in your own code that will be called if an interrupt
+    is triggered.
 
     Parameters:
 
-        $fd
+        $pin
 
-    Mandatory: The file descriptor integer returned by lcd_init().
+    Mandatory: The pin number to set the interrupt for. Must be in BCM
+    numbering scheme.
 
-        $string
+        $edge
 
-    Mandatory: A string, optionally with printf() formatting tags.
+    Mandatory: 1 (lowering), 2 (raising) or 3 (both).
 
-AUTHOR
+        $callback
+
+    Mandatory: The string name of a subroutine previously written in your
+    user code that will be called when the interrupt is triggered. This is
+    your interrupt handler.
+
+    head1 AUTHOR
 
     Steve Bertrand, <steveb@cpan.org>
 
@@ -443,7 +522,7 @@ POD ERRORS
     Hey! The above document had some coding errors, which are explained
     below:
 
-    Around line 352:
+    Around line 424:
 
       Non-ASCII character seen before =encoding in '5×8,'. Assuming UTF-8
 

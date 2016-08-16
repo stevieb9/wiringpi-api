@@ -9,47 +9,61 @@
 #include <wiringPi.h>
 #include <lcd.h>
 
+#define PERL_NO_GET_CONTEXT
+
 /*
  * definitions
  */
 
-void registerInterrupt(int pin, int edge, int int_num);
-void interruptOne();
-void interruptTwo();
+void interruptHandler();
+int setInterrupt(int pin, int edge, char *callback);
+int initThread(char *callback);
 static int phys_wpi_map[64];
 int physPinToWpi(int wpi_pin);
-void callPerlInterrupt();
 
 /*
  * declarations
  */
 
-void registerInterrupt(int pin, int edge, int int_num){
-    if (int_num == 1)
-        wiringPiISR(pin, edge, &interruptOne);
-    if (int_num == 2)
-        wiringPiISR(pin, edge, &interruptTwo);
-}
+char *perl_callback; // dynamically set perl callback for interrupt handler
+PerlInterpreter *mine;
 
-void interruptOne(){
-    //dSP;
-    //PUSHMARK(SP);
-    printf("*** interrupt one! ***\n");
-    //call_pv("RPi::WiringPi::Interrupt::interrupt_one", G_DISCARD|G_NOARGS);
-}
+void interruptHandler(){
+    PERL_SET_CONTEXT(mine);
 
-void interruptTwo(){
     dSP;
     PUSHMARK(SP);
-    call_pv("RPi::WiringPi::Interrupt::interrupt_two", G_DISCARD|G_NOARGS);
+    PUTBACK;
+
+    call_pv(perl_callback, G_DISCARD|G_NOARGS);
+
+    FREETMPS;
+    LEAVE;
+}
+
+int setInterrupt(int pin, int edge, char *callback){
+    perl_callback = callback;
+    int interrupt = wiringPiISR(pin, edge, &interruptHandler);
+    return interrupt;
+}
+
+int initThread(char *callback){
+    PI_THREAD (myThread){
+        dSP;
+        PUSHMARK(SP);
+        PUTBACK;
+
+        call_pv(callback, G_DISCARD|G_NOARGS);
+
+        FREETMPS;
+        LEAVE;
+    }
+
+    return piThreadCreate(myThread);
 }
 
 int physPinToWpi(int wpi_pin){
     return phys_wpi_map[wpi_pin];
-}
-
-void callPerlInterrupt(){
-    printf("test");
 }
 
 static int phys_wpi_map[64] =
@@ -110,7 +124,7 @@ static int phys_wpi_map[64] =
 
 */
 
-MODULE = RPi::WiringPi::Core  PACKAGE = RPi::WiringPi::Core
+MODULE = WiringPi::API  PACKAGE = WiringPi::API
 
 #
 # core
@@ -247,20 +261,33 @@ void lcdPuts(fd, string)
     int fd
     char *string
 
+# threading
+
+#int
+#piThreadCreate(callback)
+#    char callback
+
+void piLock(keyNum)
+    int keyNum
+
+void piUnlock(keyNum)
+    int keyNum
+
 # custom
+
+int
+setInterrupt(pin, edge, callback)
+    int pin
+    int edge
+    char *callback
+
+void
+interruptHandler()
+
+int
+initThread(callback)
+    char *callback
 
 int
 physPinToWpi(wpi_pin)
     int wpi_pin
-
-void
-registerInterrupt(pin, edge, int_num)
-    int pin
-    int edge
-    int int_num
-
-void
-interruptOne()
-
-void
-interruptTwo()

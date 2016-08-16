@@ -1,14 +1,40 @@
-package RPi::WiringPi::Core;
+package WiringPi::API;  
 
 use strict;
 use warnings;
 
-our $VERSION = '0.07';
-
-use RPi::WiringPi::Constant qw(:all);
+our $VERSION = '1.00';
 
 require XSLoader;
-XSLoader::load('RPi::WiringPi::Core', $VERSION);
+XSLoader::load('WiringPi::API', $VERSION);
+
+require Exporter;
+our @ISA = qw(Exporter);
+
+my @wpi_c_functions = qw(
+    wiringPiSetup wiringPiSetupSys wiringPiSetupGpio wiringPiSetupPhys
+    pinMode pullUpDnControl digitalRead digitalWrite digitalWriteByte
+    pwmWrite getAlt piBoardDev wpiToGpio physPinToGpio pwmSetRange lcdInit
+    lcdHome lcdClear lcdDisplay lcdCursor lcdCursorBlink lcdSendCommand
+    lcdPosition lcdCharDef lcdPutChar lcdPuts setInterrupt
+);
+
+my @wpi_perl_functions = qw(
+    setup setup_sys setup_phys setup_gpio pin_mode pull_up_down read_pin
+    write_pin pwm_write get_alt board_rev wpi_to_gpio phys_to_gpio 
+    pwm_set_range lcd_init lcd_home lcd_clear lcd_display lcd_cursor
+    lcd_cursor_blink lcd_send_cmd lcd_position lcd_char_def lcd_put_char
+    lcd_puts set_interrupt
+);
+
+our @EXPORT_OK;
+
+@EXPORT_OK = (@wpi_c_functions, @wpi_perl_functions);
+our %EXPORT_TAGS;
+
+$EXPORT_TAGS{wiringPi} = [@wpi_c_functions];
+$EXPORT_TAGS{perl} = [@wpi_perl_functions];
+$EXPORT_TAGS{all} = [@wpi_c_functions, @wpi_perl_functions];
 
 # not yet implemented:
 #extern void pinModeAlt          (int pin, int mode) ;
@@ -21,9 +47,10 @@ sub new {
 
 # interrupt functions
 
-sub register_interrupt {
-    my ($pin, $edge, $interrupt_num) = @_;
-    registerInterrupt($pin, $edge, $interrupt_num);
+sub set_interrupt {
+    shift if @_ == 4;
+    my ($pin, $edge, $callback) = @_;
+    setInterrupt($pin, $edge, $callback);
 }
 
 # system functions
@@ -32,6 +59,10 @@ sub setup {
     return wiringPiSetup();
 }
 sub setup_sys {
+    my $pin_map = RPi::WiringPi::Util::gpio_scheme('BCM');
+    for (values %$pin_map){
+        RPi::WiringPi::Util::export($_);
+    }
     return wiringPiSetupSys();
 }
 sub setup_phys {
@@ -160,6 +191,15 @@ sub lcd_puts {
     my ($fd, $string) = @_;
     lcdPuts($fd, $string);
 }
+
+# threading functions
+
+sub thread_create {
+    my ($self, $sub_name) = @_;
+    my $status = initThread($sub_name);
+
+    print "thread failed to start\n" if $status != 0;
+}
 sub _vim{1;};
 
 1;
@@ -167,24 +207,88 @@ __END__
 
 =head1 NAME
 
-RPi::WiringPi::Core - Tight Perl wrapper for Rasperry Pi's wiringPi C library
-functionality
+WiringPi::API - Direct access to Raspberry Pi's wiringPi API, with optional
+Perl OO access
+
+=head1 SYNOPSIS
+
+    # import the API functions directly
+
+    use WiringPi::API qw(:wiringPi)
+
+    # import the Perl wrapped functions
+
+    use WiringPi::API qw(:perl)
+
+    # import both versions
+
+    use WiringPi::API qw(:all)
+
+    # use as a base class with OO functionality
+
+    use parent 'WiringPi::API';
+
+    # use in the traditional Perl OO way
+
+    use WiringPi::API;
+
+    my $api = WiringPi::API->new;
 
 =head1 DESCRIPTION
-
-WARNING: Until version 1.00 has been released, the API along with functionality
-may change at any time without any notice. If you happen to be testing with 
-this software and find something broken, please contact me.
 
 This is an XS-based module, and requires L<wiringPi|http://wiringpi.com> to be
 installed. The C<wiringPiDev> shared library is also required (for the LCD
 functionality), but it's installed by default with C<wiringPi>.
 
+This module allows you to import the wiringPi's functions directly as-is, use
+it as a Perl base class, export the Perl wrapped functions, or use it in a
+traditional Perl OO way.
+
+See the documentation on the L<wiringPi|http://wiringpi.com> website for a more
+in-depth description of most of the functions it provides. Some of the
+functions we've wrapped are not documented, they were just selectively plucked
+from the C code itself.
+
+=head1 EXPORT_OK
+
+Exported with the C<:wiringPi> tag, these XS functions map directly to the
+wiringPi functions with their original names. Note that C<setInterrupt> is not
+a direct wrapper, it's a custom C wrapper for C<wiringPiISR()> in order to
+make it functional here.
+
+    wiringPiSetup wiringPiSetupSys wiringPiSetupGpio wiringPiSetupPhys
+    pinMode pullUpDnControl digitalRead digitalWrite digitalWriteByte
+    pwmWrite getAlt piBoardDev wpiToGpio physPinToGpio pwmSetRange lcdInit
+    lcdHome lcdClear lcdDisplay lcdCursor lcdCursorBlink lcdSendCommand
+    lcdPosition lcdCharDef lcdPutChar lcdPuts setInterrupt
+
+Exported with the C<:perl> tag. Perl wrapper functions for the XS functions.
+
+    setup setup_sys setup_phys setup_gpio pin_mode pull_up_down read_pin
+    write_pin pwm_write get_alt board_rev wpi_to_gpio phys_to_gpio 
+    pwm_set_range lcd_init lcd_home lcd_clear lcd_display lcd_cursor
+    lcd_cursor_blink lcd_send_cmd lcd_position lcd_char_def lcd_put_char
+    lcd_puts set_interrupt
+
+=head1 EXPORT_TAGS
+
+=head2 :wiringPi
+
+See L<EXPORT_OK>
+
+=head2 :perl
+
+See L<EXPORT_OK>
+
+head2= :all
+
+Exports all available exportable functions.
+
 =head1 CORE METHODS
 
 =head2 new()
 
-Returns a new C<RPi::WiringPi::Core> object.
+Returns a new C<WiringPi::API> object.
 
 =head2 setup()
 
@@ -575,7 +679,30 @@ Mandatory: The file descriptor integer returned by C<lcd_init()>.
 
 Mandatory: A string to display.
 
-=head1 AUTHOR
+=head2 set_interrupt($pin, $edge, $callback)
+
+Wrapper around wiringPi's C<wiringPiISR()> that allows you to send in the name
+of a Perl sub in your own code that will be called if an interrupt is
+triggered.
+
+Parameters:
+
+    $pin
+
+Mandatory: The pin number to set the interrupt for. Must be in C<BCM> numbering
+scheme.
+
+    $edge
+
+Mandatory: C<1> (lowering), C<2> (raising) or C<3> (both).
+
+    $callback
+
+Mandatory: The string name of a subroutine previously written in your user code
+that will be called when the interrupt is triggered. This is your interrupt
+handler.
+
+head1 AUTHOR
 
 Steve Bertrand, E<lt>steveb@cpan.orgE<gt>
 

@@ -1,9 +1,9 @@
 use warnings;
 use strict;
 
-use RPi::WiringPi::Core;
+use WiringPi::API;
 
-my $core = RPi::WiringPi::Core->new;
+my $core = WiringPi::API->new;
 
 $core->pin_mode(1, 1);
 

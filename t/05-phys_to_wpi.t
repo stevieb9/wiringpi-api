@@ -1,23 +1,16 @@
-# Before 'make install' is performed this script should be runnable with
-# 'make test'. After 'make install' it should work as 'perl RPi-WiringPi-Core.t'
-
-#########################
-
-# change 'tests => 1' to 'tests => last_test_to_print';
-
 use strict;
 use warnings;
 
 use Data::Dumper;
 use Test::More;
-BEGIN { use_ok('RPi::WiringPi::Core') };
+BEGIN { use_ok('WiringPi::API') };
 
-my $mod = 'RPi::WiringPi::Core';
+my $mod = 'WiringPi::API';
 
 my %map;
 
 for (0..63){
-    $map{$_} = RPi::WiringPi::Core::phys_to_wpi($_);
+    $map{$_} = WiringPi::API::phys_to_wpi($_);
 }
 
 is $map{40}, 29, "phys pin 40 == wpi 29";

@@ -86,5 +86,3 @@ void callback(){
 void setInterrupt(int pin, int edge){
     wiringPiISR(pin, edge, &callback);
 }
-
-

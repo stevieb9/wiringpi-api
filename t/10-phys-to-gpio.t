@@ -2,9 +2,9 @@ use strict;
 use warnings;
 
 use Test::More;
-use RPi::WiringPi::Core;
+use WiringPi::API;
 
-my $mod = 'RPi::WiringPi::Core';
+my $mod = 'WiringPi::API';
 
 my %map;
 
@@ -13,10 +13,10 @@ if (! $ENV{PI_BOARD}){
     exit;
 }
 
-RPi::WiringPi::Core::wiringPiSetup();
+WiringPi::API::wiringPiSetup();
 
 for (0..63){
-    $map{$_} = RPi::WiringPi::Core::phys_to_gpio($_);
+    $map{$_} = WiringPi::API::phys_to_gpio($_);
 }
 
 is $map{40}, 21, "phys pin 40 == BCM 21";
