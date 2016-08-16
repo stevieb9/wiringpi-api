@@ -30,6 +30,8 @@ SYNOPSIS
         # !!!
         # regardless of using OO or functional style, one of the C<setup*()>
         # functions MUST be called prior to doing anything
+    
+        $api->setup;
 
 DESCRIPTION
 
@@ -97,8 +99,11 @@ CORE METHODS
 
     Sets the pin numbering scheme to WPI (wiringPi numbers).
 
-    See wiringPi setup functions <http://wiringpi.com/reference/setup> for
-    for information on this method.
+    Each setup function has benefits and drawbacks. Please refer to the
+    wiringPi setup functions <http://wiringpi.com/reference/setup> for
+    details.
+
+    This one requires you to run your script as the root user.
 
     Note that only one of the setup*() methods can be called per program
     run.
@@ -109,8 +114,13 @@ CORE METHODS
 
     Sets the pin numbering scheme to BCM (Broadcom numbers).
 
-    See wiringPi setup functions <http://wiringpi.com/reference/setup> for
-    for information on this method.
+    Each setup function has benefits and drawbacks. Please refer to the
+    wiringPi setup functions <http://wiringpi.com/reference/setup> for
+    details.
+
+    This one does NOT require running as root, but you have to manually
+    export the pins yourself with the gpio command line utility prior to
+    using the pins.
 
     Note that only one of the setup*() methods can be called per program
     run.
@@ -121,8 +131,11 @@ CORE METHODS
 
     Sets the pin numbering scheme to PHYS (physical board numbers).
 
-    See wiringPi setup functions <http://wiringpi.com/reference/setup> for
-    for information on this method.
+    Each setup function has benefits and drawbacks. Please refer to the
+    wiringPi setup functions <http://wiringpi.com/reference/setup> for
+    details.
+
+    This one requires you to run your script as the root user.
 
     Note that only one of the setup*() methods can be called per program
     run.
@@ -133,8 +146,11 @@ CORE METHODS
 
     Sets the pin numbering scheme to BCM (Broadcom numbers).
 
-    See wiringPi setup functions <http://wiringpi.com/reference/setup> for
-    for information on this method.
+    Each setup function has benefits and drawbacks. Please refer to the
+    wiringPi setup functions <http://wiringpi.com/reference/setup> for
+    details.
+
+    This one requires you to run your script as the root user.
 
     Note that only one of the setup*() methods can be called per program
     run.
@@ -549,7 +565,7 @@ POD ERRORS
     Hey! The above document had some coding errors, which are explained
     below:
 
-    Around line 446:
+    Around line 458:
 
       Non-ASCII character seen before =encoding in '5×8,'. Assuming UTF-8
 

@@ -305,8 +305,10 @@ Maps to C<int wiringPiSetup()>
 
 Sets the pin numbering scheme to C<WPI> (wiringPi numbers).
 
-See L<wiringPi setup functions|http://wiringpi.com/reference/setup> for
-for information on this method.
+Each setup function has benefits and drawbacks. Please refer to the
+L<wiringPi setup functions|http://wiringpi.com/reference/setup> for details.
+
+This one requires you to run your script as the C<root> user.
 
 Note that only one of the C<setup*()> methods can be called per program run.
 
@@ -316,8 +318,12 @@ Maps to C<int wiringPiSetupSys()>
 
 Sets the pin numbering scheme to C<BCM> (Broadcom numbers).
 
-See L<wiringPi setup functions|http://wiringpi.com/reference/setup> for
-for information on this method.
+Each setup function has benefits and drawbacks. Please refer to the
+L<wiringPi setup functions|http://wiringpi.com/reference/setup> for details.
+
+This one does NOT require running as root, but you have to manually export
+the pins yourself with the C<gpio> command line utility prior to using the
+pins.
 
 Note that only one of the C<setup*()> methods can be called per program run.
 
@@ -327,8 +333,10 @@ Maps to C<int wiringPiSetupPhys()>
 
 Sets the pin numbering scheme to C<PHYS> (physical board numbers).
 
-See L<wiringPi setup functions|http://wiringpi.com/reference/setup> for
-for information on this method.
+Each setup function has benefits and drawbacks. Please refer to the
+L<wiringPi setup functions|http://wiringpi.com/reference/setup> for details.
+
+This one requires you to run your script as the C<root> user.
 
 Note that only one of the C<setup*()> methods can be called per program run.
 
@@ -338,8 +346,10 @@ Maps to C<int wiringPiSetupGpio()>
 
 Sets the pin numbering scheme to C<BCM> (Broadcom numbers).
 
-See L<wiringPi setup functions|http://wiringpi.com/reference/setup> for
-for information on this method.
+Each setup function has benefits and drawbacks. Please refer to the
+L<wiringPi setup functions|http://wiringpi.com/reference/setup> for details.
+
+This one requires you to run your script as the C<root> user.
 
 Note that only one of the C<setup*()> methods can be called per program run.
 
