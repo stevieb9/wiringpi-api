@@ -1,7 +1,7 @@
 # This Makefile is for the WiringPi::API extension to perl.
 #
 # It was generated automatically by MakeMaker version
-# 7.22 (Revision: 72200) from the contents of
+# 7.2 (Revision: 72000) from the contents of
 # Makefile.PL. Don't edit this file, edit Makefile.PL instead.
 #
 #       ANY CHANGES MADE HERE WILL BE LOST!
@@ -29,7 +29,7 @@
 
 # --- MakeMaker const_config section:
 
-# These definitions are from config.sh (via /usr/lib/perl/5.18/Config.pm).
+# These definitions are from config.sh (via /usr/lib/arm-linux-gnueabihf/perl/5.20/Config.pm).
 # They may have been overridden via Makefile.PL or on the command line.
 AR = ar
 CC = cc
@@ -42,16 +42,16 @@ FULL_AR = /usr/bin/ar
 LD = cc
 LDDLFLAGS = -shared -L/usr/local/lib -fstack-protector
 LDFLAGS =  -fstack-protector -L/usr/local/lib
-LIBC = 
+LIBC = libc-2.19.so
 LIB_EXT = .a
 OBJ_EXT = .o
 OSNAME = linux
-OSVERS = 3.13.0-79-generic
+OSVERS = 3.19.0-trunk-armmp
 RANLIB = :
-SITELIBEXP = /usr/local/share/perl/5.18.2
-SITEARCHEXP = /usr/local/lib/perl/5.18.2
+SITELIBEXP = /usr/local/share/perl/5.20.2
+SITEARCHEXP = /usr/local/lib/arm-linux-gnueabihf/perl/5.20.2
 SO = so
-VENDORARCHEXP = /usr/lib/perl5
+VENDORARCHEXP = /usr/lib/arm-linux-gnueabihf/perl5/5.20
 VENDORLIBEXP = /usr/share/perl5
 
 
@@ -61,11 +61,11 @@ DIRFILESEP = /
 DFSEP = $(DIRFILESEP)
 NAME = WiringPi::API
 NAME_SYM = WiringPi_API
-VERSION = 1.02
+VERSION = 1.03
 VERSION_MACRO = VERSION
-VERSION_SYM = 1_02
+VERSION_SYM = 1_03
 DEFINE_VERSION = -D$(VERSION_MACRO)=\"$(VERSION)\"
-XS_VERSION = 1.02
+XS_VERSION = 1.03
 XS_VERSION_MACRO = XS_VERSION
 XS_DEFINE_VERSION = -D$(XS_VERSION_MACRO)=\"$(XS_VERSION)\"
 INST_ARCHLIB = blib/arch
@@ -82,17 +82,17 @@ PREFIX = $(SITEPREFIX)
 PERLPREFIX = /usr
 SITEPREFIX = /usr/local
 VENDORPREFIX = /usr
-INSTALLPRIVLIB = /usr/share/perl/5.18
+INSTALLPRIVLIB = /usr/share/perl/5.20
 DESTINSTALLPRIVLIB = $(DESTDIR)$(INSTALLPRIVLIB)
-INSTALLSITELIB = /usr/local/share/perl/5.18.2
+INSTALLSITELIB = /usr/local/share/perl/5.20.2
 DESTINSTALLSITELIB = $(DESTDIR)$(INSTALLSITELIB)
 INSTALLVENDORLIB = /usr/share/perl5
 DESTINSTALLVENDORLIB = $(DESTDIR)$(INSTALLVENDORLIB)
-INSTALLARCHLIB = /usr/lib/perl/5.18
+INSTALLARCHLIB = /usr/lib/arm-linux-gnueabihf/perl/5.20
 DESTINSTALLARCHLIB = $(DESTDIR)$(INSTALLARCHLIB)
-INSTALLSITEARCH = /usr/local/lib/perl/5.18.2
+INSTALLSITEARCH = /usr/local/lib/arm-linux-gnueabihf/perl/5.20.2
 DESTINSTALLSITEARCH = $(DESTDIR)$(INSTALLSITEARCH)
-INSTALLVENDORARCH = /usr/lib/perl5
+INSTALLVENDORARCH = /usr/lib/arm-linux-gnueabihf/perl5/5.20
 DESTINSTALLVENDORARCH = $(DESTDIR)$(INSTALLVENDORARCH)
 INSTALLBIN = /usr/bin
 DESTINSTALLBIN = $(DESTDIR)$(INSTALLBIN)
@@ -118,16 +118,16 @@ INSTALLSITEMAN3DIR = /usr/local/man/man3
 DESTINSTALLSITEMAN3DIR = $(DESTDIR)$(INSTALLSITEMAN3DIR)
 INSTALLVENDORMAN3DIR = /usr/share/man/man3
 DESTINSTALLVENDORMAN3DIR = $(DESTDIR)$(INSTALLVENDORMAN3DIR)
-PERL_LIB = /usr/share/perl/5.18
-PERL_ARCHLIB = /usr/lib/perl/5.18
-PERL_ARCHLIBDEP = /usr/lib/perl/5.18
+PERL_LIB = /usr/share/perl/5.20
+PERL_ARCHLIB = /usr/lib/arm-linux-gnueabihf/perl/5.20
+PERL_ARCHLIBDEP = /usr/lib/arm-linux-gnueabihf/perl/5.20
 LIBPERL_A = libperl.a
 FIRST_MAKEFILE = Makefile
 MAKEFILE_OLD = Makefile.old
 MAKE_APERL_FILE = Makefile.aperl
 PERLMAINCC = $(CC)
-PERL_INC = /usr/lib/perl/5.18/CORE
-PERL_INCDEP = /usr/lib/perl/5.18/CORE
+PERL_INC = /usr/lib/arm-linux-gnueabihf/perl/5.20/CORE
+PERL_INCDEP = /usr/lib/arm-linux-gnueabihf/perl/5.20/CORE
 PERL = "/usr/bin/perl"
 FULLPERL = "/usr/bin/perl"
 ABSPERL = $(PERL)
@@ -142,9 +142,9 @@ PERM_DIR = 755
 PERM_RW = 644
 PERM_RWX = 755
 
-MAKEMAKER   = /usr/local/share/perl/5.18.2/ExtUtils/MakeMaker.pm
-MM_VERSION  = 7.22
-MM_REVISION = 72200
+MAKEMAKER   = /usr/local/share/perl/5.20.2/ExtUtils/MakeMaker.pm
+MM_VERSION  = 7.2
+MM_REVISION = 72000
 
 # FULLEXT = Pathname for extension directory (eg Foo/Bar/Oracle).
 # BASEEXT = Basename part of FULLEXT. May be just equal FULLEXT. (eg Oracle)
@@ -196,7 +196,7 @@ TO_INST_PM = lib/WiringPi/API.pm
 
 
 # --- MakeMaker platform_constants section:
-MM_Unix_VERSION = 7.22
+MM_Unix_VERSION = 7.2
 PERL_MALLOC_DEF = -DPERL_EXTMALLOC_DEF -Dmalloc=Perl_malloc -Dfree=Perl_mfree -Drealloc=Perl_realloc -Dcalloc=Perl_calloc
 
 
@@ -208,12 +208,12 @@ AUTOSPLITFILE = $(ABSPERLRUN)  -e 'use AutoSplit;  autosplit($$$$ARGV[0], $$$$AR
 
 # --- MakeMaker tool_xsubpp section:
 
-XSUBPPDIR = /usr/share/perl/5.18/ExtUtils
+XSUBPPDIR = /usr/share/perl5/ExtUtils
 XSUBPP = "$(XSUBPPDIR)$(DFSEP)xsubpp"
 XSUBPPRUN = $(PERLRUN) $(XSUBPP)
 XSPROTOARG = 
-XSUBPPDEPS = /usr/share/perl/5.18/ExtUtils/typemap typemap /usr/share/perl/5.18/ExtUtils$(DFSEP)xsubpp
-XSUBPPARGS = -typemap '/usr/share/perl/5.18/ExtUtils/typemap' -typemap '/home/steve02/devel/repos/wiringpi-api/typemap'
+XSUBPPDEPS = /usr/share/perl/5.20/ExtUtils/typemap typemap /usr/share/perl5/ExtUtils$(DFSEP)xsubpp
+XSUBPPARGS = -typemap '/usr/share/perl/5.20/ExtUtils/typemap' -typemap '/home/pi/repos/wiringpi-api/typemap'
 XSUBPP_EXTRA_ARGS =
 
 
@@ -270,7 +270,7 @@ RCS_LABEL = rcs -Nv$(VERSION_SYM): -q
 DIST_CP = best
 DIST_DEFAULT = tardist
 DISTNAME = WiringPi-API
-DISTVNAME = WiringPi-API-1.02
+DISTVNAME = WiringPi-API-1.03
 
 
 # --- MakeMaker macro section:
@@ -281,7 +281,7 @@ DISTVNAME = WiringPi-API-1.02
 
 # --- MakeMaker cflags section:
 
-CCFLAGS = -D_REENTRANT -D_GNU_SOURCE -DDEBIAN -fstack-protector -fno-strict-aliasing -pipe -I/usr/local/include -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
+CCFLAGS = -D_REENTRANT -D_GNU_SOURCE -DDEBIAN -fwrapv -fno-strict-aliasing -pipe -I/usr/local/include -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
 OPTIMIZE = -O2 -g
 PERLTYPE = 
 MPOLLUTE = 
@@ -295,7 +295,7 @@ MPOLLUTE =
 EXTRALIBS = -lwiringPi -lwiringPiDev
 LDLOADLIBS = -lwiringPi -lwiringPiDev
 BSLOADLIBS = 
-LD_RUN_PATH = /usr/local/lib
+LD_RUN_PATH = /usr/lib:/usr/local/lib
 
 
 # --- MakeMaker const_cccmd section:
@@ -327,7 +327,7 @@ PASTHRU = LIBPERL_A="$(LIBPERL_A)"\
 # --- MakeMaker c_o section:
 
 .c.i:
-	cc -E -c $(PASTHRU_INC) $(INC) \
+	cc  -E -c $(PASTHRU_INC) $(INC) \
 	$(CCFLAGS) $(OPTIMIZE) \
 	$(PERLTYPE) $(MPOLLUTE) $(DEFINE_VERSION) \
 	$(XS_DEFINE_VERSION) $(CCCDLFLAGS) "-I$(PERL_INC)" $(PASTHRU_DEFINE) $(DEFINE) $*.c > $*.i
@@ -593,7 +593,7 @@ metafile : create_distdir
 	$(NOECHO) $(ECHO) 'configure_requires:' >> META_new.yml
 	$(NOECHO) $(ECHO) '  ExtUtils::MakeMaker: '\''0'\''' >> META_new.yml
 	$(NOECHO) $(ECHO) 'dynamic_config: 1' >> META_new.yml
-	$(NOECHO) $(ECHO) 'generated_by: '\''ExtUtils::MakeMaker version 7.22, CPAN::Meta::Converter version 2.150001'\''' >> META_new.yml
+	$(NOECHO) $(ECHO) 'generated_by: '\''ExtUtils::MakeMaker version 7.2, CPAN::Meta::Converter version 2.143240'\''' >> META_new.yml
 	$(NOECHO) $(ECHO) 'license: unknown' >> META_new.yml
 	$(NOECHO) $(ECHO) 'meta-spec:' >> META_new.yml
 	$(NOECHO) $(ECHO) '  url: http://module-build.sourceforge.net/META-spec-v1.4.html' >> META_new.yml
@@ -607,7 +607,7 @@ metafile : create_distdir
 	$(NOECHO) $(ECHO) 'resources:' >> META_new.yml
 	$(NOECHO) $(ECHO) '  bugtracker: https://github.com/stevieb9/wiringpi-api/issues' >> META_new.yml
 	$(NOECHO) $(ECHO) '  repository: https://github.com/stevieb9/wiringpi-api.git' >> META_new.yml
-	$(NOECHO) $(ECHO) 'version: '\''1.02'\''' >> META_new.yml
+	$(NOECHO) $(ECHO) 'version: '\''1.03'\''' >> META_new.yml
 	-$(NOECHO) $(MV) META_new.yml $(DISTVNAME)/META.yml
 	$(NOECHO) $(ECHO) Generating META.json
 	$(NOECHO) $(ECHO) '{' > META_new.json
@@ -616,7 +616,7 @@ metafile : create_distdir
 	$(NOECHO) $(ECHO) '      "Steve Bertrand <steveb@cpan.org>"' >> META_new.json
 	$(NOECHO) $(ECHO) '   ],' >> META_new.json
 	$(NOECHO) $(ECHO) '   "dynamic_config" : 1,' >> META_new.json
-	$(NOECHO) $(ECHO) '   "generated_by" : "ExtUtils::MakeMaker version 7.22, CPAN::Meta::Converter version 2.150001",' >> META_new.json
+	$(NOECHO) $(ECHO) '   "generated_by" : "ExtUtils::MakeMaker version 7.2, CPAN::Meta::Converter version 2.143240",' >> META_new.json
 	$(NOECHO) $(ECHO) '   "license" : [' >> META_new.json
 	$(NOECHO) $(ECHO) '      "unknown"' >> META_new.json
 	$(NOECHO) $(ECHO) '   ],' >> META_new.json
@@ -657,7 +657,7 @@ metafile : create_distdir
 	$(NOECHO) $(ECHO) '         "web" : "https://github.com/stevieb9/wiringpi-api"' >> META_new.json
 	$(NOECHO) $(ECHO) '      }' >> META_new.json
 	$(NOECHO) $(ECHO) '   },' >> META_new.json
-	$(NOECHO) $(ECHO) '   "version" : "1.02"' >> META_new.json
+	$(NOECHO) $(ECHO) '   "version" : "1.03"' >> META_new.json
 	$(NOECHO) $(ECHO) '}' >> META_new.json
 	-$(NOECHO) $(MV) META_new.json $(DISTVNAME)/META.json
 
@@ -906,7 +906,6 @@ PERL_HDRS = \
         $(PERL_INCDEP)/embed.h            \
         $(PERL_INCDEP)/embedvar.h            \
         $(PERL_INCDEP)/fakesdio.h            \
-        $(PERL_INCDEP)/fakethr.h            \
         $(PERL_INCDEP)/feature.h            \
         $(PERL_INCDEP)/form.h            \
         $(PERL_INCDEP)/git_version.h            \
@@ -941,7 +940,6 @@ PERL_HDRS = \
         $(PERL_INCDEP)/perlio.h            \
         $(PERL_INCDEP)/perliol.h            \
         $(PERL_INCDEP)/perlsdio.h            \
-        $(PERL_INCDEP)/perlsfio.h            \
         $(PERL_INCDEP)/perlvars.h            \
         $(PERL_INCDEP)/perly.h            \
         $(PERL_INCDEP)/pp.h            \
@@ -964,6 +962,7 @@ PERL_HDRS = \
         $(PERL_INCDEP)/utfebcdic.h            \
         $(PERL_INCDEP)/util.h            \
         $(PERL_INCDEP)/uudmap.h            \
+        $(PERL_INCDEP)/vutil.h            \
         $(PERL_INCDEP)/warnings.h            
 
 $(OBJECT) : $(PERL_HDRS)
@@ -995,7 +994,7 @@ $(FIRST_MAKEFILE) : Makefile.PL $(CONFIGDEP)
 # --- MakeMaker makeaperl section ---
 MAP_TARGET    = perl
 FULLPERL      = "/usr/bin/perl"
-MAP_PERLINC   = "-Iblib/arch" "-Iblib/lib" "-I/usr/lib/perl/5.18" "-I/usr/share/perl/5.18"
+MAP_PERLINC   = "-Iblib/arch" "-Iblib/lib" "-I/usr/lib/arm-linux-gnueabihf/perl/5.20" "-I/usr/share/perl/5.20"
 
 $(MAP_TARGET) :: $(MAKE_APERL_FILE)
 	$(MAKE) $(USEMAKEFILE) $(MAKE_APERL_FILE) $@
@@ -1036,21 +1035,21 @@ testdb_dynamic :: dynamic pure_all
 subdirs-test_static :: static pure_all
 
 test_static :: subdirs-test_static $(MAP_TARGET)
-	PERL_DL_NONLAZY=1 "/home/steve02/devel/repos/wiringpi-api/$(MAP_TARGET)" $(MAP_PERLINC) "-MExtUtils::Command::MM" "-MTest::Harness" "-e" "undef *Test::Harness::Switches; test_harness($(TEST_VERBOSE), '$(INST_LIB)', '$(INST_ARCHLIB)')" $(TEST_FILES)
+	PERL_DL_NONLAZY=1 "/home/pi/repos/wiringpi-api/$(MAP_TARGET)" $(MAP_PERLINC) "-MExtUtils::Command::MM" "-MTest::Harness" "-e" "undef *Test::Harness::Switches; test_harness($(TEST_VERBOSE), '$(INST_LIB)', '$(INST_ARCHLIB)')" $(TEST_FILES)
 
 testdb_static :: static pure_all $(MAP_TARGET)
-	PERL_DL_NONLAZY=1 "/home/steve02/devel/repos/wiringpi-api/$(MAP_TARGET)" $(MAP_PERLINC) "-I$(INST_LIB)" "-I$(INST_ARCHLIB)" $(TEST_FILE)
+	PERL_DL_NONLAZY=1 "/home/pi/repos/wiringpi-api/$(MAP_TARGET)" $(MAP_PERLINC) "-I$(INST_LIB)" "-I$(INST_ARCHLIB)" $(TEST_FILE)
 
 
 
 # --- MakeMaker ppd section:
 # Creates a PPD (Perl Package Description) for a binary distribution.
 ppd :
-	$(NOECHO) $(ECHO) '<SOFTPKG NAME="WiringPi-API" VERSION="1.02">' > WiringPi-API.ppd
+	$(NOECHO) $(ECHO) '<SOFTPKG NAME="WiringPi-API" VERSION="1.03">' > WiringPi-API.ppd
 	$(NOECHO) $(ECHO) '    <ABSTRACT>Direct access to Raspberry Pi'\''s wiringPi API, with optional Perl OO access</ABSTRACT>' >> WiringPi-API.ppd
 	$(NOECHO) $(ECHO) '    <AUTHOR>Steve Bertrand &lt;steveb@cpan.org&gt;</AUTHOR>' >> WiringPi-API.ppd
 	$(NOECHO) $(ECHO) '    <IMPLEMENTATION>' >> WiringPi-API.ppd
-	$(NOECHO) $(ECHO) '        <ARCHITECTURE NAME="x86_64-linux-gnu-thread-multi-5.18" />' >> WiringPi-API.ppd
+	$(NOECHO) $(ECHO) '        <ARCHITECTURE NAME="arm-linux-gnueabihf-thread-multi-64int-5.20" />' >> WiringPi-API.ppd
 	$(NOECHO) $(ECHO) '        <CODEBASE HREF="" />' >> WiringPi-API.ppd
 	$(NOECHO) $(ECHO) '    </IMPLEMENTATION>' >> WiringPi-API.ppd
 	$(NOECHO) $(ECHO) '</SOFTPKG>' >> WiringPi-API.ppd

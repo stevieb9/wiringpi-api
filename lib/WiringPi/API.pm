@@ -69,7 +69,7 @@ sub setup_phys {
     return wiringPiSetupPhys();
 }
 sub setup_gpio {
-    return wiringPiSetupGPIO();
+    return wiringPiSetupGpio();
 }
 
 # pin functions
