@@ -104,7 +104,7 @@ CORE METHODS
 
     Maps to int wiringPiSetup()
 
-    Sets the pin numbering scheme to WPI (wiringPi numbers).
+    Sets the pin number mapping scheme to wiringPi.
 
     Each setup function has benefits and drawbacks. Please refer to the
     wiringPi setup functions <http://wiringpi.com/reference/setup> for
@@ -112,14 +112,15 @@ CORE METHODS
 
     This one requires you to run your script as the root user.
 
+    See pinout.xyz <https://pinout.xyz/pinout/wiringpi> for a pin number
+    conversion chart, or on the command line, run gpio readall.
+
     Note that only one of the setup*() methods can be called per program
     run.
 
  setup_sys()
 
     Maps to int wiringPiSetupSys()
-
-    Sets the pin numbering scheme to BCM (Broadcom numbers).
 
     Each setup function has benefits and drawbacks. Please refer to the
     wiringPi setup functions <http://wiringpi.com/reference/setup> for
@@ -129,6 +130,11 @@ CORE METHODS
     export the pins yourself with the gpio command line utility prior to
     using the pins.
 
+    Sets the pin mapping to GPIO.
+
+    See pinout.xyz <https://pinout.xyz/pinout/wiringpi> for a pin number
+    conversion chart, or on the command line, run gpio readall.
+
     Note that only one of the setup*() methods can be called per program
     run.
 
@@ -136,13 +142,17 @@ CORE METHODS
 
     Maps to int wiringPiSetupPhys()
 
-    Sets the pin numbering scheme to PHYS (physical board numbers).
+    Sets the pin mapping to use the physical pin position number on the
+    board.
 
     Each setup function has benefits and drawbacks. Please refer to the
     wiringPi setup functions <http://wiringpi.com/reference/setup> for
     details.
 
     This one requires you to run your script as the root user.
+
+    See pinout.xyz <https://pinout.xyz/pinout/wiringpi> for a pin number
+    conversion chart, or on the command line, run gpio readall.
 
     Note that only one of the setup*() methods can be called per program
     run.
@@ -158,6 +168,11 @@ CORE METHODS
     details.
 
     This one requires you to run your script as the root user.
+
+    Sets the pin mapping to GPIO.
+
+    See pinout.xyz <https://pinout.xyz/pinout/wiringpi> for a pin number
+    conversion chart, or on the command line, run gpio readall.
 
     Note that only one of the setup*() methods can be called per program
     run.
@@ -572,7 +587,7 @@ POD ERRORS
     Hey! The above document had some coding errors, which are explained
     below:
 
-    Around line 465:
+    Around line 479:
 
       Non-ASCII character seen before =encoding in '5×8,'. Assuming UTF-8
 
