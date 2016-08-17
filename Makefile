@@ -1,7 +1,7 @@
 # This Makefile is for the WiringPi::API extension to perl.
 #
 # It was generated automatically by MakeMaker version
-# 7.2 (Revision: 72000) from the contents of
+# 7.1001 (Revision: 71001) from the contents of
 # Makefile.PL. Don't edit this file, edit Makefile.PL instead.
 #
 #       ANY CHANGES MADE HERE WILL BE LOST!
@@ -29,7 +29,7 @@
 
 # --- MakeMaker const_config section:
 
-# These definitions are from config.sh (via /usr/lib/arm-linux-gnueabihf/perl/5.20/Config.pm).
+# These definitions are from config.sh (via /root/perl5/perlbrew/perls/perl-5.24.0/lib/5.24.0/armv7l-linux/Config.pm).
 # They may have been overridden via Makefile.PL or on the command line.
 AR = ar
 CC = cc
@@ -40,19 +40,19 @@ DLSRC = dl_dlopen.xs
 EXE_EXT = 
 FULL_AR = /usr/bin/ar
 LD = cc
-LDDLFLAGS = -shared -L/usr/local/lib -fstack-protector
-LDFLAGS =  -fstack-protector -L/usr/local/lib
+LDDLFLAGS = -shared -O2 -L/usr/local/lib -fstack-protector-strong
+LDFLAGS =  -fstack-protector-strong -L/usr/local/lib
 LIBC = libc-2.19.so
 LIB_EXT = .a
 OBJ_EXT = .o
 OSNAME = linux
-OSVERS = 3.19.0-trunk-armmp
+OSVERS = 4.4.11-v7+
 RANLIB = :
-SITELIBEXP = /usr/local/share/perl/5.20.2
-SITEARCHEXP = /usr/local/lib/arm-linux-gnueabihf/perl/5.20.2
+SITELIBEXP = /root/perl5/perlbrew/perls/perl-5.24.0/lib/site_perl/5.24.0
+SITEARCHEXP = /root/perl5/perlbrew/perls/perl-5.24.0/lib/site_perl/5.24.0/armv7l-linux
 SO = so
-VENDORARCHEXP = /usr/lib/arm-linux-gnueabihf/perl5/5.20
-VENDORLIBEXP = /usr/share/perl5
+VENDORARCHEXP = 
+VENDORLIBEXP = 
 
 
 # --- MakeMaker constants section:
@@ -74,62 +74,62 @@ INST_BIN = blib/bin
 INST_LIB = blib/lib
 INST_MAN1DIR = blib/man1
 INST_MAN3DIR = blib/man3
-MAN1EXT = 1p
-MAN3EXT = 3pm
+MAN1EXT = 1
+MAN3EXT = 3
 INSTALLDIRS = site
 DESTDIR = 
 PREFIX = $(SITEPREFIX)
-PERLPREFIX = /usr
-SITEPREFIX = /usr/local
-VENDORPREFIX = /usr
-INSTALLPRIVLIB = /usr/share/perl/5.20
+PERLPREFIX = /root/perl5/perlbrew/perls/perl-5.24.0
+SITEPREFIX = /root/perl5/perlbrew/perls/perl-5.24.0
+VENDORPREFIX = 
+INSTALLPRIVLIB = /root/perl5/perlbrew/perls/perl-5.24.0/lib/5.24.0
 DESTINSTALLPRIVLIB = $(DESTDIR)$(INSTALLPRIVLIB)
-INSTALLSITELIB = /usr/local/share/perl/5.20.2
+INSTALLSITELIB = /root/perl5/perlbrew/perls/perl-5.24.0/lib/site_perl/5.24.0
 DESTINSTALLSITELIB = $(DESTDIR)$(INSTALLSITELIB)
-INSTALLVENDORLIB = /usr/share/perl5
+INSTALLVENDORLIB = 
 DESTINSTALLVENDORLIB = $(DESTDIR)$(INSTALLVENDORLIB)
-INSTALLARCHLIB = /usr/lib/arm-linux-gnueabihf/perl/5.20
+INSTALLARCHLIB = /root/perl5/perlbrew/perls/perl-5.24.0/lib/5.24.0/armv7l-linux
 DESTINSTALLARCHLIB = $(DESTDIR)$(INSTALLARCHLIB)
-INSTALLSITEARCH = /usr/local/lib/arm-linux-gnueabihf/perl/5.20.2
+INSTALLSITEARCH = /root/perl5/perlbrew/perls/perl-5.24.0/lib/site_perl/5.24.0/armv7l-linux
 DESTINSTALLSITEARCH = $(DESTDIR)$(INSTALLSITEARCH)
-INSTALLVENDORARCH = /usr/lib/arm-linux-gnueabihf/perl5/5.20
+INSTALLVENDORARCH = 
 DESTINSTALLVENDORARCH = $(DESTDIR)$(INSTALLVENDORARCH)
-INSTALLBIN = /usr/bin
+INSTALLBIN = /root/perl5/perlbrew/perls/perl-5.24.0/bin
 DESTINSTALLBIN = $(DESTDIR)$(INSTALLBIN)
-INSTALLSITEBIN = /usr/local/bin
+INSTALLSITEBIN = /root/perl5/perlbrew/perls/perl-5.24.0/bin
 DESTINSTALLSITEBIN = $(DESTDIR)$(INSTALLSITEBIN)
-INSTALLVENDORBIN = /usr/bin
+INSTALLVENDORBIN = 
 DESTINSTALLVENDORBIN = $(DESTDIR)$(INSTALLVENDORBIN)
-INSTALLSCRIPT = /usr/bin
+INSTALLSCRIPT = /root/perl5/perlbrew/perls/perl-5.24.0/bin
 DESTINSTALLSCRIPT = $(DESTDIR)$(INSTALLSCRIPT)
-INSTALLSITESCRIPT = /usr/local/bin
+INSTALLSITESCRIPT = /root/perl5/perlbrew/perls/perl-5.24.0/bin
 DESTINSTALLSITESCRIPT = $(DESTDIR)$(INSTALLSITESCRIPT)
-INSTALLVENDORSCRIPT = /usr/bin
+INSTALLVENDORSCRIPT = 
 DESTINSTALLVENDORSCRIPT = $(DESTDIR)$(INSTALLVENDORSCRIPT)
-INSTALLMAN1DIR = /usr/share/man/man1
+INSTALLMAN1DIR = /root/perl5/perlbrew/perls/perl-5.24.0/man/man1
 DESTINSTALLMAN1DIR = $(DESTDIR)$(INSTALLMAN1DIR)
-INSTALLSITEMAN1DIR = /usr/local/man/man1
+INSTALLSITEMAN1DIR = /root/perl5/perlbrew/perls/perl-5.24.0/man/man1
 DESTINSTALLSITEMAN1DIR = $(DESTDIR)$(INSTALLSITEMAN1DIR)
-INSTALLVENDORMAN1DIR = /usr/share/man/man1
+INSTALLVENDORMAN1DIR = 
 DESTINSTALLVENDORMAN1DIR = $(DESTDIR)$(INSTALLVENDORMAN1DIR)
-INSTALLMAN3DIR = /usr/share/man/man3
+INSTALLMAN3DIR = /root/perl5/perlbrew/perls/perl-5.24.0/man/man3
 DESTINSTALLMAN3DIR = $(DESTDIR)$(INSTALLMAN3DIR)
-INSTALLSITEMAN3DIR = /usr/local/man/man3
+INSTALLSITEMAN3DIR = /root/perl5/perlbrew/perls/perl-5.24.0/man/man3
 DESTINSTALLSITEMAN3DIR = $(DESTDIR)$(INSTALLSITEMAN3DIR)
-INSTALLVENDORMAN3DIR = /usr/share/man/man3
+INSTALLVENDORMAN3DIR = 
 DESTINSTALLVENDORMAN3DIR = $(DESTDIR)$(INSTALLVENDORMAN3DIR)
-PERL_LIB = /usr/share/perl/5.20
-PERL_ARCHLIB = /usr/lib/arm-linux-gnueabihf/perl/5.20
-PERL_ARCHLIBDEP = /usr/lib/arm-linux-gnueabihf/perl/5.20
+PERL_LIB = /root/perl5/perlbrew/perls/perl-5.24.0/lib/5.24.0
+PERL_ARCHLIB = /root/perl5/perlbrew/perls/perl-5.24.0/lib/5.24.0/armv7l-linux
+PERL_ARCHLIBDEP = /root/perl5/perlbrew/perls/perl-5.24.0/lib/5.24.0/armv7l-linux
 LIBPERL_A = libperl.a
 FIRST_MAKEFILE = Makefile
 MAKEFILE_OLD = Makefile.old
 MAKE_APERL_FILE = Makefile.aperl
 PERLMAINCC = $(CC)
-PERL_INC = /usr/lib/arm-linux-gnueabihf/perl/5.20/CORE
-PERL_INCDEP = /usr/lib/arm-linux-gnueabihf/perl/5.20/CORE
-PERL = "/usr/bin/perl"
-FULLPERL = "/usr/bin/perl"
+PERL_INC = /root/perl5/perlbrew/perls/perl-5.24.0/lib/5.24.0/armv7l-linux/CORE
+PERL_INCDEP = /root/perl5/perlbrew/perls/perl-5.24.0/lib/5.24.0/armv7l-linux/CORE
+PERL = "/root/perl5/perlbrew/perls/perl-5.24.0/bin/perl"
+FULLPERL = "/root/perl5/perlbrew/perls/perl-5.24.0/bin/perl"
 ABSPERL = $(PERL)
 PERLRUN = $(PERL)
 FULLPERLRUN = $(FULLPERL)
@@ -142,9 +142,9 @@ PERM_DIR = 755
 PERM_RW = 644
 PERM_RWX = 755
 
-MAKEMAKER   = /usr/local/share/perl/5.20.2/ExtUtils/MakeMaker.pm
-MM_VERSION  = 7.2
-MM_REVISION = 72000
+MAKEMAKER   = /root/perl5/perlbrew/perls/perl-5.24.0/lib/5.24.0/ExtUtils/MakeMaker.pm
+MM_VERSION  = 7.1001
+MM_REVISION = 71001
 
 # FULLEXT = Pathname for extension directory (eg Foo/Bar/Oracle).
 # BASEEXT = Basename part of FULLEXT. May be just equal FULLEXT. (eg Oracle)
@@ -194,9 +194,12 @@ PERL_ARCHIVE_AFTER =
 
 TO_INST_PM = lib/WiringPi/API.pm
 
+PM_TO_BLIB = lib/WiringPi/API.pm \
+	blib/lib/WiringPi/API.pm
+
 
 # --- MakeMaker platform_constants section:
-MM_Unix_VERSION = 7.2
+MM_Unix_VERSION = 7.1001
 PERL_MALLOC_DEF = -DPERL_EXTMALLOC_DEF -Dmalloc=Perl_malloc -Dfree=Perl_mfree -Drealloc=Perl_realloc -Dcalloc=Perl_calloc
 
 
@@ -208,12 +211,12 @@ AUTOSPLITFILE = $(ABSPERLRUN)  -e 'use AutoSplit;  autosplit($$$$ARGV[0], $$$$AR
 
 # --- MakeMaker tool_xsubpp section:
 
-XSUBPPDIR = /usr/share/perl5/ExtUtils
+XSUBPPDIR = /root/perl5/perlbrew/perls/perl-5.24.0/lib/5.24.0/ExtUtils
 XSUBPP = "$(XSUBPPDIR)$(DFSEP)xsubpp"
 XSUBPPRUN = $(PERLRUN) $(XSUBPP)
 XSPROTOARG = 
-XSUBPPDEPS = /usr/share/perl/5.20/ExtUtils/typemap typemap /usr/share/perl5/ExtUtils$(DFSEP)xsubpp
-XSUBPPARGS = -typemap '/usr/share/perl/5.20/ExtUtils/typemap' -typemap '/home/pi/repos/wiringpi-api/typemap'
+XSUBPPDEPS = /root/perl5/perlbrew/perls/perl-5.24.0/lib/5.24.0/ExtUtils/typemap typemap /root/perl5/perlbrew/perls/perl-5.24.0/lib/5.24.0/ExtUtils$(DFSEP)xsubpp
+XSUBPPARGS = -typemap "/root/perl5/perlbrew/perls/perl-5.24.0/lib/5.24.0/ExtUtils/typemap" -typemap "typemap"
 XSUBPP_EXTRA_ARGS =
 
 
@@ -281,8 +284,8 @@ DISTVNAME = WiringPi-API-1.03
 
 # --- MakeMaker cflags section:
 
-CCFLAGS = -D_REENTRANT -D_GNU_SOURCE -DDEBIAN -fwrapv -fno-strict-aliasing -pipe -I/usr/local/include -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
-OPTIMIZE = -O2 -g
+CCFLAGS = -fwrapv -fno-strict-aliasing -pipe -fstack-protector-strong -I/usr/local/include -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_FORTIFY_SOURCE=2
+OPTIMIZE = -O2
 PERLTYPE = 
 MPOLLUTE = 
 
@@ -313,14 +316,14 @@ PASTHRU = LIBPERL_A="$(LIBPERL_A)"\
 	LINKTYPE="$(LINKTYPE)"\
 	OPTIMIZE="$(OPTIMIZE)"\
 	PREFIX="$(PREFIX)"\
-	PASTHRU_DEFINE=' $(PASTHRU_DEFINE)'\
-	PASTHRU_INC='-I. $(PASTHRU_INC)'
+	PASTHRU_DEFINE="$(PASTHRU_DEFINE)"\
+	PASTHRU_INC="$(PASTHRU_INC)"
 
 
 # --- MakeMaker special_targets section:
 .SUFFIXES : .xs .c .C .cpp .i .s .cxx .cc $(OBJ_EXT)
 
-.PHONY: all config static dynamic test linkext manifest blibdirs clean realclean disttest distdir pure_all subdirs clean_subdirs makemakerdflt manifypods realclean_subdirs subdirs_dynamic subdirs_pure_nolink subdirs_static subdirs-test_dynamic subdirs-test_static test_dynamic test_static
+.PHONY: all config static dynamic test linkext manifest blibdirs clean realclean disttest distdir
 
 
 
@@ -332,46 +335,44 @@ PASTHRU = LIBPERL_A="$(LIBPERL_A)"\
 	$(PERLTYPE) $(MPOLLUTE) $(DEFINE_VERSION) \
 	$(XS_DEFINE_VERSION) $(CCCDLFLAGS) "-I$(PERL_INC)" $(PASTHRU_DEFINE) $(DEFINE) $*.c > $*.i
 
-.c.s :
-	$(CCCMD) -S $(CCCDLFLAGS) "-I$(PERL_INC)" $(PASTHRU_DEFINE) $(DEFINE) $*.c 
+.c.s:
+	$(CCCMD) -S $(CCCDLFLAGS) "-I$(PERL_INC)" $(PASTHRU_DEFINE) $(DEFINE) $*.c
 
-.c$(OBJ_EXT) :
+.c$(OBJ_EXT):
 	$(CCCMD) $(CCCDLFLAGS) "-I$(PERL_INC)" $(PASTHRU_DEFINE) $(DEFINE) $*.c
 
-.cpp$(OBJ_EXT) :
+.cpp$(OBJ_EXT):
 	$(CCCMD) $(CCCDLFLAGS) "-I$(PERL_INC)" $(PASTHRU_DEFINE) $(DEFINE) $*.cpp
 
-.cxx$(OBJ_EXT) :
+.cxx$(OBJ_EXT):
 	$(CCCMD) $(CCCDLFLAGS) "-I$(PERL_INC)" $(PASTHRU_DEFINE) $(DEFINE) $*.cxx
 
-.cc$(OBJ_EXT) :
+.cc$(OBJ_EXT):
 	$(CCCMD) $(CCCDLFLAGS) "-I$(PERL_INC)" $(PASTHRU_DEFINE) $(DEFINE) $*.cc
 
-.C$(OBJ_EXT) :
+.C$(OBJ_EXT):
 	$(CCCMD) $(CCCDLFLAGS) "-I$(PERL_INC)" $(PASTHRU_DEFINE) $(DEFINE) $*.C
 
 
 # --- MakeMaker xs_c section:
 
 .xs.c:
-	$(XSUBPPRUN) $(XSPROTOARG) $(XSUBPPARGS) $(XSUBPP_EXTRA_ARGS) $*.xs > $*.xsc
-	$(MV) $*.xsc $*.c
+	$(XSUBPPRUN) $(XSPROTOARG) $(XSUBPPARGS) $(XSUBPP_EXTRA_ARGS) $*.xs > $*.xsc && $(MV) $*.xsc $*.c
 
 
 # --- MakeMaker xs_o section:
-.xs$(OBJ_EXT) :
-	$(XSUBPPRUN) $(XSPROTOARG) $(XSUBPPARGS) $*.xs > $*.xsc
-	$(MV) $*.xsc $*.c
-	$(CCCMD) $(CCCDLFLAGS) "-I$(PERL_INC)" $(PASTHRU_DEFINE) $(DEFINE) $*.c 
+
+.xs$(OBJ_EXT):
+	$(XSUBPPRUN) $(XSPROTOARG) $(XSUBPPARGS) $*.xs > $*.xsc && $(MV) $*.xsc $*.c
+	$(CCCMD) $(CCCDLFLAGS) "-I$(PERL_INC)" $(PASTHRU_DEFINE) $(DEFINE) $*.c
 
 
 # --- MakeMaker top_targets section:
 all :: pure_all manifypods
 	$(NOECHO) $(NOOP)
 
-pure_all :: config pm_to_blib subdirs linkext
-	$(NOECHO) $(NOOP)
 
+pure_all :: config pm_to_blib subdirs linkext
 	$(NOECHO) $(NOOP)
 
 subdirs :: $(MYEXTLIB)
@@ -380,7 +381,7 @@ subdirs :: $(MYEXTLIB)
 config :: $(FIRST_MAKEFILE) blibdirs
 	$(NOECHO) $(NOOP)
 
-$(O_FILES) : $(H_FILES)
+$(O_FILES): $(H_FILES)
 
 help :
 	perldoc ExtUtils::MakeMaker
@@ -438,7 +439,7 @@ $(INST_MAN3DIR)$(DFSEP).exists :: Makefile.PL
 
 # --- MakeMaker linkext section:
 
-linkext :: dynamic
+linkext :: $(LINKTYPE)
 	$(NOECHO) $(NOOP)
 
 
@@ -451,39 +452,38 @@ BOOTSTRAP = $(BASEEXT).bs
 # As Mkbootstrap might not write a file (if none is required)
 # we use touch to prevent make continually trying to remake it.
 # The DynaLoader only reads a non-empty file.
-$(BASEEXT).bs : $(FIRST_MAKEFILE) $(BOOTDEP)
-	$(NOECHO) $(ECHO) "Running Mkbootstrap for $(BASEEXT) ($(BSLOADLIBS))"
+$(BOOTSTRAP) : $(FIRST_MAKEFILE) $(BOOTDEP) $(INST_ARCHAUTODIR)$(DFSEP).exists
+	$(NOECHO) $(ECHO) "Running Mkbootstrap for $(NAME) ($(BSLOADLIBS))"
 	$(NOECHO) $(PERLRUN) \
 		"-MExtUtils::Mkbootstrap" \
 		-e "Mkbootstrap('$(BASEEXT)','$(BSLOADLIBS)');"
-	$(NOECHO) $(TOUCH) "$(BASEEXT).bs"
-	$(CHMOD) $(PERM_RW) "$(BASEEXT).bs"
-
-$(INST_ARCHAUTODIR)/$(BASEEXT).bs : $(BASEEXT).bs $(INST_ARCHAUTODIR)$(DFSEP).exists
-	$(NOECHO) $(RM_RF) $(INST_ARCHAUTODIR)/$(BASEEXT).bs
-	- $(CP_NONEMPTY) $(BASEEXT).bs $(INST_ARCHAUTODIR)/$(BASEEXT).bs $(PERM_RW)
+	$(NOECHO) $(TOUCH) "$@"
+	$(CHMOD) $(PERM_RW) "$@"
 
 
 # --- MakeMaker dynamic section:
 
-dynamic :: $(FIRST_MAKEFILE) config $(INST_BOOT) $(INST_DYNAMIC)
+dynamic :: $(FIRST_MAKEFILE) $(BOOTSTRAP) $(INST_DYNAMIC)
 	$(NOECHO) $(NOOP)
 
 
 # --- MakeMaker dynamic_lib section:
-# This section creates the dynamically loadable objects from relevant
-# objects and possibly $(MYEXTLIB).
+
+# This section creates the dynamically loadable $(INST_DYNAMIC)
+# from $(OBJECT) and possibly $(MYEXTLIB).
 ARMAYBE = :
 OTHERLDFLAGS = 
 INST_DYNAMIC_DEP = 
 INST_DYNAMIC_FIX = 
 
-$(INST_DYNAMIC) : $(OBJECT) $(MYEXTLIB) $(INST_ARCHAUTODIR)$(DFSEP).exists $(EXPORT_LIST) $(PERL_ARCHIVEDEP) $(PERL_ARCHIVE_AFTER) $(INST_DYNAMIC_DEP)
+$(INST_DYNAMIC): $(OBJECT) $(MYEXTLIB) $(INST_ARCHAUTODIR)$(DFSEP).exists $(EXPORT_LIST) $(PERL_ARCHIVEDEP) $(PERL_ARCHIVE_AFTER) $(INST_DYNAMIC_DEP)
 	$(RM_F) $@
-	LD_RUN_PATH="$(LD_RUN_PATH)" $(LD)  $(LDDLFLAGS) $(LDFROM) $(OTHERLDFLAGS) -o $@ $(MYEXTLIB) \
-	  $(PERL_ARCHIVE) $(LDLOADLIBS) $(PERL_ARCHIVE_AFTER) $(EXPORT_LIST) \
+	LD_RUN_PATH="$(LD_RUN_PATH)" $(LD)  $(LDDLFLAGS) $(LDFROM) $(OTHERLDFLAGS) -o $@ $(MYEXTLIB)	\
+	  $(PERL_ARCHIVE) $(LDLOADLIBS) $(PERL_ARCHIVE_AFTER) $(EXPORT_LIST)	\
 	  $(INST_DYNAMIC_FIX)
 	$(CHMOD) $(PERM_RWX) $@
+	$(NOECHO) $(RM_RF) $(BOOTSTRAP)
+	- $(CP_NONEMPTY) $(BOOTSTRAP) $(INST_BOOT) $(PERM_RW)
 
 
 # --- MakeMaker static section:
@@ -495,12 +495,12 @@ static :: $(FIRST_MAKEFILE) $(INST_STATIC)
 
 
 # --- MakeMaker static_lib section:
-$(INST_STATIC): $(OBJECT) $(MYEXTLIB) $(INST_ARCHAUTODIR)$(DFSEP).exists
-	$(RM_F) "$@"
-	$(FULL_AR) $(AR_STATIC_ARGS) "$@" $(OBJECT)
-	$(RANLIB) "$@"
+
+$(INST_STATIC) : $(OBJECT) $(MYEXTLIB) $(INST_ARCHAUTODIR)$(DFSEP).exists
+	$(RM_RF) $@
+	$(FULL_AR) $(AR_STATIC_ARGS) $@ $(OBJECT) && $(RANLIB) $@
 	$(CHMOD) $(PERM_RWX) $@
-	$(NOECHO) $(ECHO) "$(EXTRALIBS)" > $(INST_ARCHAUTODIR)$(DFSEP)extralibs.ld
+	$(NOECHO) $(ECHO) "$(EXTRALIBS)" > "$(INST_ARCHAUTODIR)/extralibs.ld"
 
 
 # --- MakeMaker manifypods section:
@@ -509,7 +509,7 @@ POD2MAN_EXE = $(PERLRUN) "-MExtUtils::Command::MM" -e pod2man "--"
 POD2MAN = $(POD2MAN_EXE)
 
 
-manifypods : pure_all config  \
+manifypods : pure_all  \
 	lib/WiringPi/API.pm
 	$(NOECHO) $(POD2MAN) --section=3 --perm_rw=$(PERM_RW) -u \
 	  lib/WiringPi/API.pm $(INST_MAN3DIR)/WiringPi::API.$(MAN3EXT) 
@@ -544,21 +544,17 @@ clean :: clean_subdirs
 	  $(BOOTSTRAP) $(INST_ARCHAUTODIR)/extralibs.all \
 	  $(INST_ARCHAUTODIR)/extralibs.ld $(MAKE_APERL_FILE) \
 	  *$(LIB_EXT) *$(OBJ_EXT) \
-	  *perl.core API.base \
-	  API.bs API.bso \
-	  API.c API.def \
-	  API.exp API.o \
-	  API_def.old MYMETA.json \
-	  MYMETA.yml blibdirs.ts \
-	  core core.*perl.*.? \
-	  core.[0-9] core.[0-9][0-9] \
-	  core.[0-9][0-9][0-9] core.[0-9][0-9][0-9][0-9] \
-	  core.[0-9][0-9][0-9][0-9][0-9] lib$(BASEEXT).def \
-	  mon.out perl \
-	  perl$(EXE_EXT) perl.exe \
-	  perlmain.c pm_to_blib \
-	  pm_to_blib.ts so_locations \
-	  tmon.out 
+	  *perl.core API.c \
+	  MYMETA.json MYMETA.yml \
+	  blibdirs.ts core \
+	  core.*perl.*.? core.[0-9] \
+	  core.[0-9][0-9] core.[0-9][0-9][0-9] \
+	  core.[0-9][0-9][0-9][0-9] core.[0-9][0-9][0-9][0-9][0-9] \
+	  lib$(BASEEXT).def mon.out \
+	  perl perl$(EXE_EXT) \
+	  perl.exe perlmain.c \
+	  pm_to_blib pm_to_blib.ts \
+	  so_locations tmon.out 
 	- $(RM_RF) \
 	  blib 
 	  $(NOECHO) $(RM_F) $(MAKEFILE_OLD)
@@ -566,17 +562,16 @@ clean :: clean_subdirs
 
 
 # --- MakeMaker realclean_subdirs section:
-# so clean is forced to complete before realclean_subdirs runs
-realclean_subdirs : clean
+realclean_subdirs :
 	$(NOECHO) $(NOOP)
 
 
 # --- MakeMaker realclean section:
 # Delete temporary files (via clean) and also delete dist files
-realclean purge :: realclean_subdirs
+realclean purge ::  clean realclean_subdirs
 	- $(RM_F) \
-	  $(FIRST_MAKEFILE) $(MAKEFILE_OLD) \
-	  $(OBJECT) 
+	  $(FIRST_MAKEFILE) $(OBJECT) \
+	  $(MAKEFILE_OLD) 
 	- $(RM_RF) \
 	  $(DISTVNAME) 
 
@@ -593,7 +588,7 @@ metafile : create_distdir
 	$(NOECHO) $(ECHO) 'configure_requires:' >> META_new.yml
 	$(NOECHO) $(ECHO) '  ExtUtils::MakeMaker: '\''0'\''' >> META_new.yml
 	$(NOECHO) $(ECHO) 'dynamic_config: 1' >> META_new.yml
-	$(NOECHO) $(ECHO) 'generated_by: '\''ExtUtils::MakeMaker version 7.2, CPAN::Meta::Converter version 2.143240'\''' >> META_new.yml
+	$(NOECHO) $(ECHO) 'generated_by: '\''ExtUtils::MakeMaker version 7.1001, CPAN::Meta::Converter version 2.150005'\''' >> META_new.yml
 	$(NOECHO) $(ECHO) 'license: unknown' >> META_new.yml
 	$(NOECHO) $(ECHO) 'meta-spec:' >> META_new.yml
 	$(NOECHO) $(ECHO) '  url: http://module-build.sourceforge.net/META-spec-v1.4.html' >> META_new.yml
@@ -608,6 +603,7 @@ metafile : create_distdir
 	$(NOECHO) $(ECHO) '  bugtracker: https://github.com/stevieb9/wiringpi-api/issues' >> META_new.yml
 	$(NOECHO) $(ECHO) '  repository: https://github.com/stevieb9/wiringpi-api.git' >> META_new.yml
 	$(NOECHO) $(ECHO) 'version: '\''1.03'\''' >> META_new.yml
+	$(NOECHO) $(ECHO) 'x_serialization_backend: '\''CPAN::Meta::YAML version 0.018'\''' >> META_new.yml
 	-$(NOECHO) $(MV) META_new.yml $(DISTVNAME)/META.yml
 	$(NOECHO) $(ECHO) Generating META.json
 	$(NOECHO) $(ECHO) '{' > META_new.json
@@ -616,7 +612,7 @@ metafile : create_distdir
 	$(NOECHO) $(ECHO) '      "Steve Bertrand <steveb@cpan.org>"' >> META_new.json
 	$(NOECHO) $(ECHO) '   ],' >> META_new.json
 	$(NOECHO) $(ECHO) '   "dynamic_config" : 1,' >> META_new.json
-	$(NOECHO) $(ECHO) '   "generated_by" : "ExtUtils::MakeMaker version 7.2, CPAN::Meta::Converter version 2.143240",' >> META_new.json
+	$(NOECHO) $(ECHO) '   "generated_by" : "ExtUtils::MakeMaker version 7.1001, CPAN::Meta::Converter version 2.150005",' >> META_new.json
 	$(NOECHO) $(ECHO) '   "license" : [' >> META_new.json
 	$(NOECHO) $(ECHO) '      "unknown"' >> META_new.json
 	$(NOECHO) $(ECHO) '   ],' >> META_new.json
@@ -657,7 +653,8 @@ metafile : create_distdir
 	$(NOECHO) $(ECHO) '         "web" : "https://github.com/stevieb9/wiringpi-api"' >> META_new.json
 	$(NOECHO) $(ECHO) '      }' >> META_new.json
 	$(NOECHO) $(ECHO) '   },' >> META_new.json
-	$(NOECHO) $(ECHO) '   "version" : "1.03"' >> META_new.json
+	$(NOECHO) $(ECHO) '   "version" : "1.03",' >> META_new.json
+	$(NOECHO) $(ECHO) '   "x_serialization_backend" : "JSON::PP version 2.27300"' >> META_new.json
 	$(NOECHO) $(ECHO) '}' >> META_new.json
 	-$(NOECHO) $(MV) META_new.json $(DISTVNAME)/META.json
 
@@ -757,17 +754,17 @@ ci :
 distmeta : create_distdir metafile
 	$(NOECHO) cd $(DISTVNAME) && $(ABSPERLRUN) -MExtUtils::Manifest=maniadd -e 'exit unless -e q{META.yml};' \
 	  -e 'eval { maniadd({q{META.yml} => q{Module YAML meta-data (added by MakeMaker)}}) }' \
-	  -e '    or die "Could not add META.yml to MANIFEST: $${'\''@'\''}"' --
+	  -e '    or print "Could not add META.yml to MANIFEST: $$$${'\''@'\''}\n"' --
 	$(NOECHO) cd $(DISTVNAME) && $(ABSPERLRUN) -MExtUtils::Manifest=maniadd -e 'exit unless -f q{META.json};' \
 	  -e 'eval { maniadd({q{META.json} => q{Module JSON meta-data (added by MakeMaker)}}) }' \
-	  -e '    or die "Could not add META.json to MANIFEST: $${'\''@'\''}"' --
+	  -e '    or print "Could not add META.json to MANIFEST: $$$${'\''@'\''}\n"' --
 
 
 
 # --- MakeMaker distsignature section:
 distsignature : distmeta
 	$(NOECHO) cd $(DISTVNAME) && $(ABSPERLRUN) -MExtUtils::Manifest=maniadd -e 'eval { maniadd({q{SIGNATURE} => q{Public-key signature (added by MakeMaker)}}) }' \
-	  -e '    or die "Could not add SIGNATURE to MANIFEST: $${'\''@'\''}"' --
+	  -e '    or print "Could not add SIGNATURE to MANIFEST: $$$${'\''@'\''}\n"' --
 	$(NOECHO) cd $(DISTVNAME) && $(TOUCH) SIGNATURE
 	cd $(DISTVNAME) && cpansign -s
 
@@ -843,7 +840,7 @@ doc_perl_install :: all
 	-$(NOECHO) $(MKPATH) "$(DESTINSTALLARCHLIB)"
 	-$(NOECHO) $(DOC_INSTALL) \
 		"Module" "$(NAME)" \
-		"installed into" "$(INSTALLPRIVLIB)" \
+		"installed into" $(INSTALLPRIVLIB) \
 		LINKTYPE "$(LINKTYPE)" \
 		VERSION "$(VERSION)" \
 		EXE_FILES "$(EXE_FILES)" \
@@ -854,7 +851,7 @@ doc_site_install :: all
 	-$(NOECHO) $(MKPATH) "$(DESTINSTALLARCHLIB)"
 	-$(NOECHO) $(DOC_INSTALL) \
 		"Module" "$(NAME)" \
-		"installed into" "$(INSTALLSITELIB)" \
+		"installed into" $(INSTALLSITELIB) \
 		LINKTYPE "$(LINKTYPE)" \
 		VERSION "$(VERSION)" \
 		EXE_FILES "$(EXE_FILES)" \
@@ -865,7 +862,7 @@ doc_vendor_install :: all
 	-$(NOECHO) $(MKPATH) "$(DESTINSTALLARCHLIB)"
 	-$(NOECHO) $(DOC_INSTALL) \
 		"Module" "$(NAME)" \
-		"installed into" "$(INSTALLVENDORLIB)" \
+		"installed into" $(INSTALLVENDORLIB) \
 		LINKTYPE "$(LINKTYPE)" \
 		VERSION "$(VERSION)" \
 		EXE_FILES "$(EXE_FILES)" \
@@ -903,6 +900,8 @@ PERL_HDRS = \
         $(PERL_INCDEP)/cop.h            \
         $(PERL_INCDEP)/cv.h            \
         $(PERL_INCDEP)/dosish.h            \
+        $(PERL_INCDEP)/dquote_inline.h            \
+        $(PERL_INCDEP)/ebcdic_tables.h            \
         $(PERL_INCDEP)/embed.h            \
         $(PERL_INCDEP)/embedvar.h            \
         $(PERL_INCDEP)/fakesdio.h            \
@@ -915,6 +914,7 @@ PERL_HDRS = \
         $(PERL_INCDEP)/hv_func.h            \
         $(PERL_INCDEP)/inline.h            \
         $(PERL_INCDEP)/intrpvar.h            \
+        $(PERL_INCDEP)/invlist_inline.h            \
         $(PERL_INCDEP)/iperlsys.h            \
         $(PERL_INCDEP)/keywords.h            \
         $(PERL_INCDEP)/l1_char_class_tab.h            \
@@ -933,7 +933,6 @@ PERL_HDRS = \
         $(PERL_INCDEP)/overload.h            \
         $(PERL_INCDEP)/pad.h            \
         $(PERL_INCDEP)/parser.h            \
-        $(PERL_INCDEP)/patchlevel-debian.h            \
         $(PERL_INCDEP)/patchlevel.h            \
         $(PERL_INCDEP)/perl.h            \
         $(PERL_INCDEP)/perlapi.h            \
@@ -993,13 +992,12 @@ $(FIRST_MAKEFILE) : Makefile.PL $(CONFIGDEP)
 
 # --- MakeMaker makeaperl section ---
 MAP_TARGET    = perl
-FULLPERL      = "/usr/bin/perl"
-MAP_PERLINC   = "-Iblib/arch" "-Iblib/lib" "-I/usr/lib/arm-linux-gnueabihf/perl/5.20" "-I/usr/share/perl/5.20"
+FULLPERL      = "/root/perl5/perlbrew/perls/perl-5.24.0/bin/perl"
 
-$(MAP_TARGET) :: $(MAKE_APERL_FILE)
+$(MAP_TARGET) :: static $(MAKE_APERL_FILE)
 	$(MAKE) $(USEMAKEFILE) $(MAKE_APERL_FILE) $@
 
-$(MAKE_APERL_FILE) : static $(FIRST_MAKEFILE) pm_to_blib
+$(MAKE_APERL_FILE) : $(FIRST_MAKEFILE) pm_to_blib
 	$(NOECHO) $(ECHO) Writing \"$(MAKE_APERL_FILE)\" for this $(MAP_TARGET)
 	$(NOECHO) $(PERLRUNINST) \
 		Makefile.PL DIR="" \
@@ -1008,6 +1006,7 @@ $(MAKE_APERL_FILE) : static $(FIRST_MAKEFILE) pm_to_blib
 
 
 # --- MakeMaker test section:
+
 TEST_VERBOSE=0
 TEST_TYPE=test_$(LINKTYPE)
 TEST_FILE = test.pl
@@ -1015,67 +1014,51 @@ TEST_FILES = t/*.t
 TESTDB_SW = -d
 
 testdb :: testdb_$(LINKTYPE)
+
+test :: $(TEST_TYPE) subdirs-test
+
+subdirs-test ::
 	$(NOECHO) $(NOOP)
 
-test :: $(TEST_TYPE)
-	$(NOECHO) $(NOOP)
 
-# Occasionally we may face this degenerate target:
-test_ : test_dynamic
-	$(NOECHO) $(NOOP)
-
-subdirs-test_dynamic :: dynamic pure_all
-
-test_dynamic :: subdirs-test_dynamic
+test_dynamic :: pure_all
 	PERL_DL_NONLAZY=1 $(FULLPERLRUN) "-MExtUtils::Command::MM" "-MTest::Harness" "-e" "undef *Test::Harness::Switches; test_harness($(TEST_VERBOSE), '$(INST_LIB)', '$(INST_ARCHLIB)')" $(TEST_FILES)
 
-testdb_dynamic :: dynamic pure_all
+testdb_dynamic :: pure_all
 	PERL_DL_NONLAZY=1 $(FULLPERLRUN) $(TESTDB_SW) "-I$(INST_LIB)" "-I$(INST_ARCHLIB)" $(TEST_FILE)
 
-subdirs-test_static :: static pure_all
+test_ : test_dynamic
 
-test_static :: subdirs-test_static $(MAP_TARGET)
-	PERL_DL_NONLAZY=1 "/home/pi/repos/wiringpi-api/$(MAP_TARGET)" $(MAP_PERLINC) "-MExtUtils::Command::MM" "-MTest::Harness" "-e" "undef *Test::Harness::Switches; test_harness($(TEST_VERBOSE), '$(INST_LIB)', '$(INST_ARCHLIB)')" $(TEST_FILES)
+test_static :: pure_all $(MAP_TARGET)
+	PERL_DL_NONLAZY=1 ./$(MAP_TARGET) "-MExtUtils::Command::MM" "-MTest::Harness" "-e" "undef *Test::Harness::Switches; test_harness($(TEST_VERBOSE), '$(INST_LIB)', '$(INST_ARCHLIB)')" $(TEST_FILES)
 
-testdb_static :: static pure_all $(MAP_TARGET)
-	PERL_DL_NONLAZY=1 "/home/pi/repos/wiringpi-api/$(MAP_TARGET)" $(MAP_PERLINC) "-I$(INST_LIB)" "-I$(INST_ARCHLIB)" $(TEST_FILE)
+testdb_static :: pure_all $(MAP_TARGET)
+	PERL_DL_NONLAZY=1 ./$(MAP_TARGET) $(TESTDB_SW) "-I$(INST_LIB)" "-I$(INST_ARCHLIB)" $(TEST_FILE)
 
 
 
 # --- MakeMaker ppd section:
 # Creates a PPD (Perl Package Description) for a binary distribution.
 ppd :
-	$(NOECHO) $(ECHO) '<SOFTPKG NAME="WiringPi-API" VERSION="1.03">' > WiringPi-API.ppd
-	$(NOECHO) $(ECHO) '    <ABSTRACT>Direct access to Raspberry Pi'\''s wiringPi API, with optional Perl OO access</ABSTRACT>' >> WiringPi-API.ppd
-	$(NOECHO) $(ECHO) '    <AUTHOR>Steve Bertrand &lt;steveb@cpan.org&gt;</AUTHOR>' >> WiringPi-API.ppd
-	$(NOECHO) $(ECHO) '    <IMPLEMENTATION>' >> WiringPi-API.ppd
-	$(NOECHO) $(ECHO) '        <ARCHITECTURE NAME="arm-linux-gnueabihf-thread-multi-64int-5.20" />' >> WiringPi-API.ppd
-	$(NOECHO) $(ECHO) '        <CODEBASE HREF="" />' >> WiringPi-API.ppd
-	$(NOECHO) $(ECHO) '    </IMPLEMENTATION>' >> WiringPi-API.ppd
-	$(NOECHO) $(ECHO) '</SOFTPKG>' >> WiringPi-API.ppd
+	$(NOECHO) $(ECHO) '<SOFTPKG NAME="$(DISTNAME)" VERSION="$(VERSION)">' > $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '    <ABSTRACT>Direct access to Raspberry Pi'\''s wiringPi API, with optional Perl OO access</ABSTRACT>' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '    <AUTHOR>Steve Bertrand &lt;steveb@cpan.org&gt;</AUTHOR>' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '    <IMPLEMENTATION>' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '        <ARCHITECTURE NAME="armv7l-linux-5.24" />' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '        <CODEBASE HREF="" />' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '    </IMPLEMENTATION>' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '</SOFTPKG>' >> $(DISTNAME).ppd
 
 
 # --- MakeMaker pm_to_blib section:
 
 pm_to_blib : $(FIRST_MAKEFILE) $(TO_INST_PM)
 	$(NOECHO) $(ABSPERLRUN) -MExtUtils::Install -e 'pm_to_blib({@ARGV}, '\''$(INST_LIB)/auto'\'', q[$(PM_FILTER)], '\''$(PERM_DIR)'\'')' -- \
-	  'lib/WiringPi/API.pm' 'blib/lib/WiringPi/API.pm' 
+	  lib/WiringPi/API.pm blib/lib/WiringPi/API.pm 
 	$(NOECHO) $(TOUCH) pm_to_blib
 
 
 # --- MakeMaker selfdocument section:
-
-# here so even if top_targets is overridden, these will still be defined
-# gmake will silently still work if any are .PHONY-ed but nmake won't
-
-static ::
-	$(NOECHO) $(NOOP)
-
-dynamic ::
-	$(NOECHO) $(NOOP)
-
-config ::
-	$(NOECHO) $(NOOP)
 
 
 # --- MakeMaker postamble section:
