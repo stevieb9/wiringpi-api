@@ -310,20 +310,21 @@ Returns a new C<WiringPi::API> object.
 
 Maps to C<int wiringPiSetup()>
 
-Sets the pin numbering scheme to C<WPI> (wiringPi numbers).
+Sets the pin number mapping scheme to C<wiringPi>.
 
 Each setup function has benefits and drawbacks. Please refer to the
 L<wiringPi setup functions|http://wiringpi.com/reference/setup> for details.
 
 This one requires you to run your script as the C<root> user.
 
+See L<pinout.xyz|https://pinout.xyz/pinout/wiringpi> for a pin number
+conversion chart, or on the command line, run C<gpio readall>.
+
 Note that only one of the C<setup*()> methods can be called per program run.
 
 =head2 setup_sys()
 
 Maps to C<int wiringPiSetupSys()>
-
-Sets the pin numbering scheme to C<BCM> (Broadcom numbers).
 
 Each setup function has benefits and drawbacks. Please refer to the
 L<wiringPi setup functions|http://wiringpi.com/reference/setup> for details.
@@ -332,18 +333,26 @@ This one does NOT require running as root, but you have to manually export
 the pins yourself with the C<gpio> command line utility prior to using the
 pins.
 
+Sets the pin mapping to C<GPIO>.
+
+See L<pinout.xyz|https://pinout.xyz/pinout/wiringpi> for a pin number
+conversion chart, or on the command line, run C<gpio readall>.
+
 Note that only one of the C<setup*()> methods can be called per program run.
 
 =head2 setup_phys()
 
 Maps to C<int wiringPiSetupPhys()>
 
-Sets the pin numbering scheme to C<PHYS> (physical board numbers).
+Sets the pin mapping to use the physical pin position number on the board.
 
 Each setup function has benefits and drawbacks. Please refer to the
 L<wiringPi setup functions|http://wiringpi.com/reference/setup> for details.
 
 This one requires you to run your script as the C<root> user.
+
+See L<pinout.xyz|https://pinout.xyz/pinout/wiringpi> for a pin number
+conversion chart, or on the command line, run C<gpio readall>.
 
 Note that only one of the C<setup*()> methods can be called per program run.
 
@@ -357,6 +366,11 @@ Each setup function has benefits and drawbacks. Please refer to the
 L<wiringPi setup functions|http://wiringpi.com/reference/setup> for details.
 
 This one requires you to run your script as the C<root> user.
+
+Sets the pin mapping to C<GPIO>.
+
+See L<pinout.xyz|https://pinout.xyz/pinout/wiringpi> for a pin number
+conversion chart, or on the command line, run C<gpio readall>.
 
 Note that only one of the C<setup*()> methods can be called per program run.
 
