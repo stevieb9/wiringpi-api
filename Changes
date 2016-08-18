@@ -1,8 +1,11 @@
 Revision history for Perl extension WiringPi::API.
 
-1.03    
+1.03    2016-08-18
         - fixed call to SetupGpio(), case was wrong
         - renamed gpio_scheme() call to pin_scheme()
+        - removed erroneous call to external module (pin_scheme())
+        - POD cleanup, re-worded $pin descriptions, and fixed up setup*()
+          routine explanations
 
 1.02    2016-08-16
         - removed references to wiringPi pin numbering scheme being the default

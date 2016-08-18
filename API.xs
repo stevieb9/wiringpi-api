@@ -25,6 +25,43 @@ int physPinToWpi(int wpi_pin);
  * declarations
  */
 
+static int phys_wpi_map[64] =
+{
+  -1, // pin 0 doesn't exist
+  -1, -1,
+   8, -1,
+   9, -1,
+   7, 15,
+  -1, 16,
+   0,  1,
+   2, -1,
+   3,  4,
+  -1,  5,
+  12, -1,
+  13,  6,
+  14, 10,
+  -1, 11,
+  30, 31,
+  21, -1,
+  22, 26,
+  23, -1,
+  24, 27,
+  25, 28,
+  -1, 29,
+  -1, -1,
+  -1, -1,
+  -1, -1,
+  -1, -1,
+  -1, -1,
+  17, 18,
+  19, 20,
+  -1, -1,
+  -1, -1,
+  -1, -1,
+  -1, -1,
+  -1
+};
+
 char *perl_callback; // dynamically set perl callback for interrupt handler
 PerlInterpreter *mine;
 
@@ -65,43 +102,6 @@ int initThread(char *callback){
 int physPinToWpi(int wpi_pin){
     return phys_wpi_map[wpi_pin];
 }
-
-static int phys_wpi_map[64] =
-{
-  -1, // pin 0 doesn't exist
-  -1, -1,
-   8, -1,
-   9, -1,
-   7, 15,
-  -1, 16,
-   0,  1,
-   2, -1,
-   3,  4,
-  -1,  5,
-  12, -1,
-  13,  6,
-  14, 10,
-  -1, 11,
-  30, 31,
-  21, -1,
-  22, 26,
-  23, -1,
-  24, 27,
-  25, 28,
-  -1, 29,
-  -1, -1,
-  -1, -1,
-  -1, -1,
-  -1, -1,
-  -1, -1,
-  17, 18,
-  19, 20,
-  -1, -1,
-  -1, -1,
-  -1, -1,
-  -1, -1,
-  -1
-};
 
 /*
     not yet implemented
@@ -257,7 +257,8 @@ lcdPutchar(fd, data)
     int fd
     unsigned char data
 
-void lcdPuts(fd, string)
+void
+lcdPuts(fd, string)
     int fd
     char *string
 
@@ -267,7 +268,8 @@ void lcdPuts(fd, string)
 #piThreadCreate(callback)
 #    char callback
 
-void piLock(keyNum)
+void
+piLock(keyNum)
     int keyNum
 
 void piUnlock(keyNum)

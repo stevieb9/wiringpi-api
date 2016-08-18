@@ -12,19 +12,25 @@ require Exporter;
 our @ISA = qw(Exporter);
 
 my @wpi_c_functions = qw(
-    wiringPiSetup wiringPiSetupSys wiringPiSetupGpio wiringPiSetupPhys
-    pinMode pullUpDnControl digitalRead digitalWrite digitalWriteByte
-    pwmWrite getAlt piBoardDev wpiToGpio physPinToGpio pwmSetRange lcdInit
-    lcdHome lcdClear lcdDisplay lcdCursor lcdCursorBlink lcdSendCommand
-    lcdPosition lcdCharDef lcdPutChar lcdPuts setInterrupt
+    wiringPiSetup       wiringPiSetupSys    wiringPiSetupGpio
+    wiringPiSetupPhys   pinMode             pullUpDnControl
+    digitalRead         digitalWrite        digitalWriteByte
+    pwmWrite            getAlt              piBoardDev
+    wpiToGpio           physPinToGpio       pwmSetRange
+    lcdInit             lcdHome             lcdClear
+    lcdDisplay          lcdCursor           lcdCursorBlink
+    lcdSendCommand      lcdPosition         lcdCharDef
+    lcdPutChar          lcdPuts             setInterrupt
 );
 
 my @wpi_perl_functions = qw(
-    setup setup_sys setup_phys setup_gpio pin_mode pull_up_down read_pin
-    write_pin pwm_write get_alt board_rev wpi_to_gpio phys_to_gpio 
-    pwm_set_range lcd_init lcd_home lcd_clear lcd_display lcd_cursor
-    lcd_cursor_blink lcd_send_cmd lcd_position lcd_char_def lcd_put_char
-    lcd_puts set_interrupt
+    setup           setup_sys       setup_phys          setup_gpio pin_mode
+    pull_up_down    read_pin        write_pin           pwm_write
+    get_alt         board_rev       wpi_to_gpio         phys_to_gpio
+    pwm_set_range   lcd_init        lcd_home            lcd_clear
+    lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
+    lcd_position    lcd_char_def    lcd_put_char        lcd_puts
+    set_interrupt
 );
 
 our @EXPORT_OK;
@@ -131,9 +137,7 @@ sub pwm_set_range {
 # lcd functions
 
 sub lcd_init {
-    if (ref $_[0] =~ /RPi::WiringPi/ || $_[0] =~ /RPi::WiringPi/){
-        shift;
-    }
+    shift if @_ == 14;
     my @args = @_;
     my $fd = lcdInit(@args); # LCD handle
     return $fd;
@@ -164,7 +168,6 @@ sub lcd_cursor_blink {
 sub lcd_send_cmd {
     shift if @_ == 3;
     my ($fd, $cmd) = @_;
-    warn "\nlcdSendCommand() wiringPi function isn't documented!\n";
     lcdSendCommand($fd, $cmd);
 }
 sub lcd_position {
@@ -193,7 +196,6 @@ sub lcd_puts {
 sub thread_create {
     my ($self, $sub_name) = @_;
     my $status = initThread($sub_name);
-
     print "thread failed to start\n" if $status != 0;
 }
 sub _vim{1;};
@@ -207,6 +209,9 @@ WiringPi::API - Direct access to Raspberry Pi's wiringPi API, with optional
 Perl OO access
 
 =head1 SYNOPSIS
+
+No matter which import option you choose, before you can start making calls,
+you must initialize the software by calling one of the C<setup*()> routines.
 
     # import the API functions directly
 
@@ -230,19 +235,6 @@ Perl OO access
 
     my $api = WiringPi::API->new;
 
-    # !!!
-    # regardless of using OO or functional style, one of the C<setup*()>
-    # functions MUST be called prior to doing anything
-    # !!!
-
-    # OO
-
-    $api->setup;
-
-    # functional
-
-    setup();
-
 =head1 DESCRIPTION
 
 This is an XS-based module, and requires L<wiringPi|http://wiringpi.com> to be
@@ -260,24 +252,33 @@ from the C code itself.
 
 =head1 EXPORT_OK
 
-Exported with the C<:wiringPi> tag, these XS functions map directly to the
-wiringPi functions with their original names. Note that C<setInterrupt> is not
-a direct wrapper, it's a custom C wrapper for C<wiringPiISR()> in order to
-make it functional here.
+Exported with the C<:wiringPi> tag.
 
-    wiringPiSetup wiringPiSetupSys wiringPiSetupGpio wiringPiSetupPhys
-    pinMode pullUpDnControl digitalRead digitalWrite digitalWriteByte
-    pwmWrite getAlt piBoardDev wpiToGpio physPinToGpio pwmSetRange lcdInit
-    lcdHome lcdClear lcdDisplay lcdCursor lcdCursorBlink lcdSendCommand
-    lcdPosition lcdCharDef lcdPutChar lcdPuts setInterrupt
+These XS functions map directly to the wiringPi functions with their original
+names. Note that C<setInterrupt> is not a direct wrapper, it's a custom C
+wrapper for C<wiringPiISR()> in order to make it functional here.
 
-Exported with the C<:perl> tag. Perl wrapper functions for the XS functions.
+    wiringPiSetup       wiringPiSetupSys    wiringPiSetupGpio
+    wiringPiSetupPhys   pinMode             pullUpDnControl
+    digitalRead         digitalWrite        digitalWriteByte
+    pwmWrite            getAlt              piBoardDev
+    wpiToGpio           physPinToGpio       pwmSetRange
+    lcdInit             lcdHome             lcdClear
+    lcdDisplay          lcdCursor           lcdCursorBlink
+    lcdSendCommand      lcdPosition         lcdCharDef
+    lcdPutChar          lcdPuts             setInterrupt
 
-    setup setup_sys setup_phys setup_gpio pin_mode pull_up_down read_pin
-    write_pin pwm_write get_alt board_rev wpi_to_gpio phys_to_gpio 
-    pwm_set_range lcd_init lcd_home lcd_clear lcd_display lcd_cursor
-    lcd_cursor_blink lcd_send_cmd lcd_position lcd_char_def lcd_put_char
-    lcd_puts set_interrupt
+Exported with the C<:perl> tag.
+
+Perl wrapper functions for the XS functions.
+
+    setup           setup_sys       setup_phys          setup_gpio pin_mode
+    pull_up_down    read_pin        write_pin           pwm_write
+    get_alt         board_rev       wpi_to_gpio         phys_to_gpio
+    pwm_set_range   lcd_init        lcd_home            lcd_clear
+    lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
+    lcd_position    lcd_char_def    lcd_put_char        lcd_puts
+    set_interrupt
 
 =head1 EXPORT_TAGS
 
@@ -308,10 +309,10 @@ Maps to C<int wiringPiSetup()>
 
 Sets the pin number mapping scheme to C<wiringPi>.
 
+This setup routine requires you to run your script as the C<root> user.
+
 Each setup function has benefits and drawbacks. Please refer to the
 L<wiringPi setup functions|http://wiringpi.com/reference/setup> for details.
-
-This one requires you to run your script as the C<root> user.
 
 See L<pinout.xyz|https://pinout.xyz/pinout/wiringpi> for a pin number
 conversion chart, or on the command line, run C<gpio readall>.
@@ -322,19 +323,11 @@ Note that only one of the C<setup*()> methods can be called per program run.
 
 Maps to C<int wiringPiSetupSys()>
 
-Each setup function has benefits and drawbacks. Please refer to the
-L<wiringPi setup functions|http://wiringpi.com/reference/setup> for details.
+Sets the pin numbering scheme to C<GPIO>.
 
-This one does NOT require running as root, but you have to manually export
-the pins yourself with the C<gpio> command line utility prior to using the
-pins.
-
-Sets the pin mapping to C<GPIO>.
-
-See L<pinout.xyz|https://pinout.xyz/pinout/wiringpi> for a pin number
-conversion chart, or on the command line, run C<gpio readall>.
-
-Note that only one of the C<setup*()> methods can be called per program run.
+This setup routine does NOT require running as root, but you have to manually
+export the pins yourself with the C<gpio> command line utility prior to using
+the pins.
 
 =head2 setup_phys()
 
@@ -342,46 +335,28 @@ Maps to C<int wiringPiSetupPhys()>
 
 Sets the pin mapping to use the physical pin position number on the board.
 
-Each setup function has benefits and drawbacks. Please refer to the
-L<wiringPi setup functions|http://wiringpi.com/reference/setup> for details.
-
-This one requires you to run your script as the C<root> user.
-
-See L<pinout.xyz|https://pinout.xyz/pinout/wiringpi> for a pin number
-conversion chart, or on the command line, run C<gpio readall>.
-
-Note that only one of the C<setup*()> methods can be called per program run.
+This setup routine requires you to run your script as the C<root> user.
 
 =head2 setup_gpio()
 
 Maps to C<int wiringPiSetupGpio()>
 
-Sets the pin numbering scheme to C<BCM> (Broadcom numbers).
+Sets the pin numbering scheme to C<GPIO>.
 
-Each setup function has benefits and drawbacks. Please refer to the
-L<wiringPi setup functions|http://wiringpi.com/reference/setup> for details.
-
-This one requires you to run your script as the C<root> user.
-
-Sets the pin mapping to C<GPIO>.
-
-See L<pinout.xyz|https://pinout.xyz/pinout/wiringpi> for a pin number
-conversion chart, or on the command line, run C<gpio readall>.
-
-Note that only one of the C<setup*()> methods can be called per program run.
+This setup routine requires you to run your script as the C<root> user.
 
 =head2 pin_mode($pin, $mode)
 
 Maps to C<void pinMode(int pin, int mode)>
 
-Puts the GPIO pin in either INPUT or OUTPUT mode.
+Puts the pin in either INPUT or OUTPUT mode.
 
 Parameters:
 
     $pin
 
-Mandatory: The GPIO pin number, using your currently in-use numbering scheme
-(C<BCM> aka GPIO by default).
+Mandatory: The pin number, in the pin numbering scheme dictated by whichever
+C<setup*()> routine you used.
 
     $mode
 
@@ -397,8 +372,8 @@ Parameters:
     
     $pin
 
-Mandatory: The GPIO pin number, using your currently in-use numbering scheme
-(C<BCM> aka GPIO by default).
+Mandatory: The pin number, in the pin numbering scheme dictated by whichever
+C<setup*()> routine you used.
 
 =head2 write_pin($pin, $state)
 
@@ -410,8 +385,8 @@ Parameters:
 
     $pin
 
-Mandatory: The GPIO pin number, using your currently in-use numbering scheme
-(C<BCM> aka GPIO by default).
+Mandatory: The pin number, in the pin numbering scheme dictated by whichever
+C<setup*()> routine you used.
 
     $state
 
@@ -427,8 +402,8 @@ Parameters:
 
     $pin
 
-Mandatory: The GPIO pin number, using your currently in-use numbering scheme
-(C<BCM> aka GPIO by default).
+Mandatory: The pin number, in the pin numbering scheme dictated by whichever
+C<setup*()> routine you used.
 
     $direction
 
@@ -444,8 +419,8 @@ Parameters:
 
     $pin
 
-Mandatory: The GPIO pin number, using your currently in-use numbering scheme
-(C<BCM> aka GPIO by default).
+Mandatory: The pin number, in the pin numbering scheme dictated by whichever
+C<setup*()> routine you used.
 
     $value
 
@@ -462,8 +437,8 @@ Parameters:
     
     $pin
 
-Mandatory: The GPIO pin number, using your currently in-use numbering scheme
-(C<BCM> aka GPIO by default).
+Mandatory: The pin number, in the pin numbering scheme dictated by whichever
+C<setup*()> routine you used.
 
 =head1 BOARD METHODS
 
@@ -484,15 +459,15 @@ Parameters:
 
     $pin_num
 
-Mandatory: The GPIO pin number, using your currently in-use numbering scheme
-(C<BCM> aka GPIO by default).
+Mandatory: The pin number, in the pin numbering scheme dictated by whichever
+C<setup*()> routine you used.
 
 =head2 phys_to_gpio($pin_num)
 
 Maps to C<int physPinToGpio(int pin)>
 
-Converts the pin number on the physical board to the Broadcom (BCM)
-representation, and returns it.
+Converts the pin number on the physical board to the C<GPIO> representation,
+and returns it.
 
 Parameters:
 
@@ -548,8 +523,8 @@ so DON'T change it.
 Parameters:
 
     %args = (
-        rows => $num,       # number of rows. eg: 16 or 20
-        cols => $num,       # number of columns. eg: 2 or 4
+        rows => $num,       # number of rows. eg: 2 or 4
+        cols => $num,       # number of columns. eg: 16 or 20
         bits => 4|8,        # width of the interface (4 or 8)
         rs => $pin_num,     # pin number of the LCD's RS pin
         strb => $pin_num,   # pin number of the LCD's strobe (E) pin
@@ -615,7 +590,7 @@ Parameters:
 
     $fd
 
-Mandatory: The file descriptor integer returned by C<lcd_init()>.=head2 lcd_clear($fd)
+Mandatory: The file descriptor integer returned by C<lcd_init()>.
 
     $state
 
@@ -631,11 +606,7 @@ Parameters:
 
     $fd
 
-Mandatory: The file descriptor integer returned by C<lcd_init()>.=head2 lcd_clear($fd)
-
-    $state
-
-Mandatory: C<0> to stop blinking, C<1> to enable.
+Mandatory: The file descriptor integer returned by C<lcd_init()>.
 
 =head2 lcd_send_cmd($fd, $command)
 
@@ -647,7 +618,7 @@ Parameters:
 
     $fd
 
-Mandatory: The file descriptor integer returned by C<lcd_init()>.=head2 lcd_clear($fd)
+Mandatory: The file descriptor integer returned by C<lcd_init()>.
 
     $command
 
@@ -746,8 +717,8 @@ Parameters:
 
     $pin
 
-Mandatory: The pin number to set the interrupt for. Must be in C<BCM> numbering
-scheme.
+Mandatory: The pin number, in the pin numbering scheme dictated by whichever
+C<setup*()> routine you used.
 
     $edge
 

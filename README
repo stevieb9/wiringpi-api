@@ -5,6 +5,10 @@ NAME
 
 SYNOPSIS
 
+    No matter which import option you choose, before you can start making
+    calls, you must initialize the software by calling one of the setup*()
+    routines.
+
         # import the API functions directly
     
         use WiringPi::API qw(:wiringPi)
@@ -26,19 +30,6 @@ SYNOPSIS
         use WiringPi::API;
     
         my $api = WiringPi::API->new;
-    
-        # !!!
-        # regardless of using OO or functional style, one of the C<setup*()>
-        # functions MUST be called prior to doing anything
-        # !!!
-    
-        # OO
-    
-        $api->setup;
-    
-        # functional
-    
-        setup();
 
 DESCRIPTION
 
@@ -57,25 +48,33 @@ DESCRIPTION
 
 EXPORT_OK
 
-    Exported with the :wiringPi tag, these XS functions map directly to the
-    wiringPi functions with their original names. Note that setInterrupt is
-    not a direct wrapper, it's a custom C wrapper for wiringPiISR() in
-    order to make it functional here.
+    Exported with the :wiringPi tag.
 
-        wiringPiSetup wiringPiSetupSys wiringPiSetupGpio wiringPiSetupPhys
-        pinMode pullUpDnControl digitalRead digitalWrite digitalWriteByte
-        pwmWrite getAlt piBoardDev wpiToGpio physPinToGpio pwmSetRange lcdInit
-        lcdHome lcdClear lcdDisplay lcdCursor lcdCursorBlink lcdSendCommand
-        lcdPosition lcdCharDef lcdPutChar lcdPuts setInterrupt
+    These XS functions map directly to the wiringPi functions with their
+    original names. Note that setInterrupt is not a direct wrapper, it's a
+    custom C wrapper for wiringPiISR() in order to make it functional here.
 
-    Exported with the :perl tag. Perl wrapper functions for the XS
-    functions.
+        wiringPiSetup       wiringPiSetupSys    wiringPiSetupGpio
+        wiringPiSetupPhys   pinMode             pullUpDnControl
+        digitalRead         digitalWrite        digitalWriteByte
+        pwmWrite            getAlt              piBoardDev
+        wpiToGpio           physPinToGpio       pwmSetRange
+        lcdInit             lcdHome             lcdClear
+        lcdDisplay          lcdCursor           lcdCursorBlink
+        lcdSendCommand      lcdPosition         lcdCharDef
+        lcdPutChar          lcdPuts             setInterrupt
 
-        setup setup_sys setup_phys setup_gpio pin_mode pull_up_down read_pin
-        write_pin pwm_write get_alt board_rev wpi_to_gpio phys_to_gpio 
-        pwm_set_range lcd_init lcd_home lcd_clear lcd_display lcd_cursor
-        lcd_cursor_blink lcd_send_cmd lcd_position lcd_char_def lcd_put_char
-        lcd_puts set_interrupt
+    Exported with the :perl tag.
+
+    Perl wrapper functions for the XS functions.
+
+        setup           setup_sys       setup_phys          setup_gpio pin_mode
+        pull_up_down    read_pin        write_pin           pwm_write
+        get_alt         board_rev       wpi_to_gpio         phys_to_gpio
+        pwm_set_range   lcd_init        lcd_home            lcd_clear
+        lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
+        lcd_position    lcd_char_def    lcd_put_char        lcd_puts
+        set_interrupt
 
 EXPORT_TAGS
 
@@ -106,11 +105,11 @@ CORE METHODS
 
     Sets the pin number mapping scheme to wiringPi.
 
+    This setup routine requires you to run your script as the root user.
+
     Each setup function has benefits and drawbacks. Please refer to the
     wiringPi setup functions <http://wiringpi.com/reference/setup> for
     details.
-
-    This one requires you to run your script as the root user.
 
     See pinout.xyz <https://pinout.xyz/pinout/wiringpi> for a pin number
     conversion chart, or on the command line, run gpio readall.
@@ -122,21 +121,11 @@ CORE METHODS
 
     Maps to int wiringPiSetupSys()
 
-    Each setup function has benefits and drawbacks. Please refer to the
-    wiringPi setup functions <http://wiringpi.com/reference/setup> for
-    details.
+    Sets the pin numbering scheme to GPIO.
 
-    This one does NOT require running as root, but you have to manually
-    export the pins yourself with the gpio command line utility prior to
-    using the pins.
-
-    Sets the pin mapping to GPIO.
-
-    See pinout.xyz <https://pinout.xyz/pinout/wiringpi> for a pin number
-    conversion chart, or on the command line, run gpio readall.
-
-    Note that only one of the setup*() methods can be called per program
-    run.
+    This setup routine does NOT require running as root, but you have to
+    manually export the pins yourself with the gpio command line utility
+    prior to using the pins.
 
  setup_phys()
 
@@ -145,50 +134,28 @@ CORE METHODS
     Sets the pin mapping to use the physical pin position number on the
     board.
 
-    Each setup function has benefits and drawbacks. Please refer to the
-    wiringPi setup functions <http://wiringpi.com/reference/setup> for
-    details.
-
-    This one requires you to run your script as the root user.
-
-    See pinout.xyz <https://pinout.xyz/pinout/wiringpi> for a pin number
-    conversion chart, or on the command line, run gpio readall.
-
-    Note that only one of the setup*() methods can be called per program
-    run.
+    This setup routine requires you to run your script as the root user.
 
  setup_gpio()
 
     Maps to int wiringPiSetupGpio()
 
-    Sets the pin numbering scheme to BCM (Broadcom numbers).
+    Sets the pin numbering scheme to GPIO.
 
-    Each setup function has benefits and drawbacks. Please refer to the
-    wiringPi setup functions <http://wiringpi.com/reference/setup> for
-    details.
-
-    This one requires you to run your script as the root user.
-
-    Sets the pin mapping to GPIO.
-
-    See pinout.xyz <https://pinout.xyz/pinout/wiringpi> for a pin number
-    conversion chart, or on the command line, run gpio readall.
-
-    Note that only one of the setup*() methods can be called per program
-    run.
+    This setup routine requires you to run your script as the root user.
 
  pin_mode($pin, $mode)
 
     Maps to void pinMode(int pin, int mode)
 
-    Puts the GPIO pin in either INPUT or OUTPUT mode.
+    Puts the pin in either INPUT or OUTPUT mode.
 
     Parameters:
 
         $pin
 
-    Mandatory: The GPIO pin number, using your currently in-use numbering
-    scheme (BCM aka GPIO by default).
+    Mandatory: The pin number, in the pin numbering scheme dictated by
+    whichever setup*() routine you used.
 
         $mode
 
@@ -204,8 +171,8 @@ CORE METHODS
 
         $pin
 
-    Mandatory: The GPIO pin number, using your currently in-use numbering
-    scheme (BCM aka GPIO by default).
+    Mandatory: The pin number, in the pin numbering scheme dictated by
+    whichever setup*() routine you used.
 
  write_pin($pin, $state)
 
@@ -217,8 +184,8 @@ CORE METHODS
 
         $pin
 
-    Mandatory: The GPIO pin number, using your currently in-use numbering
-    scheme (BCM aka GPIO by default).
+    Mandatory: The pin number, in the pin numbering scheme dictated by
+    whichever setup*() routine you used.
 
         $state
 
@@ -234,8 +201,8 @@ CORE METHODS
 
         $pin
 
-    Mandatory: The GPIO pin number, using your currently in-use numbering
-    scheme (BCM aka GPIO by default).
+    Mandatory: The pin number, in the pin numbering scheme dictated by
+    whichever setup*() routine you used.
 
         $direction
 
@@ -251,8 +218,8 @@ CORE METHODS
 
         $pin
 
-    Mandatory: The GPIO pin number, using your currently in-use numbering
-    scheme (BCM aka GPIO by default).
+    Mandatory: The pin number, in the pin numbering scheme dictated by
+    whichever setup*() routine you used.
 
         $value
 
@@ -269,8 +236,8 @@ CORE METHODS
 
         $pin
 
-    Mandatory: The GPIO pin number, using your currently in-use numbering
-    scheme (BCM aka GPIO by default).
+    Mandatory: The pin number, in the pin numbering scheme dictated by
+    whichever setup*() routine you used.
 
 BOARD METHODS
 
@@ -291,14 +258,14 @@ BOARD METHODS
 
         $pin_num
 
-    Mandatory: The GPIO pin number, using your currently in-use numbering
-    scheme (BCM aka GPIO by default).
+    Mandatory: The pin number, in the pin numbering scheme dictated by
+    whichever setup*() routine you used.
 
  phys_to_gpio($pin_num)
 
     Maps to int physPinToGpio(int pin)
 
-    Converts the pin number on the physical board to the Broadcom (BCM)
+    Converts the pin number on the physical board to the GPIO
     representation, and returns it.
 
     Parameters:
@@ -355,8 +322,8 @@ LCD METHODS
     Parameters:
 
         %args = (
-            rows => $num,       # number of rows. eg: 16 or 20
-            cols => $num,       # number of columns. eg: 2 or 4
+            rows => $num,       # number of rows. eg: 2 or 4
+            cols => $num,       # number of columns. eg: 16 or 20
             bits => 4|8,        # width of the interface (4 or 8)
             rs => $pin_num,     # pin number of the LCD's RS pin
             strb => $pin_num,   # pin number of the LCD's strobe (E) pin
@@ -422,8 +389,7 @@ LCD METHODS
 
         $fd
 
-    Mandatory: The file descriptor integer returned by lcd_init().=head2
-    lcd_clear($fd)
+    Mandatory: The file descriptor integer returned by lcd_init().
 
         $state
 
@@ -439,12 +405,7 @@ LCD METHODS
 
         $fd
 
-    Mandatory: The file descriptor integer returned by lcd_init().=head2
-    lcd_clear($fd)
-
-        $state
-
-    Mandatory: 0 to stop blinking, 1 to enable.
+    Mandatory: The file descriptor integer returned by lcd_init().
 
  lcd_send_cmd($fd, $command)
 
@@ -456,8 +417,7 @@ LCD METHODS
 
         $fd
 
-    Mandatory: The file descriptor integer returned by lcd_init().=head2
-    lcd_clear($fd)
+    Mandatory: The file descriptor integer returned by lcd_init().
 
         $command
 
@@ -557,8 +517,8 @@ INTERRUPT METHODS
 
         $pin
 
-    Mandatory: The pin number to set the interrupt for. Must be in BCM
-    numbering scheme.
+    Mandatory: The pin number, in the pin numbering scheme dictated by
+    whichever setup*() routine you used.
 
         $edge
 
@@ -587,7 +547,7 @@ POD ERRORS
     Hey! The above document had some coding errors, which are explained
     below:
 
-    Around line 479:
+    Around line 448:
 
       Non-ASCII character seen before =encoding in '5×8,'. Assuming UTF-8
 
