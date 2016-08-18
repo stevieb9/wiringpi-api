@@ -59,17 +59,13 @@ sub setup {
     return wiringPiSetup();
 }
 sub setup_sys {
-    my $pin_map = RPi::WiringPi::Util::gpio_scheme('BCM');
-    for (values %$pin_map){
-        RPi::WiringPi::Util::export($_);
-    }
     return wiringPiSetupSys();
 }
 sub setup_phys {
     return wiringPiSetupPhys();
 }
 sub setup_gpio {
-    return wiringPiSetupGPIO();
+    return wiringPiSetupGpio();
 }
 
 # pin functions
