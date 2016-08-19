@@ -8,6 +8,7 @@
 
 #include <wiringPi.h>
 #include <lcd.h>
+#include <softPwm.h>
 
 #define PERL_NO_GET_CONTEXT
 

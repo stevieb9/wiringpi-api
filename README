@@ -63,6 +63,7 @@ EXPORT_OK
         lcdDisplay          lcdCursor           lcdCursorBlink
         lcdSendCommand      lcdPosition         lcdCharDef
         lcdPutChar          lcdPuts             setInterrupt
+        softPwmCreate       softPwmWrite        softPwmStop
 
     Exported with the :perl tag.
 
@@ -74,7 +75,7 @@ EXPORT_OK
         pwm_set_range   lcd_init        lcd_home            lcd_clear
         lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
         lcd_position    lcd_char_def    lcd_put_char        lcd_puts
-        set_interrupt
+        set_interrupt   soft_pwm_create soft_pwm_write      soft_pwm_stop
 
 EXPORT_TAGS
 
@@ -501,6 +502,47 @@ LCD METHODS
 
     Mandatory: A string to display.
 
+SOFT PWM METHODS
+
+    Software Pulse Width Modulation is not the same as hardware PWM. It
+    should not be used for critical things as it's frequency isn't 100%
+    stable.
+
+    This software PWM allows you to use PWM on ANY GPIO pin, not just the
+    single hardware pin available.
+
+ soft_pwm_create($pin, $initial_value, $range)
+
+    Creates a new software PWM thread that runs outside of your main
+    application.
+
+    Parameters:
+
+        $pin
+
+    Mandatory: The pin number, in the pin numbering scheme dictated by
+    whichever setup*() routine you used.
+
+        $initial_value
+
+    Optional: A value between 0 and $range.
+
+        $range
+
+    Optional: Look at this like a dial. We start at 0 and the dial has
+    turned completely when we hit the $range integer. If not sent in,
+    defaults to 1023.
+
+ soft_pwm_write($pin, $value)
+
+    Sets the HIGH frequency on pin to whatever is in $value. The value must
+    be lower than what was set in the $range parameter to
+    soft_pwm_create().
+
+ soft_pwm_stop($pin)
+
+    Turns off software PWM on the $pin.
+
 INTERRUPT METHODS
 
  set_interrupt($pin, $edge, $callback)
@@ -547,7 +589,7 @@ POD ERRORS
     Hey! The above document had some coding errors, which are explained
     below:
 
-    Around line 448:
+    Around line 449:
 
       Non-ASCII character seen before =encoding in '5×8,'. Assuming UTF-8
 

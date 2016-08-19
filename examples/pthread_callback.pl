@@ -40,7 +40,7 @@ void *wrapper(void *sub_name_ptr){
         PUTBACK;
 
         int i;
-        for (i=0;i<3;i++){
+        for (i=0; i<3; i++){
             if (access("lock", F_OK) != -1){
                 call_pv(sub_name, G_DISCARD|G_NOARGS);
             }
