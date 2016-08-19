@@ -69,6 +69,8 @@ void interruptHandler(){
     PERL_SET_CONTEXT(mine);
 
     dSP;
+    ENTER;
+    SAVETMPS;
     PUSHMARK(SP);
     PUTBACK;
 
@@ -79,14 +81,19 @@ void interruptHandler(){
 }
 
 int setInterrupt(int pin, int edge, char *callback){
+    mine = Perl_get_context();
     perl_callback = callback;
     int interrupt = wiringPiISR(pin, edge, &interruptHandler);
     return interrupt;
 }
 
 int initThread(char *callback){
+    mine = Perl_get_context();
+
     PI_THREAD (myThread){
         dSP;
+        ENTER;
+        SAVETMPS;
         PUSHMARK(SP);
         PUTBACK;
 
@@ -261,6 +268,22 @@ void
 lcdPuts(fd, string)
     int fd
     char *string
+
+# soft pwm
+
+int
+softPwmCreate(pin, value, range)
+    int pin
+    int value
+    int range
+
+void
+softPwmWrite(pin, value)
+    int pin
+    int value
+
+void softPwmStop(pin)
+    int pin
 
 # threading
 

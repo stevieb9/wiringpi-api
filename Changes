@@ -1,5 +1,9 @@
 Revision history for Perl extension WiringPi::API.
 
+1.04 xxxxx
+        - implemented softPwmCreate(), softPwmWrite() and softPwmStop(), perl:
+          soft_pwm_create(), soft_pwm_write(), soft_pwm_stop()
+
 1.03    2016-08-18
         - fixed call to SetupGpio(), case was wrong
         - renamed gpio_scheme() call to pin_scheme()

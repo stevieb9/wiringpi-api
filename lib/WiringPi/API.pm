@@ -21,6 +21,7 @@ my @wpi_c_functions = qw(
     lcdDisplay          lcdCursor           lcdCursorBlink
     lcdSendCommand      lcdPosition         lcdCharDef
     lcdPutChar          lcdPuts             setInterrupt
+    softPwmCreate       softPwmWrite        softPwmStop
 );
 
 my @wpi_perl_functions = qw(
@@ -30,7 +31,7 @@ my @wpi_perl_functions = qw(
     pwm_set_range   lcd_init        lcd_home            lcd_clear
     lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
     lcd_position    lcd_char_def    lcd_put_char        lcd_puts
-    set_interrupt
+    set_interrupt   soft_pwm_create soft_pwm_write      soft_pwm_stop
 );
 
 our @EXPORT_OK;
@@ -42,13 +43,26 @@ $EXPORT_TAGS{wiringPi} = [@wpi_c_functions];
 $EXPORT_TAGS{perl} = [@wpi_perl_functions];
 $EXPORT_TAGS{all} = [@wpi_c_functions, @wpi_perl_functions];
 
-# not yet implemented:
-#extern void pinModeAlt          (int pin, int mode) ;
-#extern int  analogRead          (int pin) ;
-#extern void analogWrite         (int pin, int value) ;
-
 sub new {
     return bless {}, shift;
+}
+
+# soft PWM functions
+
+sub soft_pwm_create {
+    shift if @_ == 4;
+    my ($pin, $value, $range) = @_;
+    softPwmCreate($pin, $value, $range);
+}
+sub soft_pwm_write {
+    shift if @_ == 3;
+    my ($pin, $value) = @_;
+    softPwmWrite($pin, $value);
+}
+sub soft_pwm_stop {
+    shift if @_ == 2;
+    my $pin = shift;
+    softPwmStop($pin);
 }
 
 # interrupt functions
@@ -267,6 +281,7 @@ wrapper for C<wiringPiISR()> in order to make it functional here.
     lcdDisplay          lcdCursor           lcdCursorBlink
     lcdSendCommand      lcdPosition         lcdCharDef
     lcdPutChar          lcdPuts             setInterrupt
+    softPwmCreate       softPwmWrite        softPwmStop
 
 Exported with the C<:perl> tag.
 
@@ -278,7 +293,7 @@ Perl wrapper functions for the XS functions.
     pwm_set_range   lcd_init        lcd_home            lcd_clear
     lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
     lcd_position    lcd_char_def    lcd_put_char        lcd_puts
-    set_interrupt
+    set_interrupt   soft_pwm_create soft_pwm_write      soft_pwm_stop
 
 =head1 EXPORT_TAGS
 
@@ -700,6 +715,44 @@ Mandatory: The file descriptor integer returned by C<lcd_init()>.
     $string
 
 Mandatory: A string to display.
+
+=head1 SOFT PWM METHODS
+
+Software Pulse Width Modulation is not the same as hardware PWM. It should not
+be used for critical things as it's frequency isn't 100% stable.
+
+This software PWM allows you to use PWM on ANY GPIO pin, not just the single
+hardware pin available.
+
+=head2 soft_pwm_create($pin, $initial_value, $range)
+
+Creates a new software PWM thread that runs outside of your main application.
+
+Parameters:
+
+    $pin
+
+Mandatory: The pin number, in the pin numbering scheme dictated by whichever
+C<setup*()> routine you used.
+
+    $initial_value
+
+Optional: A value between C<0> and C<$range>.
+
+    $range
+
+Optional: Look at this like a dial. We start at C<0> and the dial has turned
+completely when we hit the C<$range> integer. If not sent in, defaults to
+C<1023>.
+
+=head2 soft_pwm_write($pin, $value)
+
+Sets the C<HIGH> frequency on C<pin> to whatever is in C<$value>. The value must
+be lower than what was set in the C<$range> parameter to C<soft_pwm_create()>.
+
+=head2 soft_pwm_stop($pin)
+
+Turns off software PWM on the C<$pin>.
 
 =head1 INTERRUPT METHODS
 
