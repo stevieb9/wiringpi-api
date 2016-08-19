@@ -1,28 +1,24 @@
 use warnings;
 use strict;
 
-use RPi::WiringPi;
 use RPi::WiringPi::Constant qw(:all);
+use WiringPi::API qw(:perl);
 
-my $pi = RPi::WiringPi->new();
-my $pin = $pi->pin(1);
+my $c = 1;
+$SIG{INT} = sub {$c=0;};
 
-WiringPi::API::set_interrupt(
-    $pin->num, 
-    EDGE_RISING,
-    'pin_27_edge_rise'
-);
+setup_gpio();
+pin_mode(21, INPUT);
+set_interrupt(21, EDGE_FALLING, 'handler');
 
-$pin->pull(0);
-$pin->mode(INPUT);
-$pin->write(LOW);
+my $x = 1;
 
-sleep 3;
+while ($c){
+    print $x++ ."\n";
+    sleep 1;
+}
 
-$pi->cleanup;
-
-sub pin_27_edge_rise {
-    print "pin 27 edge rise callback...\n";
-    # do other stuff
+sub handler {
+    print "pin 21 edge fall callback...\n";
 }
 
