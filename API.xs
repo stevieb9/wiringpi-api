@@ -75,7 +75,15 @@ void interruptHandler(){
     PUSHMARK(SP);
     PUTBACK;
 
-    call_pv(perl_callback, G_DISCARD|G_NOARGS);
+    // for some reason, the very first interrupt always calls the handler
+    // twice. This code skips the very first erroneous call
+
+    int first_call = 1;
+
+    if (! first_call)
+        call_pv(perl_callback, G_DISCARD|G_NOARGS);
+    else
+        first_call = 0;
 
     FREETMPS;
     LEAVE;
