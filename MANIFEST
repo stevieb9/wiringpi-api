@@ -6,6 +6,7 @@ examples/get_mode.pl
 examples/import.pl
 examples/interrupt.pl
 examples/pthread.pl
+examples/pthread_callback.pl
 examples/thread.pl
 lib/WiringPi/API.pm
 Makefile.PL
