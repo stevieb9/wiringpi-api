@@ -65,6 +65,7 @@ static int phys_wpi_map[64] =
 
 char *perl_callback; // dynamically set perl callback for interrupt handler
 PerlInterpreter *mine;
+int first_call = 1;
 
 void interruptHandler(){
     PERL_SET_CONTEXT(mine);
@@ -78,10 +79,9 @@ void interruptHandler(){
     // for some reason, the very first interrupt always calls the handler
     // twice. This code skips the very first erroneous call
 
-    int first_call = 1;
-
-    if (! first_call)
+    if (first_call == 0){
         call_pv(perl_callback, G_DISCARD|G_NOARGS);
+    }
     else
         first_call = 0;
 

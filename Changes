@@ -1,6 +1,6 @@
 Revision history for Perl extension WiringPi::API.
 
-1.04 xxxxx
+1.04    2016-08-22
         - implemented softPwmCreate(), softPwmWrite() and softPwmStop(), perl:
           soft_pwm_create(), soft_pwm_write(), soft_pwm_stop()
         - interrupts now work; added code to stop the erroneous extra call to
