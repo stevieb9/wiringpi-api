@@ -1,7 +1,8 @@
 Revision history for Perl extension WiringPi::API.
 
 1.05 UNREL
-        - added support for the SR74HC595 shift register
+        - added support for the SR74HC595 shift register (shift_reg_setup() for
+          Perl, and the original sr595Setup())
 
 1.04    2016-08-22
         - implemented softPwmCreate(), softPwmWrite() and softPwmStop(), perl:
