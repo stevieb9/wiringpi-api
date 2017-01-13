@@ -7,8 +7,9 @@
 #include "ppport.h"
 
 #include <wiringPi.h>
-#include <lcd.h>
+//#include <lcd.h>
 #include <softPwm.h>
+#include <sr595.h>
 
 #define PERL_NO_GET_CONTEXT
 
@@ -293,6 +294,16 @@ softPwmWrite(pin, value)
 
 void softPwmStop(pin)
     int pin
+
+# SR74HC595 shift register
+
+int
+sr595Setup(pin_base, num_pins, data_pin, clock_pin, latch_pin)
+    int pin_base
+    int num_pins
+    int data_pin
+    int clock_pin
+    int latch_pin
 
 # threading
 

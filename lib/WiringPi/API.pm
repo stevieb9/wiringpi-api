@@ -3,7 +3,7 @@ package WiringPi::API;
 use strict;
 use warnings;
 
-our $VERSION = '1.04';
+our $VERSION = '1.05';
 
 require XSLoader;
 XSLoader::load('WiringPi::API', $VERSION);
@@ -22,6 +22,7 @@ my @wpi_c_functions = qw(
     lcdSendCommand      lcdPosition         lcdCharDef
     lcdPutChar          lcdPuts             setInterrupt
     softPwmCreate       softPwmWrite        softPwmStop
+    sr595Setup
 );
 
 my @wpi_perl_functions = qw(
@@ -32,6 +33,7 @@ my @wpi_perl_functions = qw(
     lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
     lcd_position    lcd_char_def    lcd_put_char        lcd_puts
     set_interrupt   soft_pwm_create soft_pwm_write      soft_pwm_stop
+    shift_reg_setup
 );
 
 our @EXPORT_OK;
@@ -205,6 +207,19 @@ sub lcd_puts {
     lcdPuts($fd, $string);
 }
 
+# shift register functions
+
+sub shift_reg_setup {
+    shift if @_ == 3;
+    my ($pin_base, $num_pins, $model) = @_;
+
+    $model = 'SN74HC595' if ! defined $model;
+
+    if ($model eq 'SN74HC595'){
+        sr595Setup($pin_base, $num_pins);
+    }
+}
+
 # threading functions
 
 sub thread_create {
@@ -282,6 +297,7 @@ wrapper for C<wiringPiISR()> in order to make it functional here.
     lcdSendCommand      lcdPosition         lcdCharDef
     lcdPutChar          lcdPuts             setInterrupt
     softPwmCreate       softPwmWrite        softPwmStop
+    sr595Setup
 
 Exported with the C<:perl> tag.
 
@@ -294,6 +310,7 @@ Perl wrapper functions for the XS functions.
     lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
     lcd_position    lcd_char_def    lcd_put_char        lcd_puts
     set_interrupt   soft_pwm_create soft_pwm_write      soft_pwm_stop
+    shift_reg_setup
 
 =head1 EXPORT_TAGS
 
@@ -782,6 +799,51 @@ Mandatory: C<1> (lowering), C<2> (raising) or C<3> (both).
 Mandatory: The string name of a subroutine previously written in your user code
 that will be called when the interrupt is triggered. This is your interrupt
 handler.
+
+=head1 SHIFT REGISTER FUNCTIONS
+
+Shift registers allow you to add extra output pins by multiplexing a small
+number of GPIO.
+
+Currently, we support the SR74HC595 unit, which provides eight outputs by using
+only three GPIO. To further, this particular unit can be daisy chained up to
+four wide to provide an additional 32 outputs using the same three GPIO pins.
+
+=head2 shift_reg_setup
+
+This function configures the Raspberry Pi to use a shift register (The
+SR74HC595 is currently supported).
+
+Parameters:
+
+    $pin_base
+
+Mandatory: Signed integer, higher than that of all existing GPIO pins. This
+parameter registers pin 0 on the shift register to an internal GPIO pin number.
+For example, setting this to 100, you will be able to access the first output
+on the register as GPIO 100 in all other functions.
+
+    $num_pins
+
+Mandatory: Signed integer, the number of outputs on the shift register. For a
+single SR74HC595, this is eight. If you were to daisy chain two together, this
+parameter would be 16.
+
+    $data_pin
+
+Mandatory: Integer, the GPIO pin number connected to the register's C<DS> pin
+(14). Can be any GPIO pin capable of output.
+
+    $clock_pin
+
+Mandatory: Integer, the GPIO pin number connected to the register's C<SHCP> pin
+(11). Can be any GPIO pin capable of output.
+
+    $latch_pin
+
+Mandatory: Integer, the GPIO pin number connected to the register's C<STCP> pin
+(12). Can be any GPIO pin capable of output.
+
 
 head1 AUTHOR
 
