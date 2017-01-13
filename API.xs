@@ -7,7 +7,7 @@
 #include "ppport.h"
 
 #include <wiringPi.h>
-//#include <lcd.h>
+#include <lcd.h>
 #include <softPwm.h>
 #include <sr595.h>
 
