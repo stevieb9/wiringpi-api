@@ -4,6 +4,8 @@ Revision history for Perl extension WiringPi::API.
         - changed version numbering scheme. x.yy.z: x.yy represents the version
           of wiringPi we fully support, and z represents updates to this Perl
           distribution
+        - renamed examples/ to samples/ so they don't show up on the CPAN's
+          front page for the distribution
 
 2.36    2017-01-14
         - major updates, we now require wiringPi v2.36+
