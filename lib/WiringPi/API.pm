@@ -22,8 +22,8 @@ my @wpi_c_functions = qw(
     lcdSendCommand      lcdPosition         lcdCharDef
     lcdPutChar          lcdPuts             setInterrupt
     softPwmCreate       softPwmWrite        softPwmStop
-    sr595Setup          bmp180Setup         analogRead
-    analogWrite
+    sr595Setup          bmp180Setup         bmp180Pressure
+    bmp180Temp          analogRead          analogWrite
 );
 
 my @wpi_perl_functions = qw(
@@ -34,8 +34,8 @@ my @wpi_perl_functions = qw(
     lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
     lcd_position    lcd_char_def    lcd_put_char        lcd_puts
     set_interrupt   soft_pwm_create soft_pwm_write      soft_pwm_stop
-    shift_reg_setup bmp180_setup    analog_read         analog_write
-    pin_mode
+    shift_reg_setup bmp180_setup    bmp180_pressure     bmp180_temp
+    analog_read     analog_write    pin_mode
 );
 
 our @EXPORT_OK;
@@ -252,6 +252,31 @@ sub bmp180_setup {
     }
 
     bmp180Setup($base);
+}
+sub bmp180_temp {
+    shift if ref $_[0];
+    my ($pin, $want) = @_;
+
+    $want = 'f' if ! defined $want;
+    
+    my $temp = bmp180Temp($pin);
+    my $c = $temp / 10;
+
+    if ($want eq 'f'){
+        # returning farenheit
+        return $c * 1.8 + 32;
+    }
+    elsif ($want eq 'c') {
+        # returning celcius
+        return $c;
+    }
+}
+sub bmp180_pressure {
+    shift if ref $_[0];
+    my ($pin) = @_;
+
+    # return kPa
+    return bmp180Pressure($pin) / 100;
 }
 
 # threading functions

@@ -22,6 +22,8 @@ int setInterrupt(int pin, int edge, char *callback);
 int initThread(char *callback);
 static int phys_wpi_map[64];
 int physPinToWpi(int wpi_pin);
+int bmp180Pressure(int pin);
+int bmp180Temp(int pin);
 
 /*
  * declarations
@@ -120,13 +122,20 @@ int physPinToWpi(int wpi_pin){
     return phys_wpi_map[wpi_pin];
 }
 
+int bmp180Pressure(int pin){
+    return analogRead(pin);
+}
+
+int bmp180Temp(int pin){
+    return analogRead(pin);
+}
+
 /*
     not yet implemented
 
     # core
 
     extern void pinModeAlt          (int pin, int mode) ;
-    extern void analogWrite         (int pin, int value) ;
 
     # board
 
@@ -331,6 +340,14 @@ void piUnlock(keyNum)
 int
 bmp180Setup(pin_base)
     int pin_base
+
+int
+bmp180Pressure(pin)
+    int pin
+
+int
+bmp180Temp(pin)
+    int pin
 
 # custom
 
