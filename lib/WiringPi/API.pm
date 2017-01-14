@@ -15,7 +15,7 @@ my @wpi_c_functions = qw(
     wiringPiSetup       wiringPiSetupSys    wiringPiSetupGpio
     wiringPiSetupPhys   pinMode             pullUpDnControl
     digitalRead         digitalWrite        digitalWriteByte
-    pwmWrite            getAlt              piBoardDev
+    pwmWrite            getAlt              piGpioLayout
     wpiToGpio           physPinToGpio       pwmSetRange
     lcdInit             lcdHome             lcdClear
     lcdDisplay          lcdCursor           lcdCursorBlink
@@ -28,7 +28,7 @@ my @wpi_c_functions = qw(
 my @wpi_perl_functions = qw(
     setup           setup_sys       setup_phys          setup_gpio pin_mode
     pull_up_down    read_pin        write_pin           pwm_write
-    get_alt         board_rev       wpi_to_gpio         phys_to_gpio
+    get_alt         gpio_layout     wpi_to_gpio         phys_to_gpio
     pwm_set_range   lcd_init        lcd_home            lcd_clear
     lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
     lcd_position    lcd_char_def    lcd_put_char        lcd_puts
@@ -126,8 +126,8 @@ sub get_alt {
 
 # board functions
 
-sub board_rev {
-    return piBoardRev();
+sub gpio_layout {
+    return piGpioLayout();
 }
 sub wpi_to_gpio {
     shift if @_ == 2;
@@ -485,7 +485,7 @@ C<setup*()> routine you used.
 
 =head2 board_rev()
 
-Maps to C<int piBoardRev()>
+Maps to C<int piGpioLayout()>
 
 Returns the Raspberry Pi board's revision.
 

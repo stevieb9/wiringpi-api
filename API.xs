@@ -195,7 +195,7 @@ getAlt(pin)
 #
 
 int
-piBoardRev()
+piGpioLayout()
 
 int 
 wpiPinToGpio(wpiPin)

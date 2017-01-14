@@ -1,5 +1,10 @@
 Revision history for Perl extension WiringPi::API.
 
+1.06 UNREL
+        - major updates, we now require wiringPi v2.36
+        - changed piBoardRev() to piGpioLayout(), and board_rev() to 
+          gpio_laout()
+
 1.05    2017-01-13
         - added support for the SR74HC595 shift register (shift_reg_setup() for
           Perl, and the original sr595Setup())
