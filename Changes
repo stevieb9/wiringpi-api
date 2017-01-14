@@ -1,5 +1,10 @@
 Revision history for Perl extension WiringPi::API.
 
+2.36.1 UNREL
+        - changed version numbering scheme. x.yy.z: x.yy represents the version
+          of wiringPi we fully support, and z represents updates to this Perl
+          distribution
+
 2.36    2017-01-14
         - major updates, we now require wiringPi v2.36+
         - changed version numbering scheme. We now match the wiringPi version
