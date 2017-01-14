@@ -1,6 +1,2 @@
-- add documentation for analog_read()/write
-
-- add documentation for the bmp180
-
 - add in suppot for the ADS1115 ADC (wiringPi.c)
 

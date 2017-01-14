@@ -266,7 +266,7 @@ sub bmp180_temp {
         # returning farenheit
         return $c * 1.8 + 32;
     }
-    elsif ($want eq 'c') {
+    else {
         # returning celcius
         return $c;
     }
@@ -325,8 +325,8 @@ you must initialize the software by calling one of the C<setup*()> routines.
 
 =head1 DESCRIPTION
 
-This is an XS-based module, and requires L<wiringPi|http://wiringpi.com> to be
-installed. The C<wiringPiDev> shared library is also required (for the LCD
+This is an XS-based module, and requires L<wiringPi|http://wiringpi.com> version 2.36+
+to be installed. The C<wiringPiDev> shared library is also required (for the LCD
 functionality), but it's installed by default with C<wiringPi>.
 
 This module allows you to import the wiringPi's functions directly as-is, use
@@ -937,6 +937,60 @@ Mandatory: Integer, the GPIO pin number connected to the register's C<SHCP> pin
 Mandatory: Integer, the GPIO pin number connected to the register's C<STCP> pin
 (12). Can be any GPIO pin capable of output.
 
+=head1 BMP180 PRESSURE SENSOR FUNCTIONS
+
+These functions configure and fetch data from the BMP180 pressure sensor.
+
+=head2 bmp180_setup($pin_base)
+
+Configures the system to read from a BMP180 pressure sensor.
+
+These functions can not return the raw values from the sensor. See each
+function documentation to learn how to do so.
+
+Parameters:
+
+    $pin_base
+
+Mandatory: Integer, the number at which to place the pseudo analog pins in the 
+GPIO stack. For example, if you use C<200>, pin C<200> represents the
+temperature feature of the sensor, and C<201> represents the pressure feature.
+
+Return: undef.
+
+=head2 bmp180_temp($pin, $want)
+
+Returns the temperature from the sensor.
+
+Parameters:
+
+    $pin
+
+Mandatory: Integer, represents the C<$pin_base> used in the setup function C<+ 0>.
+
+    $want
+
+Optional: C<'c'> for Celcius, and C<'f'> for Farenheit. Defaults to C<'f'>.
+
+Return: A floating point number in the requested conversion.
+
+NOTE: To get the raw sensor temperature, call the C function 
+C<bmp180Temp($pin)> directly.
+
+=head2 bmp180_pressure($pin)
+
+Returns the current air pressure in kPa.
+
+Parameters:
+
+    $pin
+
+Mandatory: Integer, represents the C<$pin_base> used in the setup function C<+ 1>.
+
+Return: A floating point number that represents the air pressure in kPa.
+
+NOTE: To get the raw sensor pressure, call the C function 
+C<bmp180Pressure($pin)> directly.
 
 head1 AUTHOR
 

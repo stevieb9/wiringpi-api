@@ -30,9 +30,9 @@ SYNOPSIS
         my $api = WiringPi::API->new;
 
 DESCRIPTION
-    This is an XS-based module, and requires wiringPi to be installed. The
-    `wiringPiDev' shared library is also required (for the LCD
-    functionality), but it's installed by default with `wiringPi'.
+    This is an XS-based module, and requires wiringPi version 2.36+ to be
+    installed. The `wiringPiDev' shared library is also required (for the
+    LCD functionality), but it's installed by default with `wiringPi'.
 
     This module allows you to import the wiringPi's functions directly
     as-is, use it as a Perl base class, export the Perl wrapped functions,
@@ -61,20 +61,22 @@ EXPORT_OK
         lcdSendCommand      lcdPosition         lcdCharDef
         lcdPutChar          lcdPuts             setInterrupt
         softPwmCreate       softPwmWrite        softPwmStop
-        sr595Setup
+        sr595Setup          bmp180Setup         bmp180Pressure
+        bmp180Temp          analogRead          analogWrite
 
     Exported with the `:perl' tag.
 
     Perl wrapper functions for the XS functions.
 
-        setup           setup_sys       setup_phys          setup_gpio pin_mode
+        setup           setup_sys       setup_phys          setup_gpio 
         pull_up_down    read_pin        write_pin           pwm_write
         get_alt         board_rev       wpi_to_gpio         phys_to_gpio
         pwm_set_range   lcd_init        lcd_home            lcd_clear
         lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
         lcd_position    lcd_char_def    lcd_put_char        lcd_puts
         set_interrupt   soft_pwm_create soft_pwm_write      soft_pwm_stop
-        shift_reg_setup
+        shift_reg_setup pin_mode        analog_read         analog_write
+        bmp180_setup    bmp180_pressure bmp180_temp
 
 EXPORT_TAGS
   :wiringPi
@@ -86,7 +88,7 @@ EXPORT_TAGS
   :all
     Exports all available exportable functions.
 
-CORE METHODS
+CORE FUNCTIONS
   new()
     NOTE: After an object is created, one of the `setup*' methods must be
     called to initialize the Pi board.
@@ -162,7 +164,7 @@ CORE METHODS
     whichever `setup*()' routine you used.
 
   write_pin($pin, $state)
-    Maps to `void digitalWrite(int pin)'
+    Maps to `void digitalWrite(int pin, int state)'
 
     Sets the state (HIGH/on, LOW/off) of a given pin.
 
@@ -176,6 +178,36 @@ CORE METHODS
         $state
 
     Mandatory: `1' to turn the pin on (HIGH), and `0' to turn it LOW (off).
+
+  analog_read($pin);
+    Maps to `int analogRead(int pin)'
+
+    Returns the data for an analog pin. Note that the Raspberry Pi doesn't
+    have analog pins, so this is used when connected through an ADC or to
+    pseudo analog pins.
+
+    Parameters:
+
+        $pin
+
+    Mandatory: The pseudo pin number, in the pin numbering scheme dictated
+    by whichever `setup*()' routine you used.
+
+  analog_write($pin, $value)
+    Maps to `void analogWrite(int pin, int value)'
+
+    Writes the value to the corresponding analog pseudo pin.
+
+    Parameters:
+
+        $pin
+
+    Mandatory: The pseudo pin number, in the pin numbering scheme dictated
+    by whichever `setup*()' routine you used.
+
+        $value
+
+    Mandatory: The data which you want to write to the pseudo pin.
 
   pull_up_down($pin, $direction)
     Maps to `void pullUpDnControl(int pin, int pud)'
@@ -222,9 +254,9 @@ CORE METHODS
     Mandatory: The pin number, in the pin numbering scheme dictated by
     whichever `setup*()' routine you used.
 
-BOARD METHODS
+BOARD FUNCTIONS
   board_rev()
-    Maps to `int piBoardRev()'
+    Maps to `int piGpioLayout()'
 
     Returns the Raspberry Pi board's revision.
 
@@ -277,7 +309,7 @@ BOARD METHODS
 
     Mandatory: An integer between `0' and `1023'.
 
-LCD METHODS
+LCD FUNCTIONS
     There are several methods to drive standard Liquid Crystal Displays. See
     wiringPiDev LCD page for full details.
 
@@ -465,7 +497,7 @@ LCD METHODS
 
     Mandatory: A string to display.
 
-SOFT PWM METHODS
+SOFT PWM FUNCTIONS
     Software Pulse Width Modulation is not the same as hardware PWM. It
     should not be used for critical things as it's frequency isn't 100%
     stable.
@@ -502,7 +534,7 @@ SOFT PWM METHODS
   soft_pwm_stop($pin)
     Turns off software PWM on the `$pin'.
 
-INTERRUPT METHODS
+INTERRUPT FUNCTIONS
   set_interrupt($pin, $edge, $callback)
     IMPORTANT: The interrupt functionality requires that your Perl can be
     used in pthreads. If you do not have a threaded Perl, the program will
@@ -571,6 +603,61 @@ SHIFT REGISTER FUNCTIONS
 
     Mandatory: Integer, the GPIO pin number connected to the register's
     `STCP' pin (12). Can be any GPIO pin capable of output.
+
+BMP180 PRESSURE SENSOR FUNCTIONS
+    These functions configure and fetch data from the BMP180 pressure
+    sensor.
+
+  bmp180_setup($pin_base)
+    Configures the system to read from a BMP180 pressure sensor.
+
+    These functions can not return the raw values from the sensor. See each
+    function documentation to learn how to do so.
+
+    Parameters:
+
+        $pin_base
+
+    Mandatory: Integer, the number at which to place the pseudo analog pins
+    in the GPIO stack. For example, if you use `200', pin `200' represents
+    the temperature feature of the sensor, and `201' represents the pressure
+    feature.
+
+    Return: undef.
+
+  bmp180_temp($pin, $want)
+    Returns the temperature from the sensor.
+
+    Parameters:
+
+        $pin
+
+    Mandatory: Integer, represents the `$pin_base' used in the setup
+    function `+ 0'.
+
+        $want
+
+    Optional: `'c'' for Celcius, and `'f'' for Farenheit. Defaults to `'f''.
+
+    Return: A floating point number in the requested conversion.
+
+    NOTE: To get the raw sensor temperature, call the C function
+    `bmp180Temp($pin)' directly.
+
+  bmp180_pressure($pin)
+    Returns the current air pressure in kPa.
+
+    Parameters:
+
+        $pin
+
+    Mandatory: Integer, represents the `$pin_base' used in the setup
+    function `+ 1'.
+
+    Return: A floating point number that represents the air pressure in kPa.
+
+    NOTE: To get the raw sensor pressure, call the C function
+    `bmp180Pressure($pin)' directly.
 
     head1 AUTHOR
 

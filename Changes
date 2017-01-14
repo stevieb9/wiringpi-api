@@ -1,12 +1,14 @@
 Revision history for Perl extension WiringPi::API.
 
-1.06 UNREL
-        - major updates, we now require wiringPi v2.36
+1.06    2017-01-14
+        - major updates, we now require wiringPi v2.36+
         - changed piBoardRev() to piGpioLayout(), and board_rev() to 
-          gpio_laout()
-        - added analogRead()/analog_read() and analogWrite()/analog_write()
+          gpio_laout() per changes in wiringPi.c/h
+        - added analogRead()/analog_read() and analogWrite()/analog_write() to
+          support the BMP180 sensor
         - added bmp180_setup()/bmp180Setup()
         - added bmp180_temp() and bmp180_pressure()
+        - added POD for all the new functionality
 
 1.05    2017-01-13
         - added support for the SR74HC595 shift register (shift_reg_setup() for
