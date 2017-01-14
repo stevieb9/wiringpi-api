@@ -5,12 +5,12 @@ examples/c_perl_callback.pl
 examples/get_mode.pl
 examples/import.pl
 examples/interrupt.pl
-examples/pthread.pl
 examples/pthread_callback.pl
+examples/sr.pl
 examples/thread.pl
 lib/WiringPi/API.pm
 Makefile.PL
-MANIFEST
+MANIFEST			This list of files
 MANIFEST.SKIP
 ppport.h
 README
