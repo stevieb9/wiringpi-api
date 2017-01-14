@@ -24,6 +24,7 @@ my @wpi_c_functions = qw(
     softPwmCreate       softPwmWrite        softPwmStop
     sr595Setup          bmp180Setup         bmp180Pressure
     bmp180Temp          analogRead          analogWrite
+    physPinToWpi
 );
 
 my @wpi_perl_functions = qw(
@@ -35,7 +36,7 @@ my @wpi_perl_functions = qw(
     lcd_position    lcd_char_def    lcd_put_char        lcd_puts
     set_interrupt   soft_pwm_create soft_pwm_write      soft_pwm_stop
     shift_reg_setup bmp180_setup    bmp180_pressure     bmp180_temp
-    analog_read     analog_write    pin_mode
+    analog_read     analog_write    pin_mode            phys_to_wpi
 );
 
 our @EXPORT_OK;
