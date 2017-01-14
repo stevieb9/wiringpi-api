@@ -210,14 +210,23 @@ sub lcd_puts {
 # shift register functions
 
 sub shift_reg_setup {
-    shift if @_ == 3;
-    my ($pin_base, $num_pins, $model) = @_;
+    shift if @_ == 6;
+    my ($pin_base, $num_pins, $data_pin, $clock_pin, $latch_pin) = @_;
 
-    $model = 'SN74HC595' if ! defined $model;
+    die "\$pin_base must be an integer\n" if $pin_base !~ /^\d+$/;
 
-    if ($model eq 'SN74HC595'){
-        sr595Setup($pin_base, $num_pins);
+    if ($num_pins < 0 && $num_pins > 32){
+        die "\$num_pins must be between 0 and 32\n"     
     }
+
+    for ($data_pin, $clock_pin, $latch_pin){
+        if ($_ < 0 && $_ > 40){
+            die "$data_pin, $clock_pin and $latch_pin must all be valid " .
+                "GPIO pin numbers\n";
+        }
+    }
+
+    sr595Setup($pin_base, $num_pins, $data_pin, $clock_pin, $latch_pin);
 }
 
 # threading functions

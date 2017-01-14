@@ -1,58 +1,55 @@
 NAME
-
     WiringPi::API - Direct access to Raspberry Pi's wiringPi API, with
     optional Perl OO access
 
 SYNOPSIS
-
     No matter which import option you choose, before you can start making
-    calls, you must initialize the software by calling one of the setup*()
+    calls, you must initialize the software by calling one of the `setup*()'
     routines.
 
         # import the API functions directly
-    
+
         use WiringPi::API qw(:wiringPi)
-    
+
         # import the Perl wrapped functions
-    
+
         use WiringPi::API qw(:perl)
-    
+
         # import both versions
-    
+
         use WiringPi::API qw(:all)
-    
+
         # use as a base class with OO functionality
-    
+
         use parent 'WiringPi::API';
-    
+
         # use in the traditional Perl OO way
-    
+
         use WiringPi::API;
-    
+
         my $api = WiringPi::API->new;
 
 DESCRIPTION
-
-    This is an XS-based module, and requires wiringPi <http://wiringpi.com>
-    to be installed. The wiringPiDev shared library is also required (for
-    the LCD functionality), but it's installed by default with wiringPi.
+    This is an XS-based module, and requires wiringPi to be installed. The
+    `wiringPiDev' shared library is also required (for the LCD
+    functionality), but it's installed by default with `wiringPi'.
 
     This module allows you to import the wiringPi's functions directly
     as-is, use it as a Perl base class, export the Perl wrapped functions,
     or use it in a traditional Perl OO way.
 
-    See the documentation on the wiringPi <http://wiringpi.com> website for
-    a more in-depth description of most of the functions it provides. Some
-    of the functions we've wrapped are not documented, they were just
-    selectively plucked from the C code itself.
+    See the documentation on the wiringPi website for a more in-depth
+    description of most of the functions it provides. Some of the functions
+    we've wrapped are not documented, they were just selectively plucked
+    from the C code itself.
 
 EXPORT_OK
-
-    Exported with the :wiringPi tag.
+    Exported with the `:wiringPi' tag.
 
     These XS functions map directly to the wiringPi functions with their
-    original names. Note that setInterrupt is not a direct wrapper, it's a
-    custom C wrapper for wiringPiISR() in order to make it functional here.
+    original names. Note that `setInterrupt' is not a direct wrapper, it's a
+    custom C wrapper for `wiringPiISR()' in order to make it functional
+    here.
 
         wiringPiSetup       wiringPiSetupSys    wiringPiSetupGpio
         wiringPiSetupPhys   pinMode             pullUpDnControl
@@ -66,7 +63,7 @@ EXPORT_OK
         softPwmCreate       softPwmWrite        softPwmStop
         sr595Setup
 
-    Exported with the :perl tag.
+    Exported with the `:perl' tag.
 
     Perl wrapper functions for the XS functions.
 
@@ -80,76 +77,64 @@ EXPORT_OK
         shift_reg_setup
 
 EXPORT_TAGS
-
- :wiringPi
-
+  :wiringPi
     See EXPORT_OK
 
- :perl
-
+  :perl
     See EXPORT_OK
 
- :all
-
+  :all
     Exports all available exportable functions.
 
 CORE METHODS
-
- new()
-
-    NOTE: After an object is created, one of the setup* methods must be
+  new()
+    NOTE: After an object is created, one of the `setup*' methods must be
     called to initialize the Pi board.
 
-    Returns a new WiringPi::API object.
+    Returns a new `WiringPi::API' object.
 
- setup()
+  setup()
+    Maps to `int wiringPiSetup()'
 
-    Maps to int wiringPiSetup()
+    Sets the pin number mapping scheme to `wiringPi'.
 
-    Sets the pin number mapping scheme to wiringPi.
-
-    This setup routine requires you to run your script as the root user.
+    This setup routine requires you to run your script as the `root' user.
 
     Each setup function has benefits and drawbacks. Please refer to the
-    wiringPi setup functions <http://wiringpi.com/reference/setup> for
-    details.
+    wiringPi setup functions for details.
 
-    See pinout.xyz <https://pinout.xyz/pinout/wiringpi> for a pin number
-    conversion chart, or on the command line, run gpio readall.
+    See pinout.xyz for a pin number conversion chart, or on the command
+    line, run `gpio readall'.
 
-    Note that only one of the setup*() methods can be called per program
+    Note that only one of the `setup*()' methods can be called per program
     run.
 
- setup_sys()
+  setup_sys()
+    Maps to `int wiringPiSetupSys()'
 
-    Maps to int wiringPiSetupSys()
-
-    Sets the pin numbering scheme to GPIO.
+    Sets the pin numbering scheme to `GPIO'.
 
     This setup routine does NOT require running as root, but you have to
-    manually export the pins yourself with the gpio command line utility
+    manually export the pins yourself with the `gpio' command line utility
     prior to using the pins.
 
- setup_phys()
-
-    Maps to int wiringPiSetupPhys()
+  setup_phys()
+    Maps to `int wiringPiSetupPhys()'
 
     Sets the pin mapping to use the physical pin position number on the
     board.
 
-    This setup routine requires you to run your script as the root user.
+    This setup routine requires you to run your script as the `root' user.
 
- setup_gpio()
+  setup_gpio()
+    Maps to `int wiringPiSetupGpio()'
 
-    Maps to int wiringPiSetupGpio()
+    Sets the pin numbering scheme to `GPIO'.
 
-    Sets the pin numbering scheme to GPIO.
+    This setup routine requires you to run your script as the `root' user.
 
-    This setup routine requires you to run your script as the root user.
-
- pin_mode($pin, $mode)
-
-    Maps to void pinMode(int pin, int mode)
+  pin_mode($pin, $mode)
+    Maps to `void pinMode(int pin, int mode)'
 
     Puts the pin in either INPUT or OUTPUT mode.
 
@@ -158,15 +143,14 @@ CORE METHODS
         $pin
 
     Mandatory: The pin number, in the pin numbering scheme dictated by
-    whichever setup*() routine you used.
+    whichever `setup*()' routine you used.
 
         $mode
 
-    Mandatory: 0 for INPUT, 1 OUTPUT, 2 PWM_OUTPUT and 3 GPIO_CLOCK.
+    Mandatory: `0' for INPUT, `1' OUTPUT, `2' PWM_OUTPUT and `3' GPIO_CLOCK.
 
- read_pin($pin);
-
-    Maps to int digitalRead(int pin)
+  read_pin($pin);
+    Maps to `int digitalRead(int pin)'
 
     Returns the current state (HIGH/on, LOW/off) of a given pin.
 
@@ -175,11 +159,10 @@ CORE METHODS
         $pin
 
     Mandatory: The pin number, in the pin numbering scheme dictated by
-    whichever setup*() routine you used.
+    whichever `setup*()' routine you used.
 
- write_pin($pin, $state)
-
-    Maps to void digitalWrite(int pin)
+  write_pin($pin, $state)
+    Maps to `void digitalWrite(int pin)'
 
     Sets the state (HIGH/on, LOW/off) of a given pin.
 
@@ -188,15 +171,14 @@ CORE METHODS
         $pin
 
     Mandatory: The pin number, in the pin numbering scheme dictated by
-    whichever setup*() routine you used.
+    whichever `setup*()' routine you used.
 
         $state
 
-    Mandatory: 1 to turn the pin on (HIGH), and 0 to turn it LOW (off).
+    Mandatory: `1' to turn the pin on (HIGH), and `0' to turn it LOW (off).
 
- pull_up_down($pin, $direction)
-
-    Maps to void pullUpDnControl(int pin, int pud)
+  pull_up_down($pin, $direction)
+    Maps to `void pullUpDnControl(int pin, int pud)'
 
     Enable/disable the built-in pull up/down resistors for a specified pin.
 
@@ -205,15 +187,14 @@ CORE METHODS
         $pin
 
     Mandatory: The pin number, in the pin numbering scheme dictated by
-    whichever setup*() routine you used.
+    whichever `setup*()' routine you used.
 
         $direction
 
-    Mandatory: 2 for UP, 1 for DOWN and 0 to disable the resistor.
+    Mandatory: `2' for UP, `1' for DOWN and `0' to disable the resistor.
 
- pwm_write($pin, $value)
-
-    Maps to void pwmWrite(int pin, int value)
+  pwm_write($pin, $value)
+    Maps to `void pwmWrite(int pin, int value)'
 
     Sets the Pulse Width Modulation duty cycle (on-time) of the pin.
 
@@ -222,39 +203,35 @@ CORE METHODS
         $pin
 
     Mandatory: The pin number, in the pin numbering scheme dictated by
-    whichever setup*() routine you used.
+    whichever `setup*()' routine you used.
 
         $value
 
-    Mandatory: 0 to 1023. 0 is 0% (off) and 1023 is 100% (fully on).
+    Mandatory: `0' to `1023'. `0' is 0% (off) and `1023' is 100% (fully on).
 
- get_alt($pin)
+  get_alt($pin)
+    Maps to `int getAlt(int pin)'
 
-    Maps to int getAlt(int pin)
-
-    This returns the current mode of the pin (using getAlt() C call). Modes
-    are INPUT 0, OUTPUT 1, PWM 2 and CLOCK 3.
+    This returns the current mode of the pin (using `getAlt()' C call).
+    Modes are INPUT `0', OUTPUT `1', PWM `2' and CLOCK `3'.
 
     Parameters:
 
         $pin
 
     Mandatory: The pin number, in the pin numbering scheme dictated by
-    whichever setup*() routine you used.
+    whichever `setup*()' routine you used.
 
 BOARD METHODS
-
- board_rev()
-
-    Maps to int piBoardRev()
+  board_rev()
+    Maps to `int piBoardRev()'
 
     Returns the Raspberry Pi board's revision.
 
- wpi_to_gpio($pin_num)
+  wpi_to_gpio($pin_num)
+    Maps to `int wpiPinToGpio(int pin)'
 
-    Maps to int wpiPinToGpio(int pin)
-
-    Converts a wiringPi pin number to the Broadcom (BCM) representation,
+    Converts a `wiringPi' pin number to the Broadcom (BCM) representation,
     and returns it.
 
     Parameters:
@@ -262,13 +239,12 @@ BOARD METHODS
         $pin_num
 
     Mandatory: The pin number, in the pin numbering scheme dictated by
-    whichever setup*() routine you used.
+    whichever `setup*()' routine you used.
 
- phys_to_gpio($pin_num)
+  phys_to_gpio($pin_num)
+    Maps to `int physPinToGpio(int pin)'
 
-    Maps to int physPinToGpio(int pin)
-
-    Converts the pin number on the physical board to the GPIO
+    Converts the pin number on the physical board to the `GPIO'
     representation, and returns it.
 
     Parameters:
@@ -277,12 +253,11 @@ BOARD METHODS
 
     Mandatory: The pin number on the physical Raspberry Pi board.
 
- phys_to_wpi($pin_num)
+  phys_to_wpi($pin_num)
+    Maps to `int physPinToWpi(int pin)'
 
-    Maps to int physPinToWpi(int pin)
-
-    Converts the pin number on the physical board to the wiringPi numbering
-    representation, and returns it.
+    Converts the pin number on the physical board to the `wiringPi'
+    numbering representation, and returns it.
 
     Parameters:
 
@@ -290,27 +265,23 @@ BOARD METHODS
 
     Mandatory: The pin number on the physical Raspberry Pi board.
 
- pwm_set_range($range);
-
-    Maps to void pwmSetRange(int range)
+  pwm_set_range($range);
+    Maps to `void pwmSetRange(int range)'
 
     Sets the range register of the Pulse Width Modulation (PWM)
-    functionality. It defaults to 1024 (0-1023).
+    functionality. It defaults to `1024' (`0-1023').
 
     Parameters:
 
         $range
 
-    Mandatory: An integer between 0 and 1023.
+    Mandatory: An integer between `0' and `1023'.
 
 LCD METHODS
+    There are several methods to drive standard Liquid Crystal Displays. See
+    wiringPiDev LCD page for full details.
 
-    There are several methods to drive standard Liquid Crystal Displays.
-    See wiringPiDev LCD page <http://wiringpi.com/dev-lib/lcd-library/> for
-    full details.
-
- lcd_init(%args)
-
+  lcd_init(%args)
     Maps to:
 
         int lcdInit(
@@ -319,8 +290,8 @@ LCD METHODS
         );
 
     Initializes the LCD library, and returns an integer representing the
-    handle handle (file descriptor) of the device. The return is supposed
-    to be constant, so DON'T change it.
+    handle handle (file descriptor) of the device. The return is supposed to
+    be constant, so DON'T change it.
 
     Parameters:
 
@@ -336,15 +307,14 @@ LCD METHODS
         );
 
     Mandatory: All entries must have a value. If you're only using four (4)
-    bit width, d4 through d7 must be set to 0.
+    bit width, `d4' through `d7' must be set to `0'.
 
-    Note: When in 4-bit mode, the d0 through 3 parameters actually map to
-    pins d4 through d7 on the LCD board, so you need to connect those pins
-    to their respective selected GPIO pins.
+    Note: When in 4-bit mode, the `d0' through `3' parameters actually map
+    to pins `d4' through `d7' on the LCD board, so you need to connect those
+    pins to their respective selected GPIO pins.
 
- lcd_home($fd)
-
-    Maps to void lcdHome(int fd)
+  lcd_home($fd)
+    Maps to `void lcdHome(int fd)'
 
     Moves the LCD cursor to the home position (top row, leftmost column).
 
@@ -352,11 +322,10 @@ LCD METHODS
 
         $fd
 
-    Mandatory: The file descriptor integer returned by lcd_init().
+    Mandatory: The file descriptor integer returned by `lcd_init()'.
 
- lcd_clear($fd)
-
-    Maps to void lcdClear(int fd)
+  lcd_clear($fd)
+    Maps to `void lcdClear(int fd)'
 
     Clears the LCD display.
 
@@ -364,11 +333,10 @@ LCD METHODS
 
         $fd
 
-    Mandatory: The file descriptor integer returned by lcd_init().
+    Mandatory: The file descriptor integer returned by `lcd_init()'.
 
- lcd_display($fd, $state)
-
-    Maps to void lcdDisplay(int fd, int state)
+  lcd_display($fd, $state)
+    Maps to `void lcdDisplay(int fd, int state)'
 
     Turns the LCD display on and off.
 
@@ -376,15 +344,14 @@ LCD METHODS
 
         $fd
 
-    Mandatory: The file descriptor integer returned by lcd_init().
+    Mandatory: The file descriptor integer returned by `lcd_init()'.
 
         $state
 
-    Mandatory: 0 to turn the display off, and 1 for on.
+    Mandatory: `0' to turn the display off, and `1' for on.
 
- lcd_cursor($fd, $state)
-
-    Maps to void lcdCursor(int fd, int state)
+  lcd_cursor($fd, $state)
+    Maps to `void lcdCursor(int fd, int state)'
 
     Turns the LCD cursor on and off.
 
@@ -392,15 +359,14 @@ LCD METHODS
 
         $fd
 
-    Mandatory: The file descriptor integer returned by lcd_init().
+    Mandatory: The file descriptor integer returned by `lcd_init()'.
 
         $state
 
-    Mandatory: 0 to turn the cursor off, 1 for on.
+    Mandatory: `0' to turn the cursor off, `1' for on.
 
- lcd_cursor_blink($fd, $state)
-
-    Maps to void lcdCursorBlink(int fd, int state)
+  lcd_cursor_blink($fd, $state)
+    Maps to `void lcdCursorBlink(int fd, int state)'
 
     Allows you to enable/disable a blinking cursor.
 
@@ -408,11 +374,10 @@ LCD METHODS
 
         $fd
 
-    Mandatory: The file descriptor integer returned by lcd_init().
+    Mandatory: The file descriptor integer returned by `lcd_init()'.
 
- lcd_send_cmd($fd, $command)
-
-    Maps to void lcdSendCommand(int fd, char command)
+  lcd_send_cmd($fd, $command)
+    Maps to `void lcdSendCommand(int fd, char command)'
 
     Sends any arbitrary command to the LCD.
 
@@ -420,15 +385,14 @@ LCD METHODS
 
         $fd
 
-    Mandatory: The file descriptor integer returned by lcd_init().
+    Mandatory: The file descriptor integer returned by `lcd_init()'.
 
         $command
 
     Mandatory: A command to submit to the LCD.
 
- lcd_position($fd, $x, $y)
-
-    Maps to void lcdPosition(int fd, int x, int y)
+  lcd_position($fd, $x, $y)
+    Maps to `void lcdPosition(int fd, int x, int y)'
 
     Moves the cursor to the specified position on the LCD display.
 
@@ -436,24 +400,23 @@ LCD METHODS
 
         $fd
 
-    Mandatory: The file descriptor integer returned by lcd_init().
+    Mandatory: The file descriptor integer returned by `lcd_init()'.
 
         $x
 
-    Mandatory: Column position. 0 is the left-most edge.
+    Mandatory: Column position. `0' is the left-most edge.
 
         $y
 
-    Mandatory: Row position. 0 is the top row.
+    Mandatory: Row position. `0' is the top row.
 
- lcd_char_def($fd, $index, $data)
-
-    Maps to void lcdCharDef(int fd, unsigned char data [8])
+  lcd_char_def($fd, $index, $data)
+    Maps to `void lcdCharDef(int fd, unsigned char data [8])'
 
     This allows you to re-define one of the 8 user-definable characters in
     the display. The data array is 8 bytes which represent the character
     from the top-line to the bottom line. Note that the characters are
-    actually 5×8, so only the lower 5 bits are used. The index is from 0 to
+    actually 5Ã—8, so only the lower 5 bits are used. The index is from 0 to
     7 and you can subsequently print the character defined using the
     lcdPutchar() call.
 
@@ -461,19 +424,18 @@ LCD METHODS
 
         $fd
 
-    Mandatory: The file descriptor integer returned by lcd_init().
+    Mandatory: The file descriptor integer returned by `lcd_init()'.
 
         $index
 
-    Mandatory: Index of the display character. Values are 0-7.
+    Mandatory: Index of the display character. Values are `0-7'.
 
         $data
 
     Mandatory: See above description.
 
- lcd_put_char($fd, $char)
-
-    Maps to void lcdPutChar(int fd, unsigned char data)
+  lcd_put_char($fd, $char)
+    Maps to `void lcdPutChar(int fd, unsigned char data)'
 
     Writes a single ASCII character to the LCD display, at the current
     cursor position.
@@ -482,15 +444,14 @@ LCD METHODS
 
         $fd
 
-    Mandatory: The file descriptor integer returned by lcd_init().
+    Mandatory: The file descriptor integer returned by `lcd_init()'.
 
         $char
 
     Mandatory: A single ASCII character.
 
- lcd_puts($fd, $string)
-
-    Maps to void lcdPuts(int fd, char *string)
+  lcd_puts($fd, $string)
+    Maps to `void lcdPuts(int fd, char *string)'
 
     Writes a string to the LCD display, at the current cursor position.
 
@@ -498,14 +459,13 @@ LCD METHODS
 
         $fd
 
-    Mandatory: The file descriptor integer returned by lcd_init().
+    Mandatory: The file descriptor integer returned by `lcd_init()'.
 
         $string
 
     Mandatory: A string to display.
 
 SOFT PWM METHODS
-
     Software Pulse Width Modulation is not the same as hardware PWM. It
     should not be used for critical things as it's frequency isn't 100%
     stable.
@@ -513,8 +473,7 @@ SOFT PWM METHODS
     This software PWM allows you to use PWM on ANY GPIO pin, not just the
     single hardware pin available.
 
- soft_pwm_create($pin, $initial_value, $range)
-
+  soft_pwm_create($pin, $initial_value, $range)
     Creates a new software PWM thread that runs outside of your main
     application.
 
@@ -523,37 +482,33 @@ SOFT PWM METHODS
         $pin
 
     Mandatory: The pin number, in the pin numbering scheme dictated by
-    whichever setup*() routine you used.
+    whichever `setup*()' routine you used.
 
         $initial_value
 
-    Optional: A value between 0 and $range.
+    Optional: A value between `0' and `$range'.
 
         $range
 
-    Optional: Look at this like a dial. We start at 0 and the dial has
-    turned completely when we hit the $range integer. If not sent in,
-    defaults to 1023.
+    Optional: Look at this like a dial. We start at `0' and the dial has
+    turned completely when we hit the `$range' integer. If not sent in,
+    defaults to `1023'.
 
- soft_pwm_write($pin, $value)
+  soft_pwm_write($pin, $value)
+    Sets the `HIGH' frequency on `pin' to whatever is in `$value'. The value
+    must be lower than what was set in the `$range' parameter to
+    `soft_pwm_create()'.
 
-    Sets the HIGH frequency on pin to whatever is in $value. The value must
-    be lower than what was set in the $range parameter to
-    soft_pwm_create().
-
- soft_pwm_stop($pin)
-
-    Turns off software PWM on the $pin.
+  soft_pwm_stop($pin)
+    Turns off software PWM on the `$pin'.
 
 INTERRUPT METHODS
-
- set_interrupt($pin, $edge, $callback)
-
+  set_interrupt($pin, $edge, $callback)
     IMPORTANT: The interrupt functionality requires that your Perl can be
     used in pthreads. If you do not have a threaded Perl, the program will
     cause a segmentation fault.
 
-    Wrapper around wiringPi's wiringPiISR() that allows you to send in the
+    Wrapper around wiringPi's `wiringPiISR()' that allows you to send in the
     name of a Perl sub in your own code that will be called if an interrupt
     is triggered.
 
@@ -562,11 +517,11 @@ INTERRUPT METHODS
         $pin
 
     Mandatory: The pin number, in the pin numbering scheme dictated by
-    whichever setup*() routine you used.
+    whichever `setup*()' routine you used.
 
         $edge
 
-    Mandatory: 1 (lowering), 2 (raising) or 3 (both).
+    Mandatory: `1' (lowering), `2' (raising) or `3' (both).
 
         $callback
 
@@ -575,7 +530,6 @@ INTERRUPT METHODS
     your interrupt handler.
 
 SHIFT REGISTER FUNCTIONS
-
     Shift registers allow you to add extra output pins by multiplexing a
     small number of GPIO.
 
@@ -584,8 +538,7 @@ SHIFT REGISTER FUNCTIONS
     chained up to four wide to provide an additional 32 outputs using the
     same three GPIO pins.
 
- shift_reg_setup
-
+  shift_reg_setup
     This function configures the Raspberry Pi to use a shift register (The
     SR74HC595 is currently supported).
 
@@ -594,10 +547,9 @@ SHIFT REGISTER FUNCTIONS
         $pin_base
 
     Mandatory: Signed integer, higher than that of all existing GPIO pins.
-    This parameter registers pin 0 on the shift register to an internal
-    GPIO pin number. For example, setting this to 100, you will be able to
-    access the first output on the register as GPIO 100 in all other
-    functions.
+    This parameter registers pin 0 on the shift register to an internal GPIO
+    pin number. For example, setting this to 100, you will be able to access
+    the first output on the register as GPIO 100 in all other functions.
 
         $num_pins
 
@@ -607,37 +559,27 @@ SHIFT REGISTER FUNCTIONS
 
         $data_pin
 
-    Mandatory: Integer, the GPIO pin number connected to the register's DS
+    Mandatory: Integer, the GPIO pin number connected to the register's `DS'
     pin (14). Can be any GPIO pin capable of output.
 
         $clock_pin
 
     Mandatory: Integer, the GPIO pin number connected to the register's
-    SHCP pin (11). Can be any GPIO pin capable of output.
+    `SHCP' pin (11). Can be any GPIO pin capable of output.
 
         $latch_pin
 
     Mandatory: Integer, the GPIO pin number connected to the register's
-    STCP pin (12). Can be any GPIO pin capable of output.
+    `STCP' pin (12). Can be any GPIO pin capable of output.
 
     head1 AUTHOR
 
     Steve Bertrand, <steveb@cpan.org>
 
 COPYRIGHT AND LICENSE
-
     Copyright (C) 2016 by Steve Bertrand
 
     This library is free software; you can redistribute it and/or modify it
     under the same terms as Perl itself, either Perl version 5.18.2 or, at
     your option, any later version of Perl 5 you may have available.
-
-POD ERRORS
-
-    Hey! The above document had some coding errors, which are explained
-    below:
-
-    Around line 451:
-
-      Non-ASCII character seen before =encoding in '5×8,'. Assuming UTF-8
 
