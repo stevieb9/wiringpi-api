@@ -1,0 +1,6 @@
+- add bmp_pressure() and bmp_temperature(), and have them return proper vals:
+    - c/f and raw for temp
+    - kPa and raw for pressure
+
+- add documentation for analog_read()/write
+- add documentation for the bmp180

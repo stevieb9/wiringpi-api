@@ -126,7 +126,6 @@ int physPinToWpi(int wpi_pin){
     # core
 
     extern void pinModeAlt          (int pin, int mode) ;
-    extern int  analogRead          (int pin) ;
     extern void analogWrite         (int pin, int value) ;
 
     # board
@@ -189,6 +188,15 @@ pwmWrite(pin, value)
 int
 getAlt(pin)
     int pin
+
+int
+analogRead(pin)
+    int pin
+
+void
+analogWrite(pin, value)
+    int pin
+    int value
 
 #
 # board
@@ -317,6 +325,12 @@ piLock(keyNum)
 
 void piUnlock(keyNum)
     int keyNum
+
+# bmp180 pressure sensor
+
+int
+bmp180Setup(pin_base)
+    int pin_base
 
 # custom
 

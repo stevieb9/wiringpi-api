@@ -22,18 +22,20 @@ my @wpi_c_functions = qw(
     lcdSendCommand      lcdPosition         lcdCharDef
     lcdPutChar          lcdPuts             setInterrupt
     softPwmCreate       softPwmWrite        softPwmStop
-    sr595Setup
+    sr595Setup          bmp180Setup         analogRead
+    analogWrite
 );
 
 my @wpi_perl_functions = qw(
-    setup           setup_sys       setup_phys          setup_gpio pin_mode
+    setup           setup_sys       setup_phys          setup_gpio 
     pull_up_down    read_pin        write_pin           pwm_write
     get_alt         gpio_layout     wpi_to_gpio         phys_to_gpio
     pwm_set_range   lcd_init        lcd_home            lcd_clear
     lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
     lcd_position    lcd_char_def    lcd_put_char        lcd_puts
     set_interrupt   soft_pwm_create soft_pwm_write      soft_pwm_stop
-    shift_reg_setup
+    shift_reg_setup bmp180_setup    analog_read         analog_write
+    pin_mode
 );
 
 our @EXPORT_OK;
@@ -122,6 +124,16 @@ sub get_alt {
     shift if @_ == 2;
     my $pin = shift;
     return getAlt($pin);
+}
+sub analog_read {
+    shift if @_ == 2;
+    my ($pin) = @_;
+    return analogRead($pin)
+}
+sub analog_write {
+    shift if @_ == 3;
+    my ($pin, $value) = @_;
+    return analogWrite($pin, $value);
 }
 
 # board functions
@@ -227,6 +239,19 @@ sub shift_reg_setup {
     }
 
     sr595Setup($pin_base, $num_pins, $data_pin, $clock_pin, $latch_pin);
+}
+
+# bmp180 pressure sensor functions
+
+sub bmp180_setup {
+    my ($self, $base) = @_;
+    shift if @_ == 3;
+
+    if (! defined $base || $base !~ /^\d+$/){
+        die "bmp180 setup parametermust be an integer\n";
+    }
+
+    bmp180Setup($base);
 }
 
 # threading functions
