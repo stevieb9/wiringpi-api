@@ -356,20 +356,22 @@ wrapper for C<wiringPiISR()> in order to make it functional here.
     lcdSendCommand      lcdPosition         lcdCharDef
     lcdPutChar          lcdPuts             setInterrupt
     softPwmCreate       softPwmWrite        softPwmStop
-    sr595Setup
+    sr595Setup          bmp180Setup         bmp180Pressure
+    bmp180Temp          analogRead          analogWrite
 
 Exported with the C<:perl> tag.
 
 Perl wrapper functions for the XS functions.
 
-    setup           setup_sys       setup_phys          setup_gpio pin_mode
+    setup           setup_sys       setup_phys          setup_gpio 
     pull_up_down    read_pin        write_pin           pwm_write
     get_alt         board_rev       wpi_to_gpio         phys_to_gpio
     pwm_set_range   lcd_init        lcd_home            lcd_clear
     lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
     lcd_position    lcd_char_def    lcd_put_char        lcd_puts
     set_interrupt   soft_pwm_create soft_pwm_write      soft_pwm_stop
-    shift_reg_setup
+    shift_reg_setup pin_mode        analog_read         analog_write
+    bmp180_setup    bmp180_pressure bmp180_temp
 
 =head1 EXPORT_TAGS
 
@@ -385,7 +387,7 @@ See L<EXPORT_OK>
 
 Exports all available exportable functions.
 
-=head1 CORE METHODS
+=head1 CORE FUNCTIONS
 
 =head2 new()
 
@@ -468,7 +470,7 @@ C<setup*()> routine you used.
 
 =head2 write_pin($pin, $state)
 
-Maps to C<void digitalWrite(int pin)>
+Maps to C<void digitalWrite(int pin, int state)>
 
 Sets the state (HIGH/on, LOW/off) of a given pin.
 
@@ -482,6 +484,38 @@ C<setup*()> routine you used.
     $state
 
 Mandatory: C<1> to turn the pin on (HIGH), and C<0> to turn it LOW (off).
+
+=head2 analog_read($pin);
+
+Maps to C<int analogRead(int pin)>
+
+Returns the data for an analog pin. Note that the Raspberry Pi doesn't have
+analog pins, so this is used when connected through an ADC or to pseudo analog
+pins.
+
+Parameters:
+    
+    $pin
+
+Mandatory: The pseudo pin number, in the pin numbering scheme dictated by
+whichever C<setup*()> routine you used.
+
+=head2 analog_write($pin, $value)
+
+Maps to C<void analogWrite(int pin, int value)>
+
+Writes the value to the corresponding analog pseudo pin.
+
+Parameters:
+
+    $pin
+
+Mandatory: The pseudo pin number, in the pin numbering scheme dictated by
+whichever C<setup*()> routine you used.
+
+    $value
+
+Mandatory: The data which you want to write to the pseudo pin. 
 
 =head2 pull_up_down($pin, $direction)
 
@@ -531,7 +565,7 @@ Parameters:
 Mandatory: The pin number, in the pin numbering scheme dictated by whichever
 C<setup*()> routine you used.
 
-=head1 BOARD METHODS
+=head1 BOARD FUNCTIONS
 
 =head2 board_rev()
 
@@ -592,7 +626,7 @@ Parameters:
 
 Mandatory: An integer between C<0> and C<1023>.
 
-=head1 LCD METHODS
+=head1 LCD FUNCTIONS
 
 There are several methods to drive standard Liquid Crystal Displays. See
 L<wiringPiDev LCD page|http://wiringpi.com/dev-lib/lcd-library/> for full
@@ -792,7 +826,7 @@ Mandatory: The file descriptor integer returned by C<lcd_init()>.
 
 Mandatory: A string to display.
 
-=head1 SOFT PWM METHODS
+=head1 SOFT PWM FUNCTIONS
 
 Software Pulse Width Modulation is not the same as hardware PWM. It should not
 be used for critical things as it's frequency isn't 100% stable.
@@ -830,7 +864,7 @@ be lower than what was set in the C<$range> parameter to C<soft_pwm_create()>.
 
 Turns off software PWM on the C<$pin>.
 
-=head1 INTERRUPT METHODS
+=head1 INTERRUPT FUNCTIONS
 
 =head2 set_interrupt($pin, $edge, $callback)
 
