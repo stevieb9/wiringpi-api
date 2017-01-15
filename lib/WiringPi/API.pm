@@ -245,8 +245,8 @@ sub shift_reg_setup {
 # bmp180 pressure sensor functions
 
 sub bmp180_setup {
-    my ($self, $base) = @_;
-    shift if @_ == 3;
+    shift if @_ == 2;
+    my $base = shift;
 
     if (! defined $base || $base !~ /^\d+$/){
         die "bmp180 setup parametermust be an integer\n";
