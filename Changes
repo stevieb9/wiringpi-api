@@ -1,12 +1,12 @@
 Revision history for Perl extension WiringPi::API.
 
-2.36.2 UNREL
+2.36.3 UNREL
         - added function table of contents to POD
         - added declaration of custom wiringPiVersion() in XS, but left it
           commented out as it will break CPAN installs
         - added version.patch file in patches/, patch sent to Gordon
 
-2.36.1  2017-01-14
+2.36.2  2017-01-14
         - changed version numbering scheme. x.yy.z: x.yy represents the version
           of wiringPi we fully support, and z represents updates to this Perl
           distribution
