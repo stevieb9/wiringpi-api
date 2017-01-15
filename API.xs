@@ -367,3 +367,6 @@ initThread(callback)
 int
 physPinToWpi(wpi_pin)
     int wpi_pin
+
+#char *
+#wiringPiVersion()

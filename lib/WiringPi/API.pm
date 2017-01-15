@@ -24,7 +24,7 @@ my @wpi_c_functions = qw(
     softPwmCreate       softPwmWrite        softPwmStop
     sr595Setup          bmp180Setup         bmp180Pressure
     bmp180Temp          analogRead          analogWrite
-    physPinToWpi
+    physPinToWpi        wiringPiVersion
 );
 
 my @wpi_perl_functions = qw(
@@ -387,6 +387,40 @@ See L<EXPORT_OK>
 =head2 :all
 
 Exports all available exportable functions.
+
+=head1 FUNCTION TOC
+
+=head2 CORE
+
+See L</CORE FUNCTIONS>.
+
+=head2 BOARD
+
+See L</BOARD FUNCTIONS>.
+
+=head2 LCD
+
+See L</LCD FUNCTIONS>.
+
+=head2 SOFTWARE PWM
+
+See L</SOFT PWM FUNCTIONS>.
+
+=head2 INTERRUPT
+
+See L</INTERRUPT FUNCTIONS>.
+
+=head2 SHIFT REGISTER
+
+See L</SHIFT REGISTER FUNCTIONS>.
+
+=head2 BAROMETRIC SENSOR
+
+See L</BMP180 PRESSURE SENSOR FUNCTIONS>.
+
+=head2 INTERRUPT
+
+See L</INTERRUPT FUNCTIONS>.
 
 =head1 CORE FUNCTIONS
 
