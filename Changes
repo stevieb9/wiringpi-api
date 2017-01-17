@@ -14,6 +14,9 @@ Revision history for Perl extension WiringPi::API.
         - added DEVELOPER FUNCTIONS section in POD for dev testing of private,
           unpublished or unreleased functions
         - added pseudoPinsSetup() for testing purposes
+        - reworded POD for setup() routines, as we no longer require root level
+          access to run our scripts (yay!)
+        - wrote test/pwm.pl, fully tests the hardware PWM functionality
 
 2.36.1  2017-01-15
         - changed version numbering scheme. x.yy.z: x.yy represents the version

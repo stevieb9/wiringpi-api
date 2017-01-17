@@ -373,7 +373,9 @@ wrapper for C<wiringPiISR()> in order to make it functional here.
 
 Exported with the C<:perl> tag.
 
-Perl wrapper functions for the XS functions.
+Perl wrapper functions for the XS functions. Not all of these are direct
+wrappers; several have additional/modified functionality than the wrapped
+versions, but are still 100% compatible.
 
     setup           setup_sys       setup_phys          setup_gpio 
     pull_up_down    read_pin        write_pin           pwm_write
@@ -448,33 +450,10 @@ Maps to C<int wiringPiSetup()>
 
 Sets the pin number mapping scheme to C<wiringPi>.
 
-This setup routine requires you to run your script as the C<root> user.
-
-Each setup function has benefits and drawbacks. Please refer to the
-L<wiringPi setup functions|http://wiringpi.com/reference/setup> for details.
-
 See L<pinout.xyz|https://pinout.xyz/pinout/wiringpi> for a pin number
 conversion chart, or on the command line, run C<gpio readall>.
 
-Note that only one of the C<setup*()> methods can be called per program run.
-
-=head2 setup_sys()
-
-Maps to C<int wiringPiSetupSys()>
-
-Sets the pin numbering scheme to C<GPIO>.
-
-This setup routine does NOT require running as root, but you have to manually
-export the pins yourself with the C<gpio> command line utility prior to using
-the pins.
-
-=head2 setup_phys()
-
-Maps to C<int wiringPiSetupPhys()>
-
-Sets the pin mapping to use the physical pin position number on the board.
-
-This setup routine requires you to run your script as the C<root> user.
+Note that only one of the C<setup*()> methods should be called per program run.
 
 =head2 setup_gpio()
 
@@ -482,7 +461,26 @@ Maps to C<int wiringPiSetupGpio()>
 
 Sets the pin numbering scheme to C<GPIO>.
 
-This setup routine requires you to run your script as the C<root> user.
+Personally, this is the setup routine that I always use, due to the GPIO numbers
+physically printed right on the Pi board.
+
+=head2 setup_phys()
+
+Maps to C<int wiringPiSetupPhys()>
+
+Sets the pin mapping to use the physical pin position number on the board.
+
+=head2 setup_sys()
+
+Maps to C<int wiringPiSetupSys()>
+
+DEPRECATED.
+
+This function is here for legacy purposes only, to provide non-root user access
+to the GPIO. It required exporting the pins manually before use. wiringPi now
+uses C</dev/gpiomem> by default, which does not require root level access.
+
+Sets the pin numbering scheme to C<GPIO>.
 
 =head2 pin_mode($pin, $mode)
 
