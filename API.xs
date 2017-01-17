@@ -133,15 +133,8 @@ int bmp180Temp(int pin){
 /*
     not yet implemented
 
-    # core
-
-
-    # board
-
     extern          void setPadDrive         (int group, int value) ;
     extern          void pwmToneWrite        (int pin, int freq) ;
-    extern          void digitalWriteByte    (int value) ;
-    extern unsigned int  digitalReadByte     (void) ;
     extern          void pwmSetMode          (int mode) ;
     extern          void pwmSetClock         (int divisor) ;
     extern          void gpioClockSet        (int pin, int freq) ;
