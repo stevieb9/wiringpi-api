@@ -22,7 +22,9 @@ Revision history for Perl extension WiringPi::API.
         - added test/pin_translations.pl, test all pin translation functions
         - added pinModeAlt() as a developer function (allows setting any pin to
           any valid mode)
-
+        - added digitalReadByte(), digitalReadByte2(), digitalWriteByte() and
+          digitalWriteByte2() as developer functions. Reads and writes an 8-bit
+          byte to/from the first and second bank of eight GPIO pins respectively
 
 2.36.1  2017-01-15
         - changed version numbering scheme. x.yy.z: x.yy represents the version

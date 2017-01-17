@@ -1076,10 +1076,8 @@ C<bmp180Pressure($pin)> directly.
 
 =head1 DEVELOPER FUNCTIONS
 
-These are functions in wiringPi or functions I'm testing for possible addition
-to wiringPi that need scrutinizing and/or testing. They most likely don't even
-have a functional use outside of wiringPi itself anyways. These should NOT be
-used by the end user. You have been warned.
+These functions are under testing, or don't potentially have a use to the end
+user. They may be risky to use, so use at your own risk.
 
 The functions in this section do not have a Perl wrapper equivalent.
 
@@ -1110,6 +1108,33 @@ Mandatory: Signed integer, any valid GPIO pin number.
     mode
 
 Mandatory: Signed integer, any valid wiringPi pin mode.
+
+=head2 digitalWriteByte(const int value)
+
+Writes an 8-bit byte to the first eight GPIO pins.
+
+Parameters:
+
+    value
+
+Mandatory: Unsigned int, the byte value you want to send in.
+
+Return: void
+
+=head2 digitalWriteByte2(const int value)
+
+Same as L</digitalWriteByte(const int value)>, but writes to the second group
+of eight GPIO pins.
+
+=head2 digitalReadByte()
+
+Reads an 8-bit byte from the first eight GPIO pins on the Pi.
+
+Takes no parameters, returns the byte value as an unsigned int.
+
+=head2 digitalReadByte2()
+
+Same as L</digitalReadByte>, but reads from the second group of eight GPIO pins.
 
 head1 AUTHOR
 

@@ -381,5 +381,19 @@ pinModeAlt(pin, mode)
     int pin
     int mode
 
+void
+digitalReadByte()
+
+void
+digitalReadByte2()
+
+int
+digitalWriteByte(value)
+    const int value
+
+int
+digitalWriteByte2(value)
+    const int value
+
 #char *
 #wiringPiVersion()
