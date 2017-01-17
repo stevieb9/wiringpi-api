@@ -1097,6 +1097,20 @@ Mandatory: Integer, larger than the highest GPIO pin number. Eg: C<500> will be
 the base for the analog pins on an ADS1115 ADC. Pin C<A0> would be C<500>, and
 ADC pin C<A3> would be C<503>.
 
+=head2 pinModeAlt(int pin, int mode)
+
+Undocumented function that allows any pin to be set to any mode.
+
+Parameters:
+
+    pin
+
+Mandatory: Signed integer, any valid GPIO pin number.
+
+    mode
+
+Mandatory: Signed integer, any valid wiringPi pin mode.
+
 head1 AUTHOR
 
 Steve Bertrand, E<lt>steveb@cpan.orgE<gt>

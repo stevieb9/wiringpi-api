@@ -20,6 +20,8 @@ Revision history for Perl extension WiringPi::API.
         - added test/pud.pl, testing for pull up/down internal resistors
         - changed board_rev() references in POD to gpio_layout() (fixes #9)
         - added test/pin_translations.pl, test all pin translation functions
+        - added pinModeAlt() as a developer function (allows setting any pin to
+          any valid mode)
 
 
 2.36.1  2017-01-15

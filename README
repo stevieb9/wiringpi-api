@@ -76,7 +76,7 @@ EXPORT_OK
 
         setup           setup_sys       setup_phys          setup_gpio 
         pull_up_down    read_pin        write_pin           pwm_write
-        get_alt         board_rev       wpi_to_gpio         phys_to_gpio
+        get_alt         gpio_layout     wpi_to_gpio         phys_to_gpio
         pwm_set_range   lcd_init        lcd_home            lcd_clear
         lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
         lcd_position    lcd_char_def    lcd_put_char        lcd_puts
@@ -311,11 +311,11 @@ CORE FUNCTIONS
 
 BOARD FUNCTIONS
 
- board_rev()
+ gpio_layout()
 
     Maps to int piGpioLayout()
 
-    Returns the Raspberry Pi board's revision.
+    Returns the Raspberry Pi board's GPIO layout (ie. the board revision).
 
  wpi_to_gpio($pin_num)
 
@@ -808,6 +808,20 @@ DEVELOPER FUNCTIONS
     Mandatory: Integer, larger than the highest GPIO pin number. Eg: 500
     will be the base for the analog pins on an ADS1115 ADC. Pin A0 would be
     500, and ADC pin A3 would be 503.
+
+ pinModeAlt(int pin, int mode)
+
+    Undocumented function that allows any pin to be set to any mode.
+
+    Parameters:
+
+        pin
+
+    Mandatory: Signed integer, any valid GPIO pin number.
+
+        mode
+
+    Mandatory: Signed integer, any valid wiringPi pin mode.
 
     head1 AUTHOR
 

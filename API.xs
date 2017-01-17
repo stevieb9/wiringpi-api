@@ -135,7 +135,6 @@ int bmp180Temp(int pin){
 
     # core
 
-    extern void pinModeAlt          (int pin, int mode) ;
 
     # board
 
@@ -376,6 +375,11 @@ ads1115Setup(pin_base, addr)
 int
 pseudoPinsSetup(pin_base)
     int pin_base
+
+void
+pinModeAlt(pin, mode)
+    int pin
+    int mode
 
 #char *
 #wiringPiVersion()
