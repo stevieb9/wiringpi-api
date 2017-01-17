@@ -379,7 +379,7 @@ versions, but are still 100% compatible.
 
     setup           setup_sys       setup_phys          setup_gpio 
     pull_up_down    read_pin        write_pin           pwm_write
-    get_alt         board_rev       wpi_to_gpio         phys_to_gpio
+    get_alt         gpio_layout     wpi_to_gpio         phys_to_gpio
     pwm_set_range   lcd_init        lcd_home            lcd_clear
     lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
     lcd_position    lcd_char_def    lcd_put_char        lcd_puts
@@ -611,11 +611,11 @@ C<setup*()> routine you used.
 
 =head1 BOARD FUNCTIONS
 
-=head2 board_rev()
+=head2 gpio_layout()
 
 Maps to C<int piGpioLayout()>
 
-Returns the Raspberry Pi board's revision.
+Returns the Raspberry Pi board's GPIO layout (ie. the board revision).
 
 =head2 wpi_to_gpio($pin_num)
 
