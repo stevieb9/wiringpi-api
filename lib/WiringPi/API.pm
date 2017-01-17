@@ -25,6 +25,7 @@ my @wpi_c_functions = qw(
     sr595Setup          bmp180Setup         bmp180Pressure
     bmp180Temp          analogRead          analogWrite
     physPinToWpi        wiringPiVersion     ads1115Setup
+    pseudoPinsSetup
 );
 
 my @wpi_perl_functions = qw(
@@ -1074,6 +1075,29 @@ Return: A floating point number that represents the air pressure in kPa.
 
 NOTE: To get the raw sensor pressure, call the C function 
 C<bmp180Pressure($pin)> directly.
+
+=head1 DEVELOPER FUNCTIONS
+
+These are functions in wiringPi or functions I'm testing for possible addition
+to wiringPi that need scrutinizing and/or testing. They most likely don't even
+have a functional use outside of wiringPi itself anyways. These should NOT be
+used by the end user. You have been warned.
+
+The functions in this section do not have a Perl wrapper equivalent.
+
+=head2 pseudoPinsSetup(int pinBase)
+
+This function allocates shared memory for the pseudo pins used to communicate
+with devices that are beyond the reach of the Pi's GPIO (eg: shift registers,
+ADCs etc).
+
+Parameters:
+
+    pinBase
+
+Mandatory: Integer, larger than the highest GPIO pin number. Eg: C<500> will be
+the base for the analog pins on an ADS1115 ADC. Pin C<A0> would be C<500>, and
+ADC pin C<A3> would be C<503>.
 
 head1 AUTHOR
 

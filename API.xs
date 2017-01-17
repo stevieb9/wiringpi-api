@@ -373,5 +373,9 @@ ads1115Setup(pin_base, addr)
     int pin_base
     int addr
 
+int
+pseudoPinsSetup(pin_base)
+    int pin_base
+
 #char *
 #wiringPiVersion()

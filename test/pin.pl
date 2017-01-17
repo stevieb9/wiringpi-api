@@ -1,11 +1,10 @@
-#!/usr/bin/perl
 use strict;
 use warnings;
 use feature 'say';
 
-
-use WiringPi::API qw(:all);
 use RPi::WiringPi::Constant qw(:all);
+use Test::More;
+use WiringPi::API qw(:all);
 
 my $p = 18;
 
@@ -23,3 +22,5 @@ pinMode($p, INPUT);
 
 say "m: " . get_alt($p);
 say "s: " . read_pin($p);
+
+done_testing();

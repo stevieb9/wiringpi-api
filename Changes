@@ -11,6 +11,9 @@ Revision history for Perl extension WiringPi::API.
           well as allowing all ADC options to be configurable, and hope it gets
           included in the next wiringPi cut)
         - added docs/, which includes Fritzing diagrams and schematics
+        - added DEVELOPER FUNCTIONS section in POD for dev testing of private,
+          unpublished or unreleased functions
+        - added pseudoPinsSetup() for testing purposes
 
 2.36.1  2017-01-15
         - changed version numbering scheme. x.yy.z: x.yy represents the version
