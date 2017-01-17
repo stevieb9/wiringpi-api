@@ -10,6 +10,7 @@ Revision history for Perl extension WiringPi::API.
           converter (I'm going to do a rewrite of this code to support 1015, as
           well as allowing all ADC options to be configurable, and hope it gets
           included in the next wiringPi cut)
+        - added docs/, which includes Fritzing diagrams and schematics
 
 2.36.1  2017-01-15
         - changed version numbering scheme. x.yy.z: x.yy represents the version
