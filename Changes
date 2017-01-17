@@ -5,6 +5,11 @@ Revision history for Perl extension WiringPi::API.
         - added declaration of custom wiringPiVersion() in XS, but left it
           commented out as it will break CPAN installs at this time
         - added version.patch file in patches/, patch sent to Gordon
+        - all four setup routines added to test/setup.pl
+        - added in wiringPi's support for the Adafruit ADS1115 analog to digital
+          converter (I'm going to do a rewrite of this code to support 1015, as
+          well as allowing all ADC options to be configurable, and hope it gets
+          included in the next wiringPi cut)
 
 2.36.1  2017-01-15
         - changed version numbering scheme. x.yy.z: x.yy represents the version

@@ -24,7 +24,7 @@ my @wpi_c_functions = qw(
     softPwmCreate       softPwmWrite        softPwmStop
     sr595Setup          bmp180Setup         bmp180Pressure
     bmp180Temp          analogRead          analogWrite
-    physPinToWpi        wiringPiVersion
+    physPinToWpi        wiringPiVersion     ads1115Setup
 );
 
 my @wpi_perl_functions = qw(
@@ -37,6 +37,7 @@ my @wpi_perl_functions = qw(
     set_interrupt   soft_pwm_create soft_pwm_write      soft_pwm_stop
     shift_reg_setup bmp180_setup    bmp180_pressure     bmp180_temp
     analog_read     analog_write    pin_mode            phys_to_wpi
+    ads1115_setup
 );
 
 our @EXPORT_OK;
@@ -218,6 +219,15 @@ sub lcd_puts {
     shift if @_ == 3;
     my ($fd, $string) = @_;
     lcdPuts($fd, $string);
+}
+
+# ads1115 functions
+
+sub ads1115_setup {
+    shift if @_ == 3;
+    my ($pin_base, $addr) = @_;
+
+    return ads1115Setup($pin_base, $addr);
 }
 
 # shift register functions
@@ -410,6 +420,10 @@ See L</SOFT PWM FUNCTIONS>.
 
 See L</INTERRUPT FUNCTIONS>.
 
+=head2 ANALOG TO DIGITAL CONVERTER
+
+See L</ADC FUNCTIONS>.
+
 =head2 SHIFT REGISTER
 
 See L</SHIFT REGISTER FUNCTIONS>.
@@ -417,10 +431,6 @@ See L</SHIFT REGISTER FUNCTIONS>.
 =head2 BAROMETRIC SENSOR
 
 See L</BMP180 PRESSURE SENSOR FUNCTIONS>.
-
-=head2 INTERRUPT
-
-See L</INTERRUPT FUNCTIONS>.
 
 =head1 CORE FUNCTIONS
 
@@ -927,6 +937,44 @@ Mandatory: C<1> (lowering), C<2> (raising) or C<3> (both).
 Mandatory: The string name of a subroutine previously written in your user code
 that will be called when the interrupt is triggered. This is your interrupt
 handler.
+
+=head1 ADC FUNCTIONS
+
+Analog to digital converters (ADC) allow you to read analog data on the
+Raspberry Pi, as the Pi doesn't have any analog input pins.
+
+This section is broken down by type/model.
+
+=head2 ADS1115 MODEL
+
+=head3 ads1115Setup($pin_base, $addr)
+
+The ADS1115 is a four channel, 16-bit wide ADC.
+
+Parameters:
+
+    $pin_base
+
+Mandatory: Signed integer, higher than that of all GPIO pins. This is the base
+number we'll use to access the pseudo pins on the ADC. Example: If C<400> is
+sent in, ADC pin C<A0> (or C<0>) will be pin 400, and C<AD3> (the fourth analog
+pin) will be 403.
+
+Parameters:
+
+    $addr
+
+Mandatory: Signed integer. This parameter depends on how you have the C<ADDR>
+pin on the ADC connected to the Pi. Below is a chart showing if the C<ADDR> pin
+is connected to the Pi C<Pin>, you'll get the address. You can also use
+C<i2cdetect -y 1> to find out your ADC address.
+
+    Pin     Address
+    ---------------
+    Gnd     0x48
+    VDD     0x49
+    SDA     0x4A
+    SCL     0x4B
 
 =head1 SHIFT REGISTER FUNCTIONS
 

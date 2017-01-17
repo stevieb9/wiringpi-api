@@ -368,5 +368,10 @@ int
 physPinToWpi(wpi_pin)
     int wpi_pin
 
+int
+ads1115Setup(pin_base, addr)
+    int pin_base
+    int addr
+
 #char *
 #wiringPiVersion()
