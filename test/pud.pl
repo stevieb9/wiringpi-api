@@ -10,8 +10,11 @@ my $p = 18;
 
 setup_gpio();
 
-pin_mode($p, PWM);
-is get_alt($p), PWM, "pud pin is PWM mode ok";
+pin_mode($p, INPUT);
+
+pull_up_down($p, PWM_OUT);
+is get_alt($p), INPUT, "pud pin is INPUT mode ok";
+
 
 pull_up_down($p, PUD_UP);
 is read_pin($p), HIGH, "pud UP is HIGH";

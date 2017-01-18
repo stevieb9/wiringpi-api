@@ -100,6 +100,9 @@ sub setup_gpio {
 sub pin_mode {
     shift if @_ == 3;
     my ($pin, $mode) = @_;
+    if (! grep {$mode == $_} qw(0 1 2 3)){
+        die "pin_mode() requires either 0, 1, 2 or 3 as a param";
+    }
     pinMode($pin, $mode);
 }
 sub pull_up_down {

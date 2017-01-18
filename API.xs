@@ -178,10 +178,6 @@ digitalWrite(pin, value)
     int value
 
 void
-digitalWriteByte(value)
-    int value
-
-void
 pwmWrite(pin, value)
     int pin
     int value
@@ -374,19 +370,19 @@ pinModeAlt(pin, mode)
     int pin
     int mode
 
-void
+int
 digitalReadByte()
 
-void
+int
 digitalReadByte2()
 
-int
+void
 digitalWriteByte(value)
-    const int value
+    int value
 
-int
+void
 digitalWriteByte2(value)
-    const int value
+    int value
 
 #char *
 #wiringPiVersion()

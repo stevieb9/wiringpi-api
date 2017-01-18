@@ -69,7 +69,7 @@ for (keys %wpi_to_gpio_pin_map){
     is
         WiringPi::API::wpi_to_gpio($_),
         $wpi_to_gpio_pin_map{$_},
-        "wpi $_ == gpio $wpi_to_gpio_pin_map{$_} ok"; }
+        "wpi $_ == gpio $wpi_to_gpio_pin_map{$_} ok";
 }
 
 done_testing();
