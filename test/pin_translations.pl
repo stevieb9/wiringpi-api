@@ -1,6 +1,12 @@
 use strict;
 use warnings;
 
+BEGIN {
+    if ($> != 0){
+        die "sudo required...\n";
+    }
+}
+
 use Test::More;
 use WiringPi::API;
 
