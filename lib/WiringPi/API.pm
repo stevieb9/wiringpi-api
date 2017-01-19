@@ -952,7 +952,9 @@ This section is broken down by type/model.
 
 =head2 ADS1115 MODEL
 
-=head3 ads1115Setup($pin_base, $addr)
+=head3 ads1115_setup($pin_base, $addr)
+
+Maps to `ads1115Setup(int pinBase, int addr)`.
 
 The ADS1115 is a four channel, 16-bit wide ADC.
 
