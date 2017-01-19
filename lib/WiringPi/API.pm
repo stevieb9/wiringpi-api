@@ -404,7 +404,7 @@ See L<EXPORT_OK>
 
 Exports all available exportable functions.
 
-=head1 FUNCTION TOC
+=head1 FUNCTION TABLE OF CONTENTS
 
 =head2 CORE
 
