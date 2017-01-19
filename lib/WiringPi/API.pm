@@ -875,6 +875,9 @@ Mandatory: A string to display.
 
 =head1 SOFT PWM FUNCTIONS
 
+Note: The software PWM functionality is experimental, and from what I've
+tested, not very reliable, so I'd stay away from this at this time.
+
 Software Pulse Width Modulation is not the same as hardware PWM. It should not
 be used for critical things as it's frequency isn't 100% stable.
 

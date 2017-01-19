@@ -3,6 +3,9 @@ Revision history for Perl extension WiringPi::API.
 2.36.3 UNREL
         - changed TOC to "TABLE OF CONTENTS" in POD (closes #18)
         - modified dist description in POD
+        - added blurb in softpwm section that this functionality is quite
+          unreliable
+
 2.36.2  2017-01-19
         - *** this software isn't completely tested. That's on this week's
               roadmap...
