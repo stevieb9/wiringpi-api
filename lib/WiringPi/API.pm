@@ -308,8 +308,8 @@ __END__
 
 =head1 NAME
 
-WiringPi::API - Direct access to Raspberry Pi's wiringPi API, with optional
-Perl OO access
+WiringPi::API - API for wiringPi, providing access to the Raspberry Pi's board,
+GPIO and connected peripherals
 
 =head1 SYNOPSIS
 
