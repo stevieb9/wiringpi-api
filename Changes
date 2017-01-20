@@ -1,6 +1,19 @@
 Revision history for Perl extension WiringPi::API.
 
-2.36.2 UNREL
+2.36.3 UNREL
+        - changed TOC to "TABLE OF CONTENTS" in POD (closes #18)
+        - modified dist description in POD
+        - added blurb in softpwm section that this functionality is quite
+          unreliable
+        - removed the code that skipped over the first interrupt in XS, as
+          the new wiringPi corrected the issue internally
+        - added POD for ads1115_setup()
+        - added test file for wiringPi's representation of the ADS1115 ADC
+
+2.36.2  2017-01-19
+        - *** this software isn't completely tested. That's on this week's
+              roadmap...
+          ***
         - added function table of contents to POD
         - added declaration of custom wiringPiVersion() in XS, but left it
           commented out as it will break CPAN installs at this time
@@ -25,6 +38,9 @@ Revision history for Perl extension WiringPi::API.
         - added digitalReadByte(), digitalReadByte2(), digitalWriteByte() and
           digitalWriteByte2() as developer functions. Reads and writes an 8-bit
           byte to/from the first and second bank of eight GPIO pins respectively
+        - added setup tests, since an issue was found that causes some calls to
+          crash the system (journal, RO), added root checks. Notes taken on
+          sourcing the issue(s)
 
 2.36.1  2017-01-15
         - changed version numbering scheme. x.yy.z: x.yy represents the version

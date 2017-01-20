@@ -3,7 +3,7 @@ package WiringPi::API;
 use strict;
 use warnings;
 
-our $VERSION = '2.36.2';
+our $VERSION = '2.36.3';
 
 require XSLoader;
 XSLoader::load('WiringPi::API', $VERSION);
@@ -337,8 +337,8 @@ __END__
 
 =head1 NAME
 
-WiringPi::API - Direct access to Raspberry Pi's wiringPi API, with optional
-Perl OO access
+WiringPi::API - API for wiringPi, providing access to the Raspberry Pi's board,
+GPIO and connected peripherals
 
 =head1 SYNOPSIS
 
@@ -436,7 +436,7 @@ See L<EXPORT_OK>
 
 Exports all available exportable functions.
 
-=head1 FUNCTION TOC
+=head1 FUNCTION TABLE OF CONTENTS
 
 =head2 CORE
 
@@ -911,6 +911,9 @@ Mandatory: A string to display.
 
 =head1 SOFT PWM FUNCTIONS
 
+Note: The software PWM functionality is experimental, and from what I've
+tested, not very reliable, so I'd stay away from this at this time.
+
 Software Pulse Width Modulation is not the same as hardware PWM. It should not
 be used for critical things as it's frequency isn't 100% stable.
 
@@ -985,7 +988,9 @@ This section is broken down by type/model.
 
 =head2 ADS1115 MODEL
 
-=head3 ads1115Setup($pin_base, $addr)
+=head3 ads1115_setup($pin_base, $addr)
+
+Maps to `ads1115Setup(int pinBase, int addr)`.
 
 The ADS1115 is a four channel, 16-bit wide ADC.
 
