@@ -18,8 +18,8 @@
  */
 
 void interruptHandler();
-int setInterrupt(int pin, int edge, char *callback);
-int initThread(char *callback);
+int setInterrupt(int pin, int edge, char * callback);
+int initThread(char * callback);
 static int phys_wpi_map[64];
 int physPinToWpi(int wpi_pin);
 int bmp180Pressure(int pin);
@@ -66,8 +66,8 @@ static int phys_wpi_map[64] =
   -1
 };
 
-char *perl_callback; // dynamically set perl callback for interrupt handler
-PerlInterpreter *mine;
+char * perl_callback; // dynamically set perl callback for interrupt handler
+PerlInterpreter * mine;
 int first_call = 1;
 
 void interruptHandler(){
@@ -92,14 +92,14 @@ void interruptHandler(){
     LEAVE;
 }
 
-int setInterrupt(int pin, int edge, char *callback){
+int setInterrupt(int pin, int edge, char * callback){
     mine = Perl_get_context();
     perl_callback = callback;
     int interrupt = wiringPiISR(pin, edge, &interruptHandler);
     return interrupt;
 }
 
-int initThread(char *callback){
+int initThread(char * callback){
     mine = Perl_get_context();
 
     PI_THREAD (myThread){
@@ -272,7 +272,7 @@ void
 lcdCharDef(fd, index, data)
     int fd
     int index
-    unsigned char *data
+    unsigned char * data
 
 void
 lcdPutchar(fd, data)
@@ -282,7 +282,7 @@ lcdPutchar(fd, data)
 void
 lcdPuts(fd, string)
     int fd
-    char *string
+    char * string
 
 # soft pwm
 
@@ -343,14 +343,14 @@ int
 setInterrupt(pin, edge, callback)
     int pin
     int edge
-    char *callback
+    char * callback
 
 void
 interruptHandler()
 
 int
 initThread(callback)
-    char *callback
+    char * callback
 
 int
 physPinToWpi(wpi_pin)
@@ -383,6 +383,16 @@ digitalWriteByte(value)
 void
 digitalWriteByte2(value)
     int value
+
+int
+wiringPiSPISetup(channel, speed)
+    int channel
+    int speed
+
+wiringPiSPIDataRW(channel, data, len)
+    int channel
+    char * data
+    int len
 
 #char *
 #wiringPiVersion()

@@ -25,7 +25,7 @@ my @wpi_c_functions = qw(
     sr595Setup          bmp180Setup         bmp180Pressure
     bmp180Temp          analogRead          analogWrite
     physPinToWpi        wiringPiVersion     ads1115Setup
-    pseudoPinsSetup
+    pseudoPinsSetup     wiringPiSPISetup    wiringPiSPIDataRW
 );
 
 my @wpi_perl_functions = qw(
@@ -38,7 +38,7 @@ my @wpi_perl_functions = qw(
     set_interrupt   soft_pwm_create soft_pwm_write      soft_pwm_stop
     shift_reg_setup bmp180_setup    bmp180_pressure     bmp180_temp
     analog_read     analog_write    pin_mode            phys_to_wpi
-    ads1115_setup
+    ads1115_setup   spi_setup       spi_data
 );
 
 our @EXPORT_OK;
@@ -256,6 +256,35 @@ sub shift_reg_setup {
     sr595Setup($pin_base, $num_pins, $data_pin, $clock_pin, $latch_pin);
 }
 
+# SPI functions
+
+sub spi_setup {
+    shift if @_ == 3;
+    my ($channel, $speed) = @_;
+
+    if ($channel != 0 && $channel != 1){
+        die "spi_setup() channel param must be 0 or 1\n";
+    }
+
+    return wiringPiSPISetup($channel, $speed);
+}
+sub spi_data {
+    shift if @_ == 4;
+    my ($chan, $data, $len) = @_;
+
+    if ($chan != 0 && $chan != 1){
+        die "spi_data() channel param must be 0 or 1\n";
+    }
+    if (ref $data ne 'ARRAY'){
+        die "spi_data() data param must be an array reference\n";
+    }
+    if (@$data != $len){
+        die "spi_data() array reference must have \$len param count\n";
+    }
+
+    return wiringPiSPIDataRW($chan, $data, $len);
+}
+
 # bmp180 pressure sensor functions
 
 sub bmp180_setup {
@@ -340,9 +369,9 @@ you must initialize the software by calling one of the C<setup*()> routines.
 
 =head1 DESCRIPTION
 
-This is an XS-based module, and requires L<wiringPi|http://wiringpi.com> version 2.36+
-to be installed. The C<wiringPiDev> shared library is also required (for the LCD
-functionality), but it's installed by default with C<wiringPi>.
+This is an XS-based module, and requires L<wiringPi|http://wiringpi.com> version
+2.36+ to be installed. The C<wiringPiDev> shared library is also required (for
+the LCD functionality), but it's installed by default with C<wiringPi>.
 
 This module allows you to import the wiringPi's functions directly as-is, use
 it as a Perl base class, export the Perl wrapped functions, or use it in a
@@ -373,6 +402,8 @@ wrapper for C<wiringPiISR()> in order to make it functional here.
     softPwmCreate       softPwmWrite        softPwmStop
     sr595Setup          bmp180Setup         bmp180Pressure
     bmp180Temp          analogRead          analogWrite
+    ads1115Setup        pseudoPinsSetup     wiringPiSPISetup
+    wiringPiSPIDataRW
 
 Exported with the C<:perl> tag.
 
@@ -388,7 +419,8 @@ versions, but are still 100% compatible.
     lcd_position    lcd_char_def    lcd_put_char        lcd_puts
     set_interrupt   soft_pwm_create soft_pwm_write      soft_pwm_stop
     shift_reg_setup pin_mode        analog_read         analog_write
-    bmp180_setup    bmp180_pressure bmp180_temp
+    bmp180_setup    bmp180_pressure bmp180_temp         phys_to_wpi
+    ads1115_setup   spi_setup       spi_data
 
 =head1 EXPORT_TAGS
 
@@ -433,6 +465,10 @@ See L</ADC FUNCTIONS>.
 =head2 SHIFT REGISTER
 
 See L</SHIFT REGISTER FUNCTIONS>.
+
+=head2 SPI
+
+See L</SPI FUNCTIONS>
 
 =head2 BAROMETRIC SENSOR
 
@@ -1021,6 +1057,60 @@ Mandatory: Integer, the GPIO pin number connected to the register's C<SHCP> pin
 
 Mandatory: Integer, the GPIO pin number connected to the register's C<STCP> pin
 (12). Can be any GPIO pin capable of output.
+
+=head1 SPI FUNCTIONS
+
+These functions allow you to set up and read/write to devices on the serial
+peripheral interface (SPI) bus.
+
+=head2 spi_setup
+
+Maps to C<int wiringPiSPISetup(int channel, int speed)>
+
+Configure the SPI bus for use to communicate with its connected devices.
+
+Parameters:
+
+    $channel
+
+Mandatory: Integer, the SPI channel the device is connected to. C<0> for channel
+C</dev/spidev0.0> and C<1> for channel C</dev/spidev0.1>.
+
+    $speed
+
+Optional: Integer, the speed for SPI communication. Defaults to 1000000 (1MHz).
+
+Note that it's wise to do some error checking when attempting to open the SPI
+bus. We return the return value of an C<ioctl()> call, so this does the trick:
+
+    if ((spi_setup(0, 1000000) < 0){
+        die "failed to open the SPI bus...\n";
+    }
+
+=head2 spi_data
+
+Maps to: C<int wiringPiSPIDataRW(int channel, unsigned char * data, int len)>
+
+Writes, and then reads a block of data over the SPI bus. The read following the
+write is read into the transmit buffer, so it'll be overwritten.
+
+Parameters:
+
+    $channel
+
+Mandatory: Integer, the SPI channel the device is connected to. C<0> for channel
+C</dev/spidev0.0> and C<1> for channel C</dev/spidev0.1>.
+
+    $data
+
+Mandatory: An array reference, with each element containing a single unsigned
+8-bit byte that you want to write to the device.
+
+    $len
+
+Mandatory: Integer, the number of bytes contained in the C<$data> parameter
+array reference that will be sent to the device. I could just count the number
+of elements, but this keeps things consistent.
 
 =head1 BMP180 PRESSURE SENSOR FUNCTIONS
 
