@@ -30,10 +30,9 @@ is read_pin($p), HIGH, "wpi setup pin HIGH ok";
 
 pin_mode($p, INPUT);
 
+pause(0.5);
+
 is get_alt($p), INPUT, "wpi setup pin mode back to INPUT ok";
-
-pause(0.3);
-
 is read_pin($p), LOW, "wpi setup back to INPUT, LOW ok";
 
 done_testing();

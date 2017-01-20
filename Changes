@@ -9,11 +9,10 @@ Revision history for Perl extension WiringPi::API.
           the new wiringPi corrected the issue internally
         - added POD for ads1115_setup()
         - added test file for wiringPi's representation of the ADS1115 ADC
+        - added support for communicating on the SPI bus (spi_setup() and
+          spi_data()
 
 2.36.2  2017-01-19
-        - *** this software isn't completely tested. That's on this week's
-              roadmap...
-          ***
         - added function table of contents to POD
         - added declaration of custom wiringPiVersion() in XS, but left it
           commented out as it will break CPAN installs at this time

@@ -50,11 +50,10 @@ is $adc->percent > 40 && $adc->percent < 60, 1, "pwm_range(9): pwm at 4 ok";
 
 pinMode($p, INPUT);
 
-is get_alt($p), INPUT, "pin back to INPUT mode ok";
-
 # sleep hackery
-select undef, undef, undef, 0.3;
+select undef, undef, undef, 1;
 
+is get_alt($p), INPUT, "pin back to INPUT mode ok";
 is read_pin($p), LOW, "pin back to LOW state ok";
 is $adc->volts < 1, 1, "pin is not outputting any signal ok";
 

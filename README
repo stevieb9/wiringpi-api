@@ -1,6 +1,6 @@
 NAME
-    WiringPi::API - Direct access to Raspberry Pi's wiringPi API, with
-    optional Perl OO access
+    WiringPi::API - API for wiringPi, providing access to the Raspberry Pi's
+    board, GPIO and connected peripherals
 
 SYNOPSIS
     No matter which import option you choose, before you can start making
@@ -63,6 +63,8 @@ EXPORT_OK
         softPwmCreate       softPwmWrite        softPwmStop
         sr595Setup          bmp180Setup         bmp180Pressure
         bmp180Temp          analogRead          analogWrite
+        ads1115Setup        pseudoPinsSetup     wiringPiSPISetup
+        wiringPiSPIDataRW
 
     Exported with the `:perl' tag.
 
@@ -78,7 +80,8 @@ EXPORT_OK
         lcd_position    lcd_char_def    lcd_put_char        lcd_puts
         set_interrupt   soft_pwm_create soft_pwm_write      soft_pwm_stop
         shift_reg_setup pin_mode        analog_read         analog_write
-        bmp180_setup    bmp180_pressure bmp180_temp
+        bmp180_setup    bmp180_pressure bmp180_temp         phys_to_wpi
+        ads1115_setup   spi_setup       spi_data
 
 EXPORT_TAGS
   :wiringPi
@@ -90,7 +93,7 @@ EXPORT_TAGS
   :all
     Exports all available exportable functions.
 
-FUNCTION TOC
+FUNCTION TABLE OF CONTENTS
   CORE
     See CORE FUNCTIONS.
 
@@ -111,6 +114,9 @@ FUNCTION TOC
 
   SHIFT REGISTER
     See SHIFT REGISTER FUNCTIONS.
+
+  SPI
+    See SPI FUNCTIONS
 
   BAROMETRIC SENSOR
     See BMP180 PRESSURE SENSOR FUNCTIONS.
@@ -522,6 +528,9 @@ LCD FUNCTIONS
     Mandatory: A string to display.
 
 SOFT PWM FUNCTIONS
+    Note: The software PWM functionality is experimental, and from what I've
+    tested, not very reliable, so I'd stay away from this at this time.
+
     Software Pulse Width Modulation is not the same as hardware PWM. It
     should not be used for critical things as it's frequency isn't 100%
     stable.
@@ -592,7 +601,9 @@ ADC FUNCTIONS
     This section is broken down by type/model.
 
   ADS1115 MODEL
-    ads1115Setup($pin_base, $addr)
+    ads1115_setup($pin_base, $addr)
+    Maps to `ads1115Setup(int pinBase, int addr)`.
+
     The ADS1115 is a four channel, 16-bit wide ADC.
 
     Parameters:
@@ -662,6 +673,61 @@ SHIFT REGISTER FUNCTIONS
 
     Mandatory: Integer, the GPIO pin number connected to the register's
     `STCP' pin (12). Can be any GPIO pin capable of output.
+
+SPI FUNCTIONS
+    These functions allow you to set up and read/write to devices on the
+    serial peripheral interface (SPI) bus.
+
+  spi_setup
+    Maps to `int wiringPiSPISetup(int channel, int speed)'
+
+    Configure the SPI bus for use to communicate with its connected devices.
+
+    Parameters:
+
+        $channel
+
+    Mandatory: Integer, the SPI channel the device is connected to. `0' for
+    channel `/dev/spidev0.0' and `1' for channel `/dev/spidev0.1'.
+
+        $speed
+
+    Optional: Integer, the speed for SPI communication. Defaults to 1000000
+    (1MHz).
+
+    Note that it's wise to do some error checking when attempting to open
+    the SPI bus. We return the return value of an `ioctl()' call, so this
+    does the trick:
+
+        if ((spi_setup(0, 1000000) < 0){
+            die "failed to open the SPI bus...\n";
+        }
+
+  spi_data
+    Maps to: `int wiringPiSPIDataRW(int channel, unsigned char * data, int
+    len)'
+
+    Writes, and then reads a block of data over the SPI bus. The read
+    following the write is read into the transmit buffer, so it'll be
+    overwritten.
+
+    Parameters:
+
+        $channel
+
+    Mandatory: Integer, the SPI channel the device is connected to. `0' for
+    channel `/dev/spidev0.0' and `1' for channel `/dev/spidev0.1'.
+
+        $data
+
+    Mandatory: An array reference, with each element containing a single
+    unsigned 8-bit byte that you want to write to the device.
+
+        $len
+
+    Mandatory: Integer, the number of bytes contained in the `$data'
+    parameter array reference that will be sent to the device. I could just
+    count the number of elements, but this keeps things consistent.
 
 BMP180 PRESSURE SENSOR FUNCTIONS
     These functions configure and fetch data from the BMP180 pressure

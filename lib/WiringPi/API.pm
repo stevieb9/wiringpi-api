@@ -266,6 +266,8 @@ sub spi_setup {
         die "spi_setup() channel param must be 0 or 1\n";
     }
 
+    $speed = 1000000 if ! defined $speed;
+
     return wiringPiSPISetup($channel, $speed);
 }
 sub spi_data {

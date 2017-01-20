@@ -29,11 +29,9 @@ write_pin($p, HIGH);
 is read_pin($p), HIGH, "gpio setup pin HIGH ok";
 
 pin_mode($p, INPUT);
+pause(1);
 
 is get_alt($p), INPUT, "gpio setup pin mode back to INPUT ok";
-
-pause(0.3);
-
 is read_pin($p), LOW, "gpio setup back to INPUT, LOW ok";
 
 done_testing();

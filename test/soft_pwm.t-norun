@@ -1,0 +1,32 @@
+use strict;
+use warnings;
+use feature 'say';
+
+BEGIN {
+    if ($> != 0){
+        die "sudo required...\n";
+    }
+}
+
+use RPi::ADC::ADS;
+use RPi::WiringPi::Constant qw(:all);
+use Test::More;
+use WiringPi::API qw(:all);
+
+my $adc = RPi::ADC::ADS->new;
+
+my $p = 18;
+my $v = 1023;
+my $r = 1023;
+
+wiringPiSetupGpio();
+
+soft_pwm_create($p, $v, $r);
+
+is $adc->percent > 99, 1, "v: $v, r: $r... output ok";
+
+soft_pwm_write($p, 1);
+
+say $adc->percent;
+say $adc->percent(2);
+done_testing();

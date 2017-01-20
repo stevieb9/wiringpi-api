@@ -7,6 +7,7 @@
 #include "ppport.h"
 
 #include <wiringPi.h>
+#include <wiringPiSPI.h>
 #include <lcd.h>
 #include <softPwm.h>
 #include <sr595.h>
@@ -389,6 +390,7 @@ wiringPiSPISetup(channel, speed)
     int channel
     int speed
 
+int
 wiringPiSPIDataRW(channel, data, len)
     int channel
     char * data

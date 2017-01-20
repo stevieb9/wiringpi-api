@@ -14,6 +14,8 @@ setup_gpio();
 
 set_interrupt(21, EDGE_FALLING, 'handler');
 
+pin_mode(18, OUTPUT);
+
 pin_mode(21, INPUT);
 pull_up_down(21, PUD_UP);
 
@@ -25,6 +27,8 @@ while ($c){
 }
 
 pull_up_down(21, PUD_OFF);
+
+pin_mode(18, INPUT);
 
 sub handler {
     print "in edge fall interrupt handler...\n";
