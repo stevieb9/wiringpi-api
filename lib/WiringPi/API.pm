@@ -284,7 +284,9 @@ sub spi_data {
         die "spi_data() array reference must have \$len param count\n";
     }
 
-    return wiringPiSPIDataRW($chan, $data, $len);
+    wiringPiSPIDataRW($chan, $data, $len);
+
+    return $data;
 }
 
 # bmp180 pressure sensor functions
@@ -1118,6 +1120,8 @@ Mandatory: An array reference, with each element containing a single unsigned
 Mandatory: Integer, the number of bytes contained in the C<$data> parameter
 array reference that will be sent to the device. I could just count the number
 of elements, but this keeps things consistent.
+
+Returns the write buffer (C<$data>) after it's been written with the read data.
 
 =head1 BMP180 PRESSURE SENSOR FUNCTIONS
 
