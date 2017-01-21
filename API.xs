@@ -18,13 +18,14 @@
  * definitions
  */
 
-void interruptHandler();
-int setInterrupt(int pin, int edge, char * callback);
-int initThread(char * callback);
-static int phys_wpi_map[64];
-int physPinToWpi(int wpi_pin);
 int bmp180Pressure(int pin);
 int bmp180Temp(int pin);
+int initThread(char * callback);
+void interruptHandler();
+int physPinToWpi(int wpi_pin);
+static int phys_wpi_map[64];
+int setInterrupt(int pin, int edge, char * callback);
+int spiDataRW(int channel, int data, int len);
 
 /*
  * declarations
@@ -66,6 +67,27 @@ static int phys_wpi_map[64] =
   -1, -1,
   -1
 };
+
+int spiDataRW (int channel, int data, int len){
+
+    unsigned char bytes[4];
+
+    bytes[3] = (data >> 24) & 0xFF;
+    bytes[2] = (data >> 16) & 0xFF;
+    bytes[1] = (data >> 8)  & 0xFF;
+    bytes[0] = data & 0xFF;
+
+    unsigned char buf[len];
+    int i;
+
+    for (i=0; i<len; i++){
+        buf[i] = bytes[i];
+    }
+
+    printf("size: %d\n", sizeof(buf));
+    
+//    wiringPiDataRW(channel, buf, len);
+}
 
 char * perl_callback; // dynamically set perl callback for interrupt handler
 PerlInterpreter * mine;
@@ -391,9 +413,9 @@ wiringPiSPISetup(channel, speed)
     int speed
 
 int
-wiringPiSPIDataRW(channel, data, len)
+spiDataRW(channel, data, len)
     int channel
-    char * data
+    int data
     int len
 
 #char *

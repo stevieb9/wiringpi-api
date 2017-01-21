@@ -25,7 +25,7 @@ my @wpi_c_functions = qw(
     sr595Setup          bmp180Setup         bmp180Pressure
     bmp180Temp          analogRead          analogWrite
     physPinToWpi        wiringPiVersion     ads1115Setup
-    pseudoPinsSetup     wiringPiSPISetup    wiringPiSPIDataRW
+    pseudoPinsSetup     wiringPiSPISetup    spiDataRW
 );
 
 my @wpi_perl_functions = qw(
@@ -284,9 +284,15 @@ sub spi_data {
         die "spi_data() array reference must have \$len param count\n";
     }
 
-    wiringPiSPIDataRW($chan, $data, $len);
+    my $buf;
 
-    return $data;
+    for (@$data){
+        $buf += $_;
+    }
+
+    spiDataRW($chan, $buf, $len);
+
+    return $buf;
 }
 
 # bmp180 pressure sensor functions
