@@ -290,9 +290,7 @@ sub spi_data {
         $buf += $_;
     }
 
-    spiDataRW($chan, $buf, $len);
-
-    return $buf;
+    return spiDataRW($chan, $buf, $len);
 }
 
 # bmp180 pressure sensor functions
@@ -397,8 +395,11 @@ from the C code itself.
 Exported with the C<:wiringPi> tag.
 
 These XS functions map directly to the wiringPi functions with their original
-names. Note that C<setInterrupt> is not a direct wrapper, it's a custom C
-wrapper for C<wiringPiISR()> in order to make it functional here.
+names. 
+
+Note that C<setInterrupt> is a custom C wrapper for C<wiringPiISR()>, as is
+C<spiDataRW> for C<wiringPiSPIDataRW(). This is required in order to be able
+to make them usable in Perl land.
 
     wiringPiSetup       wiringPiSetupSys    wiringPiSetupGpio
     wiringPiSetupPhys   pinMode             pullUpDnControl
@@ -1104,7 +1105,8 @@ bus. We return the return value of an C<ioctl()> call, so this does the trick:
 
 =head2 spi_data
 
-Maps to: C<int wiringPiSPIDataRW(int channel, unsigned char * data, int len)>
+Maps to: C<int spiDataRW(int channel, AV* data, int len)>, which calls
+C<int wiringPiSPIDataRW(int channel, unsigned char* data, int len)>.
 
 Writes, and then reads a block of data over the SPI bus. The read following the
 write is read into the transmit buffer, so it'll be overwritten.
@@ -1125,7 +1127,8 @@ Mandatory: An array reference, with each element containing a single unsigned
 
 Mandatory: Integer, the number of bytes contained in the C<$data> parameter
 array reference that will be sent to the device. I could just count the number
-of elements, but this keeps things consistent.
+of elements, but this keeps things consistent, and ensures the user is fully
+aware of the data they are sending on the bus.
 
 Returns the write buffer (C<$data>) after it's been written with the read data.
 

@@ -12,7 +12,8 @@ Revision history for Perl extension WiringPi::API.
         - added support for communicating on the SPI bus (spi_setup() and
           spi_data()
         - added spiDataRW() (C), which wraps wiringPiSPIDataRW() so that we
-          can bit hack before sending in the proper unsigned char * buf
+          can accept an AV* (aref) before transforming it into the proper 
+          unsigned char* before sending it to wiringPiSPIDataRW()
 
 2.36.2  2017-01-19
         - added function table of contents to POD

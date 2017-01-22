@@ -25,7 +25,6 @@ void interruptHandler();
 int physPinToWpi(int wpi_pin);
 static int phys_wpi_map[64];
 int setInterrupt(int pin, int edge, char * callback);
-int spiDataRW(int channel, int data, int len);
 
 /*
  * declarations
@@ -68,25 +67,59 @@ static int phys_wpi_map[64] =
   -1
 };
 
-int spiDataRW (int channel, int data, int len){
+int spiDataRW(int channel, SV* byte_ref, int len){
 
-    unsigned char bytes[4];
+     /*
+      * Custom wrapper for wiringPiSPIDataRW() as we
+      * need to translate an aref into an unsigned char *
+      */ 
 
-    bytes[3] = (data >> 24) & 0xFF;
-    bytes[2] = (data >> 16) & 0xFF;
-    bytes[1] = (data >> 8)  & 0xFF;
-    bytes[0] = data & 0xFF;
+    if (channel != 0 && channel != 1){
+        croak("channel param must be 0 or 1\n");
+    }
 
-    unsigned char buf[len];
+    if (! SvROK(byte_ref) || SvTYPE(SvRV(byte_ref)) != SVt_PVAV){
+        croak("data param must be an array reference\n");
+    }
+
+    AV* bytes = (AV*)SvRV(byte_ref);
+
+    int num_bytes = av_len(bytes) + 1;
+
+    if (len != num_bytes){
+        croak("len param doesn't match element count in data\n");
+    }
+
+    unsigned char buf[num_bytes];
+
     int i;
 
     for (i=0; i<len; i++){
-        buf[i] = bytes[i];
+        SV** elem = av_fetch(bytes, i, 0);
+
+        int elem_int = (int)SvNV(*elem);
+        
+        if (elem_int < 0 || elem_int > 255){
+            printf("byte %d in data param out of range: (%d)\n", i, elem_int);
+            exit(1);
+        }
+
+        buf[i] = (unsigned char)SvNV(*elem);
+    }
+    
+    /*  int x;
+     *  for (x=0; x<len; x++){
+     *      printf("%d\n", buf[x]);
+     *  }
+     */
+      
+    int bus_opened;
+     
+    if (bus_opened = (wiringPiSPIDataRW(channel, buf, len) < 0)){
+        croak("failed to write to the SPI bus\n");
     }
 
-    printf("size: %d\n", sizeof(buf));
-    
-//    wiringPiDataRW(channel, buf, len);
+    return bus_opened;
 }
 
 char * perl_callback; // dynamically set perl callback for interrupt handler
@@ -414,8 +447,10 @@ wiringPiSPISetup(channel, speed)
 
 int
 spiDataRW(channel, data, len)
+    # custom wrapper for wiringPiSPIDataRW().
+    # We transform an aref into an unsigned char *
     int channel
-    int data
+    SV* data
     int len
 
 #char *
