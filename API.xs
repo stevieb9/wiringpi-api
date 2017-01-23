@@ -107,19 +107,18 @@ int spiDataRW(int channel, SV* byte_ref, int len){
         buf[i] = (unsigned char)SvNV(*elem);
     }
     
-    /*  int x;
-     *  for (x=0; x<len; x++){
-     *      printf("%d\n", buf[x]);
-     *  }
-     */
-      
-    int bus_opened;
-     
-    if (bus_opened = (wiringPiSPIDataRW(channel, buf, len) < 0)){
+    if (wiringPiSPIDataRW(channel, buf, len) < 0)){
         croak("failed to write to the SPI bus\n");
     }
 
-    return bus_opened;
+    int read;
+    int x;
+
+    for (x=0; x<sizeof(buf)+1; x++){
+        read = read + buf[x];
+    }
+
+    return read;
 }
 
 char * perl_callback; // dynamically set perl callback for interrupt handler

@@ -1130,7 +1130,25 @@ array reference that will be sent to the device. I could just count the number
 of elements, but this keeps things consistent, and ensures the user is fully
 aware of the data they are sending on the bus.
 
-Returns the write buffer (C<$data>) after it's been written with the read data.
+Returns a single integer containing the full contents of the data read from the
+SPI bus. It is up to you to properly bit-shift it according to the
+specifications of the device you're communicating with. Example:
+
+    # reading from a device that returns 20 bits
+
+    my $buf = [0x01, 0x02]; # start bit, device address
+
+    # if we pass that in, we'll only get two bytes back (16 bits),
+    # but we need at least three, so we'll add a "junk" byte at
+    # the end, and the read will use all three with the data
+
+    push @$buf, 0x00;
+
+    my $ret = spiDataRW($chan, $buf, 3);
+
+    # we only need 20 bits, so remove the last four
+
+    $ret = $ret >> 4;
 
 =head1 BMP180 PRESSURE SENSOR FUNCTIONS
 
