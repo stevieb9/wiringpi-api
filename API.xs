@@ -107,7 +107,7 @@ int spiDataRW(int channel, SV* byte_ref, int len){
         buf[i] = (unsigned char)SvNV(*elem);
     }
     
-    if (wiringPiSPIDataRW(channel, buf, len) < 0)){
+    if (wiringPiSPIDataRW(channel, buf, len) < 0){
         croak("failed to write to the SPI bus\n");
     }
 
