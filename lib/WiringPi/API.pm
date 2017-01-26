@@ -277,6 +277,7 @@ sub spi_data {
     if ($chan != 0 && $chan != 1){
         die "spi_data() channel param must be 0 or 1\n";
     }
+
     if (ref $data ne 'ARRAY'){
         die "spi_data() data param must be an array reference\n";
     }
@@ -287,7 +288,7 @@ sub spi_data {
     my $buf;
 
     for (@$data){
-        $buf += $_;
+        push @$buf, $_;
     }
 
     return spiDataRW($chan, $buf, $len);

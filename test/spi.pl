@@ -16,11 +16,13 @@ use WiringPi::API qw(:all);
 
 spi_setup(0);
 
-my $d = [1];
+my $d = [1, 2];
 
 # write a single bite; reading it back
 # overwrites the TX buffer
 
-my $ret = spi_data(0, $d, 1);
+my $ret = spi_data(0, $d, 2);
 
-say $_ for @$d;
+say $ret;
+
+#say $_ for @$d;
