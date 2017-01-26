@@ -16,7 +16,7 @@
 #define PERL_NO_GET_CONTEXT
 
 /*
- * definitions
+ * declarations
  */
 
 int bmp180Pressure(int pin);
@@ -26,10 +26,6 @@ void interruptHandler();
 int physPinToWpi(int wpi_pin);
 static int phys_wpi_map[64];
 int setInterrupt(int pin, int edge, char * callback);
-
-/*
- * declarations
- */
 
 static int phys_wpi_map[64] =
 {
@@ -67,6 +63,10 @@ static int phys_wpi_map[64] =
   -1, -1,
   -1
 };
+
+/*
+ * definitions
+ */
 
 void spiDataRW(int channel, SV* byte_ref, int len){
 
