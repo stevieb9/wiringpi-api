@@ -47,9 +47,11 @@ EXPORT_OK
     Exported with the `:wiringPi' tag.
 
     These XS functions map directly to the wiringPi functions with their
-    original names. Note that `setInterrupt' is not a direct wrapper, it's a
-    custom C wrapper for `wiringPiISR()' in order to make it functional
-    here.
+    original names.
+
+    Note that `setInterrupt' is a custom C wrapper for `wiringPiISR()', as
+    is `spiDataRW' for `wiringPiSPIDataRW()'. This is required in order to
+    be able to make them usable in Perl land.
 
         wiringPiSetup       wiringPiSetupSys    wiringPiSetupGpio
         wiringPiSetupPhys   pinMode             pullUpDnControl
@@ -704,12 +706,12 @@ SPI FUNCTIONS
         }
 
   spi_data
-    Maps to: `int wiringPiSPIDataRW(int channel, unsigned char * data, int
-    len)'
+    Maps to: `int spiDataRW(int channel, AV* data, int len)', which calls
+    `int wiringPiSPIDataRW(int channel, unsigned char* data, int len)'.
 
     Writes, and then reads a block of data over the SPI bus. The read
     following the write is read into the transmit buffer, so it'll be
-    overwritten.
+    overwritten and sent back as a Perl array.
 
     Parameters:
 
@@ -721,13 +723,24 @@ SPI FUNCTIONS
         $data
 
     Mandatory: An array reference, with each element containing a single
-    unsigned 8-bit byte that you want to write to the device.
+    unsigned 8-bit byte that you want to write to the device. If you want to
+    read-only, send in an aref with all the elements set to `0'. These will
+    be overwritten with the read data, and sent back as a Perl array.
 
         $len
 
     Mandatory: Integer, the number of bytes contained in the `$data'
     parameter array reference that will be sent to the device. I could just
-    count the number of elements, but this keeps things consistent.
+    count the number of elements, but this keeps things consistent, and
+    ensures the user is fully aware of the data they are sending on the bus.
+
+    Returns a Perl array containing the same number of elements you sent in.
+
+        # read-only... three bytes
+
+        my $buf = [0x00, 0x00, 0x00];
+
+        my @ret = spiDataRW($chan, $buf, 3);
 
 BMP180 PRESSURE SENSOR FUNCTIONS
     These functions configure and fetch data from the BMP180 pressure

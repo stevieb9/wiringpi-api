@@ -399,7 +399,7 @@ These XS functions map directly to the wiringPi functions with their original
 names. 
 
 Note that C<setInterrupt> is a custom C wrapper for C<wiringPiISR()>, as is
-C<spiDataRW> for C<wiringPiSPIDataRW(). This is required in order to be able
+C<spiDataRW> for C<wiringPiSPIDataRW()>. This is required in order to be able
 to make them usable in Perl land.
 
     wiringPiSetup       wiringPiSetupSys    wiringPiSetupGpio
@@ -1110,7 +1110,8 @@ Maps to: C<int spiDataRW(int channel, AV* data, int len)>, which calls
 C<int wiringPiSPIDataRW(int channel, unsigned char* data, int len)>.
 
 Writes, and then reads a block of data over the SPI bus. The read following the
-write is read into the transmit buffer, so it'll be overwritten and sent back.
+write is read into the transmit buffer, so it'll be overwritten and sent back
+as a Perl array.
 
 Parameters:
 
