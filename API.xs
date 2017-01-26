@@ -118,8 +118,8 @@ void spiDataRW(int channel, SV* byte_ref, int len){
     Inline_Stack_Reset;
 
     int x;
-    for (x=0; x<sizeof(buf)+1; x++){
-       Inline_Stack_Push(sv_2mortal(newSViv(buf[x])));
+    for (x=0; x<len; x++){
+        Inline_Stack_Push(sv_2mortal(newSViv(buf[x])));
     } 
 
     Inline_Stack_Done;
