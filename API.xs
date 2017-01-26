@@ -5,6 +5,7 @@
 #include "perl.h"
 #include "XSUB.h"
 #include "ppport.h"
+#include "INLINE.h"
 
 #include <wiringPi.h>
 #include <wiringPiSPI.h>
@@ -67,7 +68,7 @@ static int phys_wpi_map[64] =
   -1
 };
 
-int spiDataRW(int channel, SV* byte_ref, int len){
+void spiDataRW(int channel, SV* byte_ref, int len){
 
      /*
       * Custom wrapper for wiringPiSPIDataRW() as we
@@ -111,14 +112,15 @@ int spiDataRW(int channel, SV* byte_ref, int len){
         croak("failed to write to the SPI bus\n");
     }
 
-    int read;
+    Inline_Stack_Vars;
+    Inline_Stack_Reset;
+
     int x;
-
     for (x=0; x<sizeof(buf)+1; x++){
-        read = read + buf[x];
-    }
+       Inline_Stack_Push(sv_2mortal(newSViv(buf[x])));
+    } 
 
-    return read;
+    Inline_Stack_Done;
 }
 
 char * perl_callback; // dynamically set perl callback for interrupt handler
@@ -444,13 +446,24 @@ wiringPiSPISetup(channel, speed)
     int channel
     int speed
 
-int
-spiDataRW(channel, data, len)
-    # custom wrapper for wiringPiSPIDataRW().
-    # We transform an aref into an unsigned char *
-    int channel
-    SV* data
-    int len
+void
+spiDataRW (channel, byte_ref, len)
+	int	channel
+	SV *	byte_ref
+	int	len
+        PREINIT:
+        I32* temp;
+        PPCODE:
+        temp = PL_markstack_ptr++;
+        spiDataRW(channel, byte_ref, len);
+        if (PL_markstack_ptr != temp) {
+          /* truly void, because dXSARGS not invoked */
+          PL_markstack_ptr = temp;
+          XSRETURN_EMPTY; /* return empty stack */
+        }
+        /* must have used dXSARGS; list context implied */
+        return; /* assume stack size is correct */
 
 #char *
 #wiringPiVersion()
+
