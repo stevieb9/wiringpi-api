@@ -1110,7 +1110,7 @@ Maps to: C<int spiDataRW(int channel, AV* data, int len)>, which calls
 C<int wiringPiSPIDataRW(int channel, unsigned char* data, int len)>.
 
 Writes, and then reads a block of data over the SPI bus. The read following the
-write is read into the transmit buffer, so it'll be overwritten.
+write is read into the transmit buffer, so it'll be overwritten and sent back.
 
 Parameters:
 
@@ -1122,7 +1122,9 @@ C</dev/spidev0.0> and C<1> for channel C</dev/spidev0.1>.
     $data
 
 Mandatory: An array reference, with each element containing a single unsigned
-8-bit byte that you want to write to the device.
+8-bit byte that you want to write to the device. If you want to read-only, send
+in an aref with all the elements set to C<0>. These will be overwritten with
+the read data, and sent back as a Perl array.
 
     $len
 
@@ -1131,25 +1133,13 @@ array reference that will be sent to the device. I could just count the number
 of elements, but this keeps things consistent, and ensures the user is fully
 aware of the data they are sending on the bus.
 
-Returns a single integer containing the full contents of the data read from the
-SPI bus. It is up to you to properly bit-shift it according to the
-specifications of the device you're communicating with. Example:
+Returns a Perl array containing the same number of elements you sent in. 
 
-    # reading from a device that returns 20 bits
+    # read-only... three bytes
 
-    my $buf = [0x01, 0x02]; # start bit, device address
+    my $buf = [0x00, 0x00, 0x00];
 
-    # if we pass that in, we'll only get two bytes back (16 bits),
-    # but we need at least three, so we'll add a "junk" byte at
-    # the end, and the read will use all three with the data
-
-    push @$buf, 0x00;
-
-    my $ret = spiDataRW($chan, $buf, 3);
-
-    # we only need 20 bits, so remove the last four
-
-    $ret = $ret >> 4;
+    my @ret = spiDataRW($chan, $buf, 3);
 
 =head1 BMP180 PRESSURE SENSOR FUNCTIONS
 
