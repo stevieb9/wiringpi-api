@@ -72,7 +72,9 @@ void spiDataRW(int channel, SV* byte_ref, int len){
 
      /*
       * Custom wrapper for wiringPiSPIDataRW() as we
-      * need to translate an aref into an unsigned char *
+      * need to translate an aref into an unsigned char *,
+      * and then send back an array containing the bytes
+      * read from the device
       */ 
 
     if (channel != 0 && channel != 1){
