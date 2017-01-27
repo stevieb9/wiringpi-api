@@ -114,15 +114,15 @@ void spiDataRW(int channel, SV* byte_ref, int len){
         croak("failed to write to the SPI bus\n");
     }
 
-    Inline_Stack_Vars;
-    Inline_Stack_Reset;
+    inline_stack_vars;
+    inline_stack_reset;
 
     int x;
     for (x=0; x<len; x++){
-        Inline_Stack_Push(sv_2mortal(newSViv(buf[x])));
+        inline_stack_push(sv_2mortal(newSViv(buf[x])));
     } 
 
-    Inline_Stack_Done;
+    inline_stack_done;
 }
 
 char * perl_callback; // dynamically set perl callback for interrupt handler
