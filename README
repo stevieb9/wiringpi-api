@@ -857,7 +857,7 @@ I2C FUNCTIONS
 
     Returns: The value of the ioctl() call, 0 on success.
 
- i2c_write_byte($fd, $reg, $data)
+ i2c_write_word($fd, $reg, $data)
 
     Writes two bytes to the register specified.
 

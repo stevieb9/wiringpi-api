@@ -1288,7 +1288,7 @@ Mandatory: Integer, the value to write to the device.
 
 Returns: The value of the C<ioctl()> call, C<0> on success.
 
-=head2 i2c_write_byte($fd, $reg, $data)
+=head2 i2c_write_word($fd, $reg, $data)
 
 Writes two bytes to the register specified.
 
