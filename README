@@ -134,6 +134,10 @@ FUNCTION TABLE OF CONTENTS
 
     See "SHIFT REGISTER FUNCTIONS".
 
+ I2C
+
+    See "I2C FUNCTIONS"
+
  SPI
 
     See "SPI FUNCTIONS"
@@ -1090,7 +1094,7 @@ POD ERRORS
     Hey! The above document had some coding errors, which are explained
     below:
 
-    Around line 527:
+    Around line 531:
 
       Non-ASCII character seen before =encoding in '5×8,'. Assuming UTF-8
 
