@@ -26,6 +26,9 @@ my @wpi_c_functions = qw(
     bmp180Temp          analogRead          analogWrite
     physPinToWpi        wiringPiVersion     ads1115Setup
     pseudoPinsSetup     wiringPiSPISetup    spiDataRW
+    wiringPiI2CSetup    wiringPiI2CSetupInterface
+    wiringPiI2CRead     wiringPiI2CReadReg8 wiringPiI2CReadReg16
+    wiringPiI2CWrite    wiringPiI2CWriteReg8    wiringPiI2CWriteReg16
 );
 
 my @wpi_perl_functions = qw(
@@ -38,7 +41,9 @@ my @wpi_perl_functions = qw(
     set_interrupt   soft_pwm_create soft_pwm_write      soft_pwm_stop
     shift_reg_setup bmp180_setup    bmp180_pressure     bmp180_temp
     analog_read     analog_write    pin_mode            phys_to_wpi
-    ads1115_setup   spi_setup       spi_data
+    ads1115_setup   spi_setup       spi_data            i2c_setup
+    i2c_interface   i2c_read        i2c_read_byte       i2c_read_word
+    i2c_write       i2c_write_byte  i2c_write_word
 );
 
 our @EXPORT_OK;
@@ -254,6 +259,105 @@ sub shift_reg_setup {
     }
 
     sr595Setup($pin_base, $num_pins, $data_pin, $clock_pin, $latch_pin);
+}
+
+# I2C functions
+
+sub i2c_setup {
+    shift if @_ == 2;
+    my ($addr) = @_;
+
+    if ($addr !~ /^\d$/){
+        die "address param must be an integer\n";
+    }
+
+    # file descriptor
+
+    return wiringPiI2CSetup($addr);
+}
+sub i2c_interface {
+    die "i2c_interface() is not available at this time\n";
+}
+sub i2c_read {
+    shift if @_ > 1;
+    my ($fd) = @_;
+
+    if (! defined $fd){
+        die "i2c_read() requires an \$fd param\n";
+    }
+
+    return wiringPiI2CRead($fd);
+}
+sub i2c_read_byte {
+    shift if @_ > 2;
+    my ($fd, $reg) = @_;
+
+    if (! defined $fd){
+        die "i2c_read_byte() requires an \$fd param\n";
+    }
+    if (! defined $reg){
+        die "i2c_read_byte() requires a \$register param\n";
+    }
+
+    return wiringPiI2CReadReg8($fd, $reg);
+}
+sub i2c_read_word {
+    shift if @_ > 2;
+    my ($fd, $reg) = @_;
+
+    if (! defined $fd){
+        die "i2c_read_word() requires an \$fd param\n";
+    }
+    if (! defined $reg){
+        die "i2c_read_word() requires a \$register param\n";
+    }
+
+    return wiringPiI2CReadReg8($fd, $reg);
+}
+sub i2c_write {
+    shift if @_ > 2;
+    my ($fd, $data) = @_;
+
+    if (! defined $fd){
+        die "i2c_write() requires an \$fd param\n";
+    }
+    if (! defined $data){
+        die "i2c_write() requires a \$data param\n";
+
+    }
+    return wiringPiI2CWrite($fd, $data);
+}
+sub i2c_write_byte {
+    shift if @_ > 3;
+    my ($fd, $reg, $data) = @_;
+
+    if (! defined $fd){
+        die "i2c_write_byte() requires an \$fd param\n";
+    }
+    if (! defined $reg){
+        die "i2c_write_byte() requires a \$register param\n";
+    }
+    if (! defined $data){
+        die "i2c_write_byte() requires a \$data param\n";
+    }
+
+    return wiringPiI2CWriteReg8($fd, $reg);
+}
+sub i2c_write_word {
+    shift if @_ > 3;
+    my ($fd, $reg, $data) = @_;
+
+    if (! defined $fd){
+        die "i2c_write_word() requires an \$fd param\n";
+    }
+    if (! defined $reg){
+        die "i2c_write_word() requires a \$register param\n";
+    }
+    if (! defined $data){
+        die "i2c_write_word() requires a \$data param\n";
+    }
+
+    return wiringPiI2CWriteReg16($fd, $reg);
 }
 
 # SPI functions
@@ -1074,6 +1178,135 @@ Mandatory: Integer, the GPIO pin number connected to the register's C<SHCP> pin
 
 Mandatory: Integer, the GPIO pin number connected to the register's C<STCP> pin
 (12). Can be any GPIO pin capable of output.
+
+=head1 I2C FUNCTIONS
+
+These functions allow you to read and write devices on the Inter-Integrated
+Circuit (I2C) bus.
+
+=head2 i2c_setup($addr)
+
+Maps to C<int wiringPiI2CSetup(int devId)>
+
+Configures the I2C bus in preparation for communicating with a device.
+
+Parameters:
+
+    $addr
+
+Mandatory: Integer, the address of your device as seen by running for example:
+C<i2cdetect -y 1>.
+
+=head2 i2c_interface($device, $addr)
+
+Maps to iC<int wiringPiI2CSetupInterface(const char* device, int devId)>
+
+This feature is not implemented currently, and will be used to select different
+I2C interfaces if the RPi ever receives them.
+
+=head2 i2c_read($fd)
+
+Performs a quick one-off, one-byte read without needing to specify the register
+value. Some very simple devices operate without register values needed.
+
+Parameters:
+
+    $fd
+
+Mandatory: Integer, the file descriptor that was returned from C<i2c_setup()>.
+
+Returns: A single byte of data from the device on the I2C bus.
+
+=head2 i2c_read_byte($fd, $reg)
+
+Reads a single byte from the specified register.
+
+Parameters:
+
+    $fd
+
+Mandatory: Integer, the file descriptor that was returned from C<i2c_setup()>.
+
+    $reg
+
+Mandatory: Integer, the register to read data from.
+
+Returns: A single byte of data from the device on the I2C bus from the selected
+register.
+
+=head2 i2c_read_word($fd, $reg)
+
+Reads two bytes from the specified register.
+
+Parameters:
+
+    $fd
+
+Mandatory: Integer, the file descriptor that was returned from C<i2c_setup()>.
+
+    $reg
+
+Mandatory: Integer, the register to read data from.
+
+Returns: Integer, two bytes of data from the device on the I2C bus from the
+selected register.
+
+=head2 i2c_write($fd, $data)
+
+Performs a quick one-off, one-byte write without needing to specify the register
+value. Some very simple devices operate without register values needed.
+
+Parameters:
+
+    $fd
+
+Mandatory: Integer, the file descriptor that was returned from C<i2c_setup()>.
+
+    $data
+
+Mandatory: Integer, the value to write to the device.
+
+Returns: The value of the C<ioctl()> call, C<0> on success.
+
+=head2 i2c_write_byte($fd, $reg, $data)
+
+Writes a single byte to the register specified.
+
+Parameters:
+
+    $fd
+
+Mandatory: Integer, the file descriptor that was returned from C<i2c_setup()>.
+
+    $reg
+
+Mandatory: Integer, the register to write the data to.
+
+    $data
+
+Mandatory: Integer, the value to write to the device.
+
+Returns: The value of the C<ioctl()> call, C<0> on success.
+
+=head2 i2c_write_byte($fd, $reg, $data)
+
+Writes two bytes to the register specified.
+
+Parameters:
+
+    $fd
+
+Mandatory: Integer, the file descriptor that was returned from C<i2c_setup()>.
+
+    $reg
+
+Mandatory: Integer, the register to write the data to.
+
+    $data
+
+Mandatory: Integer, the value to write to the device.
+
+Returns: The value of the C<ioctl()> call, C<0> on success.
 
 =head1 SPI FUNCTIONS
 

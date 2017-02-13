@@ -435,6 +435,8 @@ void
 digitalWriteByte2(value)
     int value
 
+# SPI
+
 int
 wiringPiSPISetup(channel, speed)
     int channel
@@ -457,6 +459,40 @@ spiDataRW (channel, byte_ref, len)
         }
         /* must have used dXSARGS; list context implied */
         return; /* assume stack size is correct */
+
+# I2C
+
+int wiringPiI2CSetup (int devId)
+    int devId
+
+int wiringPiI2CSetupInterface (device, int devId)
+    char* device
+    int devId
+
+int wiringPiI2CRead (fd)
+    int fd
+
+int wiringPiI2CReadReg8 (fd, reg)
+    int fd
+    int reg
+
+int wiringPiI2CReadReg16 (fd, reg)
+    int fd
+    int reg
+
+int wiringPiI2CWrite (fd, data)
+    int fd
+    int data
+
+int wiringPiI2CWriteReg8 (fd, reg, data)
+     int fd
+     int reg
+     int data
+
+int wiringPiI2CWriteReg16 (fd, reg, data)
+    int fd
+    int reg
+    int data
 
 #char *
 #wiringPiVersion()
