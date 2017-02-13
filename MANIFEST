@@ -3,6 +3,7 @@ Changes
 docs/breadboard/test_physical_setup_bb.jpg
 docs/fritzing/test_physical_setup.fzz
 docs/schematics/test_physical_setup_schem.jpg
+INLINE.h
 lib/WiringPi/API.pm
 Makefile.PL
 MANIFEST			This list of files
