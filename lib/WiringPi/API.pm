@@ -759,7 +759,7 @@ Mandatory: C<0> to C<1023>. C<0> is 0% (off) and C<1023> is 100% (fully on).
 Maps to C<int getAlt(int pin)>
 
 This returns the current mode of the pin (using C<getAlt()> C call). Modes are
-INPUT C<0>, OUTPUT C<1>, PWM C<2> and CLOCK C<3>.
+INPUT C<0>, OUTPUT C<1>, PWM_OUT C<2> and CLOCK C<3>.
 
 Parameters:
     

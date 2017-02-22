@@ -314,7 +314,7 @@ CORE FUNCTIONS
     Maps to int getAlt(int pin)
 
     This returns the current mode of the pin (using getAlt() C call). Modes
-    are INPUT 0, OUTPUT 1, PWM 2 and CLOCK 3.
+    are INPUT 0, OUTPUT 1, PWM_OUT 2 and CLOCK 3.
 
     Parameters:
 
