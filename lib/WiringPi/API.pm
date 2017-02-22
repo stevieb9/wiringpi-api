@@ -780,7 +780,7 @@ Returns the Raspberry Pi board's GPIO layout (ie. the board revision).
 
 Maps to C<int wpiPinToGpio(int pin)>
 
-Converts a C<wiringPi> pin number to the Broadcom (BCM) representation, and
+Converts a C<wiringPi> pin number to the Broadcom (GPIO) representation, and
 returns it.
 
 Parameters:

@@ -335,7 +335,7 @@ BOARD FUNCTIONS
 
     Maps to int wpiPinToGpio(int pin)
 
-    Converts a wiringPi pin number to the Broadcom (BCM) representation,
+    Converts a wiringPi pin number to the Broadcom (GPIO) representation,
     and returns it.
 
     Parameters:
