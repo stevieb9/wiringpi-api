@@ -539,8 +539,8 @@ LCD FUNCTIONS
     This allows you to re-define one of the 8 user-definable characters in
     the display. The data array is 8 bytes which represent the character
     from the top-line to the bottom line. Note that the characters are
-    actually 5×8, so only the lower 5 bits are used. The index is from 0 to
-    7 and you can subsequently print the character defined using the
+    actually 5 x 8, so only the lower 5 bits are used. The index is from 0
+    to 7 and you can subsequently print the character defined using the
     lcdPutchar() call.
 
     Parameters:
@@ -1093,13 +1093,4 @@ COPYRIGHT AND LICENSE
     This library is free software; you can redistribute it and/or modify it
     under the same terms as Perl itself, either Perl version 5.18.2 or, at
     your option, any later version of Perl 5 you may have available.
-
-POD ERRORS
-
-    Hey! The above document had some coding errors, which are explained
-    below:
-
-    Around line 536:
-
-      Non-ASCII character seen before =encoding in '5×8,'. Assuming UTF-8
 

@@ -983,7 +983,7 @@ Maps to C<void lcdCharDef(int fd, unsigned char data [8])>
 
 This allows you to re-define one of the 8 user-definable characters in the
 display. The data array is 8 bytes which represent the character from the
-top-line to the bottom line. Note that the characters are actually 5×8, so
+top-line to the bottom line. Note that the characters are actually 5 x 8, so
 only the lower 5 bits are used. The index is from 0 to 7 and you can
 subsequently print the character defined using the lcdPutchar() call.
 
