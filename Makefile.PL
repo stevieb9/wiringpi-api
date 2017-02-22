@@ -6,7 +6,7 @@ WriteMakefile(
     ($] >= 5.005 ?
       (ABSTRACT_FROM  => 'lib/WiringPi/API.pm',
        AUTHOR         => 'Steve Bertrand <steveb@cpan.org>') : ()),
-    LIBS              => ['-lwiringPi -lwiringPiDev'],
+    LIBS              => ['-lwiringPi -lwiringPiDev -lrt'],
     DEFINE            => '',
     INC               => '-I.',
     META_MERGE => {

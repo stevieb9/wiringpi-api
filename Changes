@@ -1,7 +1,13 @@
 Revision history for Perl extension WiringPi::API.
 
-2.36.6 UNREL
+2.36.6  2017-02-22
         - added in I2C support (work on #22)
+        - fix a boatload of C warnings due to functions not being pre-declared
+          (work on #25)
+        - added -lrt to LIBS in Makefile.PL to correct a "shm_open() undefined
+          symbol" error when testing with "make test" (closes #25)
+        - removed taint from tests
+        -
 
 2.36.5  2017-02-13
         - lower-cased Inline functions in XS file
