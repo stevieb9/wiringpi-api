@@ -936,6 +936,11 @@ Parameters:
 
 Mandatory: The file descriptor integer returned by C<lcd_init()>.
 
+    $state
+
+Mandatory: C<0> to turn the cursor blink off, C<1> for on. Default is off
+(C<0>).
+
 =head2 lcd_send_cmd($fd, $command)
 
 Maps to C<void lcdSendCommand(int fd, char command)>

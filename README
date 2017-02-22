@@ -491,6 +491,11 @@ LCD FUNCTIONS
 
     Mandatory: The file descriptor integer returned by lcd_init().
 
+        $state
+
+    Mandatory: 0 to turn the cursor blink off, 1 for on. Default is off
+    (0).
+
  lcd_send_cmd($fd, $command)
 
     Maps to void lcdSendCommand(int fd, char command)
@@ -1094,7 +1099,7 @@ POD ERRORS
     Hey! The above document had some coding errors, which are explained
     below:
 
-    Around line 531:
+    Around line 536:
 
       Non-ASCII character seen before =encoding in '5×8,'. Assuming UTF-8
 

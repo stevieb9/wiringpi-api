@@ -7,6 +7,7 @@ Revision history for Perl extension WiringPi::API.
         - added -lrt to LIBS in Makefile.PL to correct a "shm_open() undefined
           symbol" error when testing with "make test" (closes #25)
         - removed taint from tests
+        - added $state param for lcd_cursor_blink() in POD (closes #24)
         -
 
 2.36.5  2017-02-13
