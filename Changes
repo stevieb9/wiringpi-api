@@ -9,6 +9,7 @@ Revision history for Perl extension WiringPi::API.
         - removed taint from tests
         - added $state param for lcd_cursor_blink() in POD (closes #24)
         - fix miniscule POD error (closes #17)
+        - added "barometric" to the POD's bmp180 section (closes #16)
         -
 
 2.36.5  2017-02-13
@@ -22,7 +23,6 @@ Revision history for Perl extension WiringPi::API.
           contains the read data (fixes #23)
 
 2.36.3  2017-01-22
-
         - changed TOC to "TABLE OF CONTENTS" in POD (closes #18)
         - modified dist description in POD
         - added blurb in softpwm section that this functionality is quite

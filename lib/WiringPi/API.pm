@@ -1386,7 +1386,8 @@ Returns a Perl array containing the same number of elements you sent in.
 
 =head1 BMP180 PRESSURE SENSOR FUNCTIONS
 
-These functions configure and fetch data from the BMP180 pressure sensor.
+These functions configure and fetch data from the BMP180 barometric pressure
+sensor.
 
 =head2 bmp180_setup($pin_base)
 

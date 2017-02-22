@@ -961,8 +961,8 @@ SPI FUNCTIONS
 
 BMP180 PRESSURE SENSOR FUNCTIONS
 
-    These functions configure and fetch data from the BMP180 pressure
-    sensor.
+    These functions configure and fetch data from the BMP180 barometric
+    pressure sensor.
 
  bmp180_setup($pin_base)
 
