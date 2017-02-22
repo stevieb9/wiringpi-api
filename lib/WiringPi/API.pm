@@ -845,8 +845,7 @@ Maps to:
     );
 
 Initializes the LCD library, and returns an integer representing the handle
-handle (file descriptor) of the device. The return is supposed to be constant,
-so DON'T change it.
+(file descriptor) of the device.
 
 Parameters:
 
