@@ -13,7 +13,7 @@ Revision history for Perl extension WiringPi::API.
         - POD typo fix (closes #15)
         - replaced BCM with GPIO in POD (closes #14)
         - fix output constant in get_alt() in POD (PWM_OUT) (closes #13)
-        -
+
 2.36.5  2017-02-13
         - lower-cased Inline functions in XS file
         - added INLINE.h to MANIFEST file (re-closes #8)
