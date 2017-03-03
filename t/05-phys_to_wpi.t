@@ -3,12 +3,15 @@ use warnings;
 
 use Data::Dumper;
 use Test::More;
-BEGIN { use_ok('WiringPi::API') };
 
-if (! $ENV{PI_BOARD}){
-    plan skip_all => "not a Pi board";
-    exit;
+BEGIN {
+    if (! $ENV{PI_BOARD}){
+        plan skip_all => "not a Pi board";
+        exit;
+    }
 }
+
+BEGIN { use_ok('WiringPi::API') };
 
 my $mod = 'WiringPi::API';
 

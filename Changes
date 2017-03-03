@@ -1,7 +1,7 @@
 Revision history for Perl extension WiringPi::API.
 
 2.36.7  2017-02-23
-        - disable tests when not on a Pi board
+        - disable tests when not on a Pi board (within a BEGIN block)
 
 2.36.6  2017-02-22
         - added in I2C support (work on #22)
