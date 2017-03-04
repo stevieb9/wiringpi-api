@@ -19,7 +19,7 @@ my @wpi_c_functions = qw(
     wpiToGpio           physPinToGpio       pwmSetRange
     lcdInit             lcdHome             lcdClear
     lcdDisplay          lcdCursor           lcdCursorBlink
-    lcdSendCommand      lcdPosition         lcdCharDef
+    lcdSendCommand      lcdPosition         lcdDefChar
     lcdPutChar          lcdPuts             setInterrupt
     softPwmCreate       softPwmWrite        softPwmStop
     sr595Setup          bmp180Setup         bmp180Pressure
@@ -172,7 +172,22 @@ sub pwm_set_range {
 
 sub lcd_init {
     shift if @_ == 14;
-    my @args = @_;
+    my %params = @_;
+
+    my @required_args = qw(
+        rows cols bits rs strb
+        d0 d1 d2 d3 d4 d5 d6 d7
+    );
+
+    my @args;
+
+    for (@required_args){
+        if (! defined $params{$_}) {
+            die "\n'$_' is a required param for Core::lcd_init()\n";
+        }
+        push @args, $params{$_};
+    }
+
     my $fd = lcdInit(@args); # LCD handle
     return $fd;
 }
@@ -209,9 +224,17 @@ sub lcd_position {
     my ($fd, $x, $y) = @_;
     lcdPosition($fd, $x, $y);
 }
+sub lcdDefChar {
+     shift if @_ == 4;
+    my ($fd, $index, $data) = @_;
+    my $unsigned_char = pack "V0C*", @$data;
+    lcdCharDef($fd, $index, $unsigned_char);
+}
 sub lcd_char_def {
     shift if @_ == 4;
     my ($fd, $index, $data) = @_;
+    my $unsigned_char = pack "V0C*", @$data;
+    lcdCharDef($fd, $index, $unsigned_char);
     lcdCharDef($fd, $index, $data);
 }
 sub lcd_put_char {
@@ -398,9 +421,15 @@ Exported with the C<:wiringPi> tag.
 These XS functions map directly to the wiringPi functions with their original
 names. 
 
-Note that C<setInterrupt> is a custom C wrapper for C<wiringPiISR()>, as is
-C<spiDataRW> for C<wiringPiSPIDataRW()>. This is required in order to be able
-to make them usable in Perl land.
+Note that the following functions are NOT original. They have been renamed and
+reworked due to the nature of the arguments that need to be passed in, or other
+factors that required changes to make it usable through the Perl interpreter:
+
+    setInterrupt()  for wiringPiISR()
+    spiDataRW()     for wiringPiSPIDataRW()
+    lcdDefChar()    for lcdCharDef()
+
+Full list of exports:
 
     wiringPiSetup       wiringPiSetupSys    wiringPiSetupGpio
     wiringPiSetupPhys   pinMode             pullUpDnControl
@@ -409,7 +438,7 @@ to make them usable in Perl land.
     wpiToGpio           physPinToGpio       pwmSetRange
     lcdInit             lcdHome             lcdClear
     lcdDisplay          lcdCursor           lcdCursorBlink
-    lcdSendCommand      lcdPosition         lcdCharDef
+    lcdSendCommand      lcdPosition         lcdDefChar
     lcdPutChar          lcdPuts             setInterrupt
     softPwmCreate       softPwmWrite        softPwmStop
     sr595Setup          bmp180Setup         bmp180Pressure
@@ -866,13 +895,10 @@ Mandatory: Row position. C<0> is the top row.
 
 =head2 lcd_char_def($fd, $index, $data)
 
-Maps to C<void lcdCharDef(int fd, unsigned char data [8])>
+Maps to C<void lcdCharDef(int fd, unsigned char data [8])>. This function is
 
 This allows you to re-define one of the 8 user-definable characters in the
-display. The data array is 8 bytes which represent the character from the
-top-line to the bottom line. Note that the characters are actually 5×8, so
-only the lower 5 bits are used. The index is from 0 to 7 and you can
-subsequently print the character defined using the lcdPutchar() call.
+display.
 
 Parameters:
 
@@ -886,7 +912,11 @@ Mandatory: Index of the display character. Values are C<0-7>.
 
     $data
 
-Mandatory: See above description.
+Mandatory: Array reference. Each element is a single byte, up to a maximum of 8
+elements. These bytes represent the character from the top-line to the bottom
+line. Note that the characters are actually 5×8, so only the lower 5 bits are
+used. The index is from 0 to 7 and you can subsequently print the character
+defined using the lcdPutchar() call.
 
 =head2 lcd_put_char($fd, $char)
 

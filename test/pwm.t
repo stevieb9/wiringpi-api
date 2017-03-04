@@ -4,7 +4,7 @@ use feature 'say';
 
 BEGIN {
     if ($> != 0){
-#        die "sudo required...\n";
+        die "sudo required...\n";
     }
 }
 
