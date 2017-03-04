@@ -8,9 +8,11 @@ my $mod = 'WiringPi::API';
 
 my %map;
 
-if (! $ENV{PI_BOARD}){
-    plan skip_all => "not a Pi board";
-    exit;
+BEGIN {
+    if (! $ENV{PI_BOARD}){
+        plan skip_all => "not a Pi board";
+        exit;
+    }
 }
 
 WiringPi::API::wiringPiSetup();

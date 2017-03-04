@@ -1,7 +1,25 @@
 Revision history for Perl extension WiringPi::API.
 
-2.36.5 UNREL
+2.36.7  2017-02-23
+        - disable tests when not on a Pi board (within a BEGIN block)
+
+2.36.6  2017-02-22
+        - added in I2C support (work on #22)
+        - fix a boatload of C warnings due to functions not being pre-declared
+          (work on #25)
+        - added -lrt to LIBS in Makefile.PL to correct a "shm_open() undefined
+          symbol" error when testing with "make test" (closes #25)
+        - removed taint from tests
+        - added $state param for lcd_cursor_blink() in POD (closes #24)
+        - fix miniscule POD error (closes #17)
+        - added "barometric" to the POD's bmp180 section (closes #16)
+        - POD typo fix (closes #15)
+        - replaced BCM with GPIO in POD (closes #14)
+        - fix output constant in get_alt() in POD (PWM_OUT) (closes #13)
+
+2.36.5  2017-02-13
         - lower-cased Inline functions in XS file
+        - added INLINE.h to MANIFEST file (re-closes #8)
         - fix typo in lcdPutChar() in XS (was lcdPutchar)
         - fix bug in lcd_init(), where we weren't extracting the values from the
           argument hash, thereby too many args were being passed into lcdInit()
@@ -14,7 +32,6 @@ Revision history for Perl extension WiringPi::API.
           contains the read data (fixes #23)
 
 2.36.3  2017-01-22
-
         - changed TOC to "TABLE OF CONTENTS" in POD (closes #18)
         - modified dist description in POD
         - added blurb in softpwm section that this functionality is quite
