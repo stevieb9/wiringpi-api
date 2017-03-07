@@ -176,7 +176,7 @@ sub pwm_set_range {
 # lcd functions
 
 sub lcd_init {
-    shift if @_ == 14;
+    shift if @_ == 27;
     my %params = @_;
 
     my @required_args = qw(
@@ -185,10 +185,9 @@ sub lcd_init {
     );
 
     my @args;
-
     for (@required_args){
         if (! defined $params{$_}) {
-            die "\n'$_' is a required param for Core::lcd_init()\n";
+            die "\n'$_' is a required param for WiringPi::API::lcd_init()\n";
         }
         push @args, $params{$_};
     }
@@ -1542,3 +1541,4 @@ Copyright (C) 2016 by Steve Bertrand
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.18.2 or,
 at your option, any later version of Perl 5 you may have available.
+
