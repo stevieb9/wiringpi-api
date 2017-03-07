@@ -43,7 +43,7 @@ my @wpi_perl_functions = qw(
     analog_read     analog_write    pin_mode            phys_to_wpi
     ads1115_setup   spi_setup       spi_data            i2c_setup
     i2c_interface   i2c_read        i2c_read_byte       i2c_read_word
-    i2c_write       i2c_write_byte  i2c_write_word
+    i2c_write       i2c_write_byte  i2c_write_word      testChar
 );
 
 our @EXPORT_OK;

@@ -20,6 +20,7 @@
  * declarations
  */
 
+void testChar(unsigned char* test, unsigned char data);
 int bmp180Pressure(int pin);
 int bmp180Temp(int pin);
 int initThread(char * callback);
@@ -46,6 +47,10 @@ int bmp180Setup(int pin_base);
 int bmp180Pressure(int pin);
 int bmp180Temp(int pin);
 
+void testChar(unsigned char* test, unsigned char data){
+    printf("%d\n", test[0]);
+    printf("%d\n", data);
+}
 static int phys_wpi_map[64] =
 {
   -1, // pin 0 doesn't exist
@@ -516,3 +521,6 @@ int wiringPiI2CWriteReg16 (fd, reg, data)
 #char *
 #wiringPiVersion()
 
+void testChar (stuff, data)
+   unsigned char* stuff
+   unsigned char data 
