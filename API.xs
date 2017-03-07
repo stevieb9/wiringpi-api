@@ -211,7 +211,7 @@ int bmp180Temp(int pin){
 
 */
 
-MODULE = WiringPi::API  PACKAGE = WiringPi::API
+MODULE = WiringPi::API  PACKAGE = WiringPi::API PREFIX = XS_
 
 #
 # core
