@@ -480,16 +480,6 @@ GPIO and connected peripherals
 No matter which import option you choose, before you can start making calls,
 you must initialize the software by calling one of the C<setup*()> routines.
 
-    # import the API functions directly
-
-    use WiringPi::API qw(:wiringPi)
-
-    # import the Perl wrapped functions
-
-    use WiringPi::API qw(:perl)
-
-    # import both versions
-
     use WiringPi::API qw(:all)
 
     # use as a base class with OO functionality
@@ -508,48 +498,15 @@ This is an XS-based module, and requires L<wiringPi|http://wiringpi.com> version
 2.36+ to be installed. The C<wiringPiDev> shared library is also required (for
 the LCD functionality), but it's installed by default with C<wiringPi>.
 
-This module allows you to import the wiringPi's functions directly as-is, use
-it as a Perl base class, export the Perl wrapped functions, or use it in a
-traditional Perl OO way.
-
 See the documentation on the L<wiringPi|http://wiringpi.com> website for a more
 in-depth description of most of the functions it provides. Some of the
 functions we've wrapped are not documented, they were just selectively plucked
-from the C code itself.
+from the C code itself. Each mapped function lists which C function it is
+responsible for.
 
 =head1 EXPORT_OK
 
-Exported with the C<:wiringPi> tag.
-
-These XS functions map directly to the wiringPi functions with their original
-names. 
-
-Note that the following functions are NOT original. They have been renamed and
-reworked due to the nature of the arguments that need to be passed in, or other
-factors that required changes to make it usable through the Perl interpreter:
-
-    setInterrupt()  for wiringPiISR()
-    spiDataRW()     for wiringPiSPIDataRW()
-    lcdDefChar()    for lcdCharDef()
-
-Full list of exports:
-
-    wiringPiSetup       wiringPiSetupSys    wiringPiSetupGpio
-    wiringPiSetupPhys   pinMode             pullUpDnControl
-    digitalRead         digitalWrite        digitalWriteByte
-    pwmWrite            getAlt              piBoardDev
-    wpiToGpio           physPinToGpio       pwmSetRange
-    lcdInit             lcdHome             lcdClear
-    lcdDisplay          lcdCursor           lcdCursorBlink
-    lcdSendCommand      lcdPosition         lcdDefChar
-    lcdPutChar          lcdPuts             setInterrupt
-    softPwmCreate       softPwmWrite        softPwmStop
-    sr595Setup          bmp180Setup         bmp180Pressure
-    bmp180Temp          analogRead          analogWrite
-    ads1115Setup        pseudoPinsSetup     wiringPiSPISetup
-    wiringPiSPIDataRW
-
-Exported with the C<:perl> tag.
+Exported with the C<:all> tag, or individually.
 
 Perl wrapper functions for the XS functions. Not all of these are direct
 wrappers; several have additional/modified functionality than the wrapped
@@ -567,12 +524,6 @@ versions, but are still 100% compatible.
     ads1115_setup   spi_setup       spi_data
 
 =head1 EXPORT_TAGS
-
-=head2 :wiringPi
-
-See L<EXPORT_OK>
-
-=head2 :perl
 
 See L<EXPORT_OK>
 
