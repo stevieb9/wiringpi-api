@@ -1,5 +1,8 @@
 Revision history for Perl extension WiringPi::API.
 
+2.36.8 UNREL
+        - clarified POD for lcd_put_char() and lcd_char_def()
+
 2.36.7  2017-03-09
         - disable tests when not on a Pi board (within a BEGIN block)
         - added INLINE.h to MANIFEST file (re-closes #8)

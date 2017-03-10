@@ -964,15 +964,20 @@ Mandatory: The file descriptor integer returned by C<lcd_init()>.
 
     $index
 
-Mandatory: Index of the display character. Values are C<0-7>.
+Mandatory: Index of the display character. Values are C<0-7>. Once the char
+is stored at this index, it can be used at any time with the C<lcd_put_char()>
+function.
 
     $data
 
-Mandatory: Array reference. Each element is a single byte, up to a maximum of 8
-elements. These bytes represent the character from the top-line to the bottom
-line. Note that the characters are actually 5×8, so only the lower 5 bits are
-used. The index is from 0 to 7 and you can subsequently print the character
-defined using the lcdPutchar() call.
+Mandatory: Array reference of exactly 8 elements. Each element is a single
+unsigned char byte. These bytes represent the character from the top-line to
+the bottom line. 
+
+Note that the characters are actually 5×8, so only the lower 5 bits are of
+each element are used (ie. `0b11111` or 0b00011111`). The index is from 0 to 7
+and you can subsequently print the character defined using the lcdPutchar()
+call using the same index sent in to this function.
 
 =head2 lcd_put_char($fd, $char)
 
@@ -989,7 +994,10 @@ Mandatory: The file descriptor integer returned by C<lcd_init()>.
 
     $char
 
-Mandatory: A single ASCII character.
+Mandatory: The character byte to print to the LCD. Note that 0-7 are reserved
+for custom characters, as defined with C<lcd_char_def()>. To print one of your
+custom chars, C<$char> should be the same integer of the C<$index> you used to
+store it in that function.
 
 =head2 lcd_puts($fd, $string)
 
