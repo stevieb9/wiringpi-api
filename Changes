@@ -1,12 +1,15 @@
 Revision history for Perl extension WiringPi::API.
 
-2.36.7  2017-02-23
+2.36.7 UNREL
         - disable tests when not on a Pi board (within a BEGIN block)
         - added INLINE.h to MANIFEST file (re-closes #8)
-        - fix typo in lcdPutChar() in XS (was lcdPutchar)
         - fix bug in lcd_init(), where we weren't extracting the values from the
           argument hash, thereby too many args were being passed into lcdInit()
           C function (closes #27)
+        - added a workaround for lcd_char_def(). For some reason, we need to
+          print a zero-width char before calling the C function lcdCharDef().
+          One day I'll need to sort out why (closes #26)
+        - in lcd_char_def(), changed from "V0C*" to "C[8]" for pack()
 
 2.36.6  2017-02-22
         - added in I2C support (work on #22)

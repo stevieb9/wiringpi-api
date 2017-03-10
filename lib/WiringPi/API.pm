@@ -231,7 +231,8 @@ sub lcd_position {
 sub lcd_char_def {
     shift if @_ == 4;
     my ($fd, $index, $data) = @_;
-    my $unsigned_char = pack "V0C*", @$data;
+    lcdPuts($fd, "\n");
+    my $unsigned_char = pack "C[8]", @$data;
     lcdCharDef($fd, $index, $unsigned_char);
 }
 sub lcd_put_char {
