@@ -451,14 +451,6 @@ sub bmp180_pressure {
     # return kPa
     return bmp180Pressure($pin) / 100;
 }
-
-# threading functions
-
-sub thread_create {
-    my ($self, $sub_name) = @_;
-    my $status = initThread($sub_name);
-    print "thread failed to start\n" if $status != 0;
-}
 sub _vim{1;};
 
 1;

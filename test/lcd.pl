@@ -39,9 +39,10 @@ sleep 1;
 
 lcd_position($fd, 0, 0);
 
-#lcd_puts($fd, "\n");
+lcd_puts($fd, "\n");
 lcd_char_def($fd, 0, $def);
-lcd_put_char($fd, 0);
+lcd_put_char($fd, 65);
+
 
 sleep 1;
 

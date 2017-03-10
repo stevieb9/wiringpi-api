@@ -20,7 +20,6 @@
  * declarations
  */
 
-void testChar(unsigned char* test, unsigned char data);
 int bmp180Pressure(int pin);
 int bmp180Temp(int pin);
 int initThread(char * callback);
@@ -47,10 +46,6 @@ int bmp180Setup(int pin_base);
 int bmp180Pressure(int pin);
 int bmp180Temp(int pin);
 
-void testChar(unsigned char* test, unsigned char data){
-    printf("%d\n", test[0]);
-    printf("%d\n", data);
-}
 static int phys_wpi_map[64] =
 {
   -1, // pin 0 doesn't exist
@@ -385,12 +380,6 @@ sr595Setup(pin_base, num_pins, data_pin, clock_pin, latch_pin)
     int clock_pin
     int latch_pin
 
-# threading
-
-#int
-#piThreadCreate(callback)
-#    char callback
-
 void
 piLock(keyNum)
     int keyNum
@@ -517,10 +506,3 @@ int wiringPiI2CWriteReg16 (fd, reg, data)
     int fd
     int reg
     int data
-
-#char *
-#wiringPiVersion()
-
-void testChar (stuff, data)
-   unsigned char* stuff
-   unsigned char data 
