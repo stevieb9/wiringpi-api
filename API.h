@@ -1,9 +1,12 @@
+/*
+ * header file for WiringPi::API.xs
+ */
+
 int bmp180Pressure(int pin);
 int bmp180Temp(int pin);
 int initThread(char * callback);
 void interruptHandler();
 int physPinToWpi(int wpi_pin);
-//static int phys_wpi_map[64];
 int setInterrupt(int pin, int edge, char* callback);
 int wiringPiI2CSetup (int devId);
 int wiringPiI2CSetupInterface (char* device, int devId);
