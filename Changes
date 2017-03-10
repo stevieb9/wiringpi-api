@@ -11,6 +11,9 @@ Revision history for Perl extension WiringPi::API.
           One day I'll need to sort out why (closes #26)
         - in lcd_char_def(), changed from "V0C*" to "C[8]" for pack()
         - removed duplicate test declaration in t/00-load.t
+        - removed the :wiringPi and :perl export tags from POD, we only
+          advertise :all now, which only exports the Perl functions (all are
+          still available in code though)
 
 2.36.6  2017-02-22
         - added in I2C support (work on #22)
