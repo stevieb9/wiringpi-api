@@ -5,6 +5,7 @@ Revision history for Perl extension WiringPi::API.
         - clean up test XS code
         - remove all code related to creating threads. That's out of scope for
           this project (closes #2)
+        - moved all XS/C declarations into a separate API.h file from API.xs
 
 2.36.7  2017-03-09
         - disable tests when not on a Pi board (within a BEGIN block)
