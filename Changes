@@ -1,11 +1,12 @@
 Revision history for Perl extension WiringPi::API.
 
-2.36.8 UNREL
+2.3608  2017-03-13
         - clarified POD for lcd_put_char() and lcd_char_def()
         - clean up test XS code
         - remove all code related to creating threads. That's out of scope for
           this project (closes #2)
         - moved all XS/C declarations into a separate API.h file from API.xs
+        - changed versioning scheme from 2.36.x to 2.360x
 
 2.36.7  2017-03-09
         - disable tests when not on a Pi board (within a BEGIN block)
