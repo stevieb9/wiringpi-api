@@ -966,7 +966,7 @@ Mandatory: Array reference of exactly 8 elements. Each element is a single
 unsigned char byte. These bytes represent the character from the top-line to
 the bottom line. 
 
-Note that the characters are actually 5×8, so only the lower 5 bits are of
+Note that the characters are actually 5 x 8, so only the lower 5 bits are of
 each element are used (ie. `0b11111` or 0b00011111`). The index is from 0 to 7
 and you can subsequently print the character defined using the lcdPutchar()
 call using the same index sent in to this function.

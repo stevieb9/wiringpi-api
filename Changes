@@ -1,5 +1,8 @@
 Revision history for Perl extension WiringPi::API.
 
+2.3609 UNREL
+        - fix unicode POD error
+
 2.3608  2017-03-13
         - clarified POD for lcd_put_char() and lcd_char_def()
         - clean up test XS code
