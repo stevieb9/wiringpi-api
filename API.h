@@ -17,7 +17,7 @@ int wiringPiI2CWrite (int fd, int data);
 int wiringPiI2CWriteReg8 (int fd, int reg, int data);
 int wiringPiI2CWriteReg16 (int fd, int reg, int data);
 unsigned int digitalReadByte();
-int digitalReadByte2();
+unsigned int digitalReadByte2();
 void digitalWriteByte(int value);
 void digitalWriteByte2(int value);
 int ads1115Setup(int pin_base, int addr);

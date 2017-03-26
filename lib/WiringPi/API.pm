@@ -115,6 +115,7 @@ sub pull_up_down {
     my ($pin, $value) = @_;
     # off, down up = 0, 1, 2
     pullUpDnControl($pin, $value);
+    select(undef, undef, undef, 0.02);
 }
 sub read_pin {
     shift if @_ == 2;

@@ -367,7 +367,7 @@ pinModeAlt(pin, mode)
 int
 digitalReadByte()
 
-int
+unsigned int
 digitalReadByte2()
 
 void

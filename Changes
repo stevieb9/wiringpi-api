@@ -2,7 +2,10 @@ Revision history for Perl extension WiringPi::API.
 
 2.3609 UNREL
         - fix unicode POD error
-
+        - fix declaration issue for digitalReadByte2()
+        - add a 0.02 second delay in pull_up_down(), as it wasn't returning
+          fast enough to re-init the pin (this broke interrupts)
+             
 2.3608  2017-03-13
         - clarified POD for lcd_put_char() and lcd_char_def()
         - clean up test XS code
