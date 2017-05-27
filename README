@@ -48,10 +48,9 @@ EXPORT_OK
         pwm_set_range   lcd_init        lcd_home            lcd_clear
         lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
         lcd_position    lcd_char_def    lcd_put_char        lcd_puts
-        set_interrupt   soft_pwm_create soft_pwm_write      soft_pwm_stop
-        shift_reg_setup pin_mode        analog_read         analog_write
-        bmp180_setup    bmp180_pressure bmp180_temp         phys_to_wpi
-        ads1115_setup   spi_setup       spi_data
+        set_interrupt   pin_mode        analog_read         analog_write
+        shift_reg_setup bmp180_setup    bmp180_pressure     bmp180_temp
+        ads1115_setup   spi_setup       spi_data            phys_to_wpi
 
 EXPORT_TAGS
 
@@ -555,51 +554,6 @@ LCD FUNCTIONS
         $string
 
     Mandatory: A string to display.
-
-SOFT PWM FUNCTIONS
-
-    Note: The software PWM functionality is experimental, and from what
-    I've tested, not very reliable, so I'd stay away from this at this
-    time.
-
-    Software Pulse Width Modulation is not the same as hardware PWM. It
-    should not be used for critical things as it's frequency isn't 100%
-    stable.
-
-    This software PWM allows you to use PWM on ANY GPIO pin, not just the
-    single hardware pin available.
-
- soft_pwm_create($pin, $initial_value, $range)
-
-    Creates a new software PWM thread that runs outside of your main
-    application.
-
-    Parameters:
-
-        $pin
-
-    Mandatory: The pin number, in the pin numbering scheme dictated by
-    whichever setup*() routine you used.
-
-        $initial_value
-
-    Optional: A value between 0 and $range.
-
-        $range
-
-    Optional: Look at this like a dial. We start at 0 and the dial has
-    turned completely when we hit the $range integer. If not sent in,
-    defaults to 1023.
-
- soft_pwm_write($pin, $value)
-
-    Sets the HIGH frequency on pin to whatever is in $value. The value must
-    be lower than what was set in the $range parameter to
-    soft_pwm_create().
-
- soft_pwm_stop($pin)
-
-    Turns off software PWM on the $pin.
 
 INTERRUPT FUNCTIONS
 
