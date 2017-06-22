@@ -396,12 +396,10 @@ spiDataRW (channel, byte_ref, len)
         temp = PL_markstack_ptr++;
         spiDataRW(channel, byte_ref, len);
         if (PL_markstack_ptr != temp) {
-          /* truly void, because dXSARGS not invoked */
           PL_markstack_ptr = temp;
-          XSRETURN_EMPTY; /* return empty stack */
+          XSRETURN_EMPTY;
         }
-        /* must have used dXSARGS; list context implied */
-        return; /* assume stack size is correct */
+        return;
 
 # I2C
 
