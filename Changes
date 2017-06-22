@@ -4,6 +4,9 @@ Revision history for Perl extension WiringPi::API.
         - removed all traces of Software PWM from code and documentation, as
           even Gordon himself advises not to use it
         - added file information and copyright to the .h and .xs files
+        - fix bug in i2c_write_word(), $data param wasn't being sent in, which
+          resulted in an argument error being thrown from the wiringPi
+          library
 
 2.3609  2017-03-26
         - fix unicode POD error

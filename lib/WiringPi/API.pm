@@ -355,7 +355,7 @@ sub i2c_write_word {
         die "i2c_write_word() requires a \$data param\n";
     }
 
-    return wiringPiI2CWriteReg16($fd, $reg);
+    return wiringPiI2CWriteReg16($fd, $reg, $data);
 }
 
 # SPI functions
