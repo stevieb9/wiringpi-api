@@ -1,5 +1,12 @@
 /*
- * header file for WiringPi::API.xs
+ * API.h file for WiringPi::API Perl distribution
+ *
+ * Copyright (c) 2017 by Steve Bertrand
+ *
+ * This library is free software; you can redistribute it and/or modify it under
+ * the same terms as Perl itself, either Perl version 5.18.2 or, at your option,
+ * any later version of Perl 5 you may have available.
+ *
  */
 
 int bmp180Pressure(int pin);
