@@ -9,6 +9,7 @@
 
 #include "API.h"
 #include <wiringPi.h>
+#include <wiringPiI2C.h>
 #include <wiringPiSPI.h>
 #include <lcd.h>
 #include <sys/mman.h>
