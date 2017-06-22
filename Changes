@@ -3,7 +3,6 @@ Revision history for Perl extension WiringPi::API.
 2.3610 UNREL
         - removed all traces of Software PWM from code and documentation, as
           even Gordon himself advises not to use it
-        - added include for wiringPiI2C.h in XS file
         - added file information and copyright to the .h and .xs files
 
 2.3609  2017-03-26
