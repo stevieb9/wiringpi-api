@@ -1,6 +1,7 @@
 Revision history for Perl extension WiringPi::API.
 
-2.3610_01
+2.3610_02 2017-06-22
+        - updated Changes with proper date
         - removed all traces of Software PWM from code and documentation, as
           even Gordon himself advises not to use it
         - added file information and copyright to the .h and .xs files
