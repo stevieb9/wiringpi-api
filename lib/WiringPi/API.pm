@@ -3,7 +3,7 @@ package WiringPi::API;
 use strict;
 use warnings;
 
-our $VERSION = '2.3610_01';
+our $VERSION = '2.3611';
 
 require XSLoader;
 XSLoader::load('WiringPi::API', $VERSION);
@@ -339,7 +339,7 @@ sub i2c_write_byte {
         die "i2c_write_byte() requires a \$data param\n";
     }
 
-    return wiringPiI2CWriteReg8($fd, $reg);
+    return wiringPiI2CWriteReg8($fd, $reg, $data);
 }
 sub i2c_write_word {
     shift if @_ > 3;
