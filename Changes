@@ -1,6 +1,6 @@
 Revision history for Perl extension WiringPi::API.
 
-2.3611 UNREL
+2.3611  2017-06-23
         - fix i2c_read_word(). It had the same issue with not sending $data in
           as i2c_write_word() did in the last releases Changes entry
         - the issue in the last release regarding Arduino I2C comms has been
