@@ -1,5 +1,7 @@
 Revision history for Perl extension WiringPi::API.
 
+2.3611 UNREL
+
 2.3610_02 2017-06-22
         - updated Changes with proper date
         - removed all traces of Software PWM from code and documentation, as
