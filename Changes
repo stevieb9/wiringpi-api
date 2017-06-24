@@ -1,7 +1,9 @@
 Revision history for Perl extension WiringPi::API.
 
 2.3612 UNREL
-        -
+        - added pin_mode_alt() due to an issue found in RPi::WiringPi. Upon
+          that module's cleanup() routine, we need to ensure all pins are back
+          to real default
 
 2.3611  2017-06-23
         - fix i2c_read_word(). It had the same issue with not sending $data in
