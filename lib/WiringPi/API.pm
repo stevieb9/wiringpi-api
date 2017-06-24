@@ -28,6 +28,7 @@ my @wpi_c_functions = qw(
     wiringPiI2CSetup    wiringPiI2CSetupInterface
     wiringPiI2CRead     wiringPiI2CReadReg8 wiringPiI2CReadReg16
     wiringPiI2CWrite    wiringPiI2CWriteReg8    wiringPiI2CWriteReg16
+    pinModeAlt
 );
 
 my @wpi_perl_functions = qw(
@@ -42,7 +43,7 @@ my @wpi_perl_functions = qw(
     ads1115_setup   spi_setup       spi_data            i2c_setup
     i2c_interface   i2c_read        i2c_read_byte       i2c_read_word
     i2c_write       i2c_write_byte  i2c_write_word      testChar
-    phys_to_wpi
+    phys_to_wpi     pin_mode_alt
 );
 
 our @EXPORT_OK;
@@ -90,6 +91,25 @@ sub pin_mode {
         die "pin_mode() requires either 0, 1, 2 or 3 as a param";
     }
     pinMode($pin, $mode);
+}
+sub pin_mode_alt {
+    shift if @_ == 3;
+    my ($pin, $alt) = @_;
+
+    if (! grep {$alt == $_} 0..7)}
+        die "pin_mode_alt() requires 0-7 as a param";
+    }
+
+    # 0     INPUT
+    # 1     OUTPUT
+    # 4     ALT0
+    # 5     ALT1
+    # 6     ALT2
+    # 7     ALT3
+    # 3     ALT4
+    # 2     ALT5
+
+    pinModeAlt($pin, $alt);
 }
 sub pull_up_down {
     shift if @_ == 3;
@@ -587,7 +607,7 @@ Sets the pin numbering scheme to C<GPIO>.
 
 Maps to C<void pinMode(int pin, int mode)>
 
-Puts the pin in either INPUT or OUTPUT mode.
+Puts the pin in either INPUT, OUTPUT, PWM or GPIO_CLOCK mode.
 
 Parameters:
 
@@ -599,6 +619,35 @@ C<setup*()> routine you used.
     $mode
 
 Mandatory: C<0> for INPUT, C<1> OUTPUT, C<2> PWM_OUTPUT and C<3> GPIO_CLOCK.
+
+=head2 pin_mode_alt($pin, $alt)
+
+Maps to the undocumented C<void pinModeAlt(int pin, int mode)>
+
+Allows you to set any pin to any mode. ALT modes allowed:
+
+    value   mode
+    ------------
+    0       INPUT
+    1       OUTPUT
+    4       ALT0
+    5       ALT1
+    6       ALT2
+    7       ALT3
+    3       ALT4
+    2       ALT5
+
+Parameters:
+
+    $pin
+
+Mandatory: The pin number, in the pin numbering scheme dictated by whichever
+C<setup*()> routine you used.
+
+    $alt
+
+Mandatory, Integer: The mode you want to put the pin into. See the list above
+for the relevant values for this parameter.
 
 =head2 read_pin($pin);
 
