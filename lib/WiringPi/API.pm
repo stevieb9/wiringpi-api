@@ -96,7 +96,7 @@ sub pin_mode_alt {
     shift if @_ == 3;
     my ($pin, $alt) = @_;
 
-    if (! grep {$alt == $_} 0..7)}
+    if (! grep {$alt == $_} 0..7){
         die "pin_mode_alt() requires 0-7 as a param";
     }
 
