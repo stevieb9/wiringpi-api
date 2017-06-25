@@ -858,6 +858,12 @@ Note: When in 4-bit mode, the C<d0> through C<3> parameters actually map to
 pins C<d4> through C<d7> on the LCD board, so you need to connect those pins
 to their respective selected GPIO pins.
 
+NOTE: There is an upper limit of the number of LCDs that can be initialized
+simultaneously. This number is 8 (0-7). Always check the return of this
+function to ensure you're under the maximum file descriptors. If you receive a
+`-1`, you're out of bounds, and any functions called on the LCD will cause a 
+segmentation fault.
+
 =head2 lcd_home($fd)
 
 Maps to C<void lcdHome(int fd)>

@@ -4,6 +4,9 @@ Revision history for Perl extension WiringPi::API.
         - added pin_mode_alt() due to an issue found in RPi::WiringPi. Upon
           that module's cleanup() routine, we need to ensure all pins are back
           to real default
+        - in relation to stevieb9/rpi-lcd#6, added a warning in lcd_init() POD
+          to always check the return value of the function for a -1 error, else
+          if you continue on, the code will segfault
 
 2.3611  2017-06-23
         - fix i2c_read_word(). It had the same issue with not sending $data in

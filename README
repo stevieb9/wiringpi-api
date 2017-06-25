@@ -362,6 +362,12 @@ LCD FUNCTIONS
     to pins `d4' through `d7' on the LCD board, so you need to connect those
     pins to their respective selected GPIO pins.
 
+    NOTE: There is an upper limit of the number of LCDs that can be
+    initialized simultaneously. This number is 8 (0-7). Always check the
+    return of this function to ensure you're under the maximum file
+    descriptors. If you receive a `-1`, you're out of bounds, and any
+    functions called on the LCD will cause a segmentation fault.
+
   lcd_home($fd)
     Maps to `void lcdHome(int fd)'
 
