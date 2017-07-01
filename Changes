@@ -1,6 +1,7 @@
 Revision history for Perl extension WiringPi::API.
 
 2.3613 UNREL
+        - integrated wiringSerial, providing basic serial interface support
 
 2.3612  2017-06-24
         - added pin_mode_alt() due to an issue found in RPi::WiringPi. Upon

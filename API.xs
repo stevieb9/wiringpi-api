@@ -20,6 +20,7 @@
 
 #include "API.h"
 #include <wiringPi.h>
+//#include <wiringSerial.h>
 #include <wiringPiSPI.h>
 #include <lcd.h>
 #include <sys/mman.h>
@@ -445,3 +446,30 @@ int wiringPiI2CWriteReg16 (fd, reg, data)
     int fd
     int reg
     int data
+
+# serial interface
+
+int serialOpen (device, baud)
+    char* device
+    int baud
+
+void serialFlush (fd)
+    int fd
+
+void serialPutchar (fd, c)
+    int fd
+    unsigned char c
+
+void serialPuts (fd, s)
+    int fd
+    char* s
+
+void serialPrintf (fd, msg)
+    int fd
+    char* msg
+
+int serialDataAvail (fd)
+    int fd
+
+int serialGetchar (fd)
+    int fd

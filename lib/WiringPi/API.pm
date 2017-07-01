@@ -27,8 +27,10 @@ my @wpi_c_functions = qw(
     pseudoPinsSetup     wiringPiSPISetup    spiDataRW
     wiringPiI2CSetup    wiringPiI2CSetupInterface
     wiringPiI2CRead     wiringPiI2CReadReg8 wiringPiI2CReadReg16
-    wiringPiI2CWrite    wiringPiI2CWriteReg8    wiringPiI2CWriteReg16
-    pinModeAlt
+    wiringPiI2CWrite    wiringPiI2CWriteReg8 wiringPiI2CWriteReg16
+    pinModeAlt          serialOpen          serialFlush
+    serialPutchar       serialPuts          serialPrintf
+    serialDataAvail     serialGetchar
 );
 
 my @wpi_perl_functions = qw(
@@ -43,7 +45,9 @@ my @wpi_perl_functions = qw(
     ads1115_setup   spi_setup       spi_data            i2c_setup
     i2c_interface   i2c_read        i2c_read_byte       i2c_read_word
     i2c_write       i2c_write_byte  i2c_write_word      testChar
-    phys_to_wpi     pin_mode_alt
+    phys_to_wpi     pin_mode_alt    serial_open         serial_flush
+    serial_put_char serial_puts     serial_printf       serial_data_avail
+    serial_get_char serial_close
 );
 
 our @EXPORT_OK;
@@ -57,6 +61,51 @@ $EXPORT_TAGS{all} = [@wpi_c_functions, @wpi_perl_functions];
 
 sub new {
     return bless {}, shift;
+}
+
+# serial functions
+
+sub serial_open {
+    shift if @_ > 2;
+    my ($dev_ptr, $baud) = @_;
+    my $fd = serialOpen($dev_ptr, $baud);
+    die "could not open serial device $dev_ptr\n" if $fd == -1;
+    return $fd;
+}
+sub serial_close {
+    shift if @_ > 1;
+    my ($fd) = @_;
+    serialClose($fd);
+}
+sub serial_flush {
+    shift if @_ > 1;
+    my ($fd) = @_;
+    serialFlush($fd);
+}
+sub serial_put_char {
+    shift if @_ > 2;
+    my ($fd, $unsigned_char) = @_;
+    serialPutchar($fd, $unsigned_char);
+}
+sub serial_puts {
+    shift if @_ > 2;
+    my ($fd, $char) = @_;
+    serialPuts($fd, $char);
+}
+sub serial_printf {
+    shift if @_ > 2;
+    my ($fd, $char_ptr) = @_;
+    serialPrintf($fd, $char_ptr);
+}
+sub serial_data_avail {
+    shift if @_ > 1;
+    my ($fd) = @_;
+    serialDataAvail($fd);
+}
+sub serial_get_char {
+    shift if @_ > 1;
+    my ($fd) = @_;
+    serialGetchar($fd);
 }
 
 # interrupt functions
@@ -509,6 +558,8 @@ versions, but are still 100% compatible.
     set_interrupt   pin_mode        analog_read         analog_write
     shift_reg_setup bmp180_setup    bmp180_pressure     bmp180_temp
     ads1115_setup   spi_setup       spi_data            phys_to_wpi
+    serial_open     serial_flush    serial_put_char     serial_puts     serial_printf       serial_data_avail
+    serial_get_char serial_close
 
 =head1 EXPORT_TAGS
 
@@ -1151,6 +1202,129 @@ Mandatory: Integer, the GPIO pin number connected to the register's C<SHCP> pin
 
 Mandatory: Integer, the GPIO pin number connected to the register's C<STCP> pin
 (12). Can be any GPIO pin capable of output.
+
+=head1 SERIAL FUNCTIONS
+
+These functions provide basic access to read and write to a serial device.
+
+=head2 serial_open($device, $baud)
+
+Maps to C<int serialOpen(const char *device, const int baud)>
+
+Opens a serial device for read/write access.
+
+Parameters:
+
+    $device
+
+Mandatory, String: The name of the serial device, eg: C</dev/ttyACM0>.
+
+    $baud
+
+Mandatory, Integer: The speed of the serial device. (eg: C<9600>).
+
+Return, Integer: The file descriptor of the device.
+
+=head2 serial_close($fd)
+
+Maps to C<void serialClose(const int fd)>
+
+Closes an already open serial device.
+
+Parameters:
+
+    $fd
+
+Mandatory, Integer: The file descriptor returned by your call to C<serial_open()>.
+
+=head2 serial_flush($fd)
+
+Maps to C<serialFlush(const int fd)>
+
+Flushes the serial device's buffer.
+
+Parameters:
+
+    $fd
+
+Mandatory, Integer: The file descriptor returned by your call to C<serial_open()>.
+
+=head2 serial_data_avail($fd)
+
+Maps to C<serialDataAvail(const int fd)>
+
+Check if there is any data available on the serial interface.
+
+Parameters:
+
+    $fd
+
+Mandatory, Integer: The file descriptor returned by your call to C<serial_open()>.
+
+=head2 serial_get_char($fd)
+
+Maps to C<serialGetchar(const int fd)
+
+Read a single byte from the serial interface.
+
+Parameters:
+
+    $fd
+
+Mandatory, Integer: The file descriptor returned by your call to C<serial_open()>.
+
+=head2 serial_put_char($fd, $char)
+
+Maps to C<serialPutchar(const int fd, const unsigned char c)>
+
+Write a single byte to the interface.
+
+Parameters:
+
+    $fd
+
+Mandatory, Integer: The file descriptor returned by your call to C<serial_open()>.
+
+    $char
+
+Mandatory, Byte: A single byte to write to the serial interface.
+
+=head2 serial_puts($fd, $string)
+
+Maps to C<serialPuts(const int fd, const char* string)>
+
+Write an arbitrary length string to the serial interface.
+
+Parameters:
+
+    $fd
+
+Mandatory, Integer: The file descriptor returned by your call to C<serial_open()>.
+
+    $string
+
+Mandatory, String: The content to write to the device.
+
+=head2 serial_printf($fd, $string, ...)
+
+Maps to C<serialPrintf(const int fd, const char msg, ...)>
+
+Allows you to send a string in, in C<printf> fashion.
+
+Parameters:
+
+    $fd
+
+Mandatory, Integer: The file descriptor returned by your call to C<serial_open()>.
+
+    $string
+
+Mandatory, String: A string populated with C<printf()> variable placeholders.
+
+    ...
+
+Optional, Data: The actual data variables according to the formatter options
+sent in in the C<$string> argument, if any.
 
 =head1 I2C FUNCTIONS
 
