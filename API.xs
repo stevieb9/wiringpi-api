@@ -30,8 +30,21 @@
 #define PERL_NO_GET_CONTEXT
 
 char* serialGets(int fd, char* buf, int nbytes){
-    int m;
-    m = read(fd, buf, nbytes);
+    int bytes_read = 0;
+
+    do {
+        int result = read(fd, buf + bytes_read, nbytes - bytes_read);
+
+        printf("%d, %d\n", bytes_read, result);
+        if (0 >= result){
+            if (0 > result){
+                exit(-1);
+            }
+            break;
+        }
+        bytes_read += result;
+    } while (bytes_read < nbytes);
+
     return buf;
 }
 
