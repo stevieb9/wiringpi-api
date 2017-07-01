@@ -103,7 +103,7 @@ sub serial_get_char {
     serialGetchar($fd);
 }
 sub serial_gets {
-    shift if @_ > 3;
+    shift if @_ > 2;
     my ($fd, $nbytes) = @_;
     my $buf = "";
     my $char_ptr = serialGets($fd, $buf, $nbytes);
