@@ -110,8 +110,7 @@ sub serial_get_char {
 sub serial_gets {
     shift if @_ > 3;
     my ($fd, $buf, $nbytes) = @_;
-    my $packed = pack "a*", $buf;
-    my $char_ptr = serialGets($fd, $packed, $nbytes);
+    my $char_ptr = serialGets($fd, $buf, $nbytes);
     my $unpacked = unpack "a*", $char_ptr;
     return $unpacked;
 }
