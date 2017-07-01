@@ -20,7 +20,6 @@
 
 #include "API.h"
 #include <wiringPi.h>
-//#include <wiringSerial.h>
 #include <wiringPiSPI.h>
 #include <lcd.h>
 #include <sys/mman.h>
