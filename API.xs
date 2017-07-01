@@ -32,18 +32,18 @@
 char* serialGets(int fd, char* buf, int nbytes){
     int bytes_read = 0;
 
-    do {
+    while (bytes_read < nbytes){
         int result = read(fd, buf + bytes_read, nbytes - bytes_read);
-
-        printf("%d, %d\n", bytes_read, result);
+        
         if (0 >= result){
             if (0 > result){
+                printf("error\n");
                 exit(-1);
             }
             break;
         }
         bytes_read += result;
-    } while (bytes_read < nbytes);
+    }
 
     return buf;
 }
