@@ -29,8 +29,8 @@ my @wpi_c_functions = qw(
     wiringPiI2CRead     wiringPiI2CReadReg8 wiringPiI2CReadReg16
     wiringPiI2CWrite    wiringPiI2CWriteReg8 wiringPiI2CWriteReg16
     pinModeAlt          serialOpen          serialFlush
-    serialPutchar       serialPuts          serialPrintf
-    serialDataAvail     serialGetchar
+    serialPutchar       serialPuts          serialDataAvail
+    serialGetchar
 );
 
 my @wpi_perl_functions = qw(
@@ -46,8 +46,8 @@ my @wpi_perl_functions = qw(
     i2c_interface   i2c_read        i2c_read_byte       i2c_read_word
     i2c_write       i2c_write_byte  i2c_write_word      testChar
     phys_to_wpi     pin_mode_alt    serial_open         serial_flush
-    serial_put_char serial_puts     serial_printf       serial_data_avail
-    serial_get_char serial_close    serial_gets
+    serial_put_char serial_puts     serial_data_avail   serial_get_char 
+    serial_close    serial_gets
 );
 
 our @EXPORT_OK;
@@ -91,11 +91,6 @@ sub serial_puts {
     shift if @_ > 2;
     my ($fd, $char) = @_;
     serialPuts($fd, $char);
-}
-sub serial_printf {
-    shift if @_ > 2;
-    my ($fd, $char_ptr) = @_;
-    serialPrintf($fd, $char_ptr);
 }
 sub serial_data_avail {
     shift if @_ > 1;
@@ -566,8 +561,8 @@ versions, but are still 100% compatible.
     set_interrupt   pin_mode        analog_read         analog_write
     shift_reg_setup bmp180_setup    bmp180_pressure     bmp180_temp
     ads1115_setup   spi_setup       spi_data            phys_to_wpi
-    serial_open     serial_flush    serial_put_char     serial_puts     serial_printf       serial_data_avail
-    serial_get_char serial_close
+    serial_open     serial_flush    serial_put_char     serial_puts
+    serial_get_char serial_close    serial_data_avail
 
 =head1 EXPORT_TAGS
 
@@ -1271,7 +1266,7 @@ Mandatory, Integer: The file descriptor returned by your call to C<serial_open()
 
 =head2 serial_get_char($fd)
 
-Maps to C<serialGetchar(const int fd)
+Maps to C<serialGetchar(const int fd)>
 
 Read a single byte from the serial interface.
 
@@ -1312,27 +1307,6 @@ Mandatory, Integer: The file descriptor returned by your call to C<serial_open()
     $string
 
 Mandatory, String: The content to write to the device.
-
-=head2 serial_printf($fd, $string, ...)
-
-Maps to C<serialPrintf(const int fd, const char msg, ...)>
-
-Allows you to send a string in, in C<printf> fashion.
-
-Parameters:
-
-    $fd
-
-Mandatory, Integer: The file descriptor returned by your call to C<serial_open()>.
-
-    $string
-
-Mandatory, String: A string populated with C<printf()> variable placeholders.
-
-    ...
-
-Optional, Data: The actual data variables according to the formatter options
-sent in in the C<$string> argument, if any.
 
 =head1 I2C FUNCTIONS
 

@@ -37,7 +37,6 @@ char* serialGets(int fd, char* buf, int nbytes){
         
         if (0 >= result){
             if (0 > result){
-                printf("error\n");
                 exit(-1);
             }
             break;
@@ -482,10 +481,6 @@ void serialPutchar (fd, c)
 void serialPuts (fd, s)
     int fd
     char* s
-
-void serialPrintf (fd, msg)
-    int fd
-    char* msg
 
 int serialDataAvail (fd)
     int fd
