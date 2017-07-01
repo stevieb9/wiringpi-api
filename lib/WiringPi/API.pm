@@ -3,7 +3,7 @@ package WiringPi::API;
 use strict;
 use warnings;
 
-our $VERSION = '2.3613';
+our $VERSION = '2.3614';
 
 require XSLoader;
 XSLoader::load('WiringPi::API', $VERSION);
