@@ -47,7 +47,7 @@ my @wpi_perl_functions = qw(
     i2c_write       i2c_write_byte  i2c_write_word      testChar
     phys_to_wpi     pin_mode_alt    serial_open         serial_flush
     serial_put_char serial_puts     serial_printf       serial_data_avail
-    serial_get_char serial_close
+    serial_get_char serial_close    serial_gets
 );
 
 our @EXPORT_OK;
@@ -106,6 +106,14 @@ sub serial_get_char {
     shift if @_ > 1;
     my ($fd) = @_;
     serialGetchar($fd);
+}
+sub serial_gets {
+    shift if @_ > 3;
+    my ($fd, $buf, $nbytes) = @_;
+    my $packed = pack "a*", $buf;
+    my $char_ptr = serialGets($fd, $packed, $nbytes);
+    my $unpacked = unpack "a*", $char_ptr;
+    return $unpacked;
 }
 
 # interrupt functions

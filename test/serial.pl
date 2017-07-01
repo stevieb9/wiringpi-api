@@ -5,4 +5,6 @@ use WiringPi::API qw(:all);
 
 my $fd = serial_open('/dev/ttyS4', 9600);
 
-print $fd;
+my $str = serial_gets($fd, "ab", 2);
+
+print $str;

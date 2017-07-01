@@ -29,6 +29,13 @@
 
 #define PERL_NO_GET_CONTEXT
 
+char* serialGets(const int fd, char *buf, const int nbytes){
+    int m;
+    m = read (fd, buf, nbytes);
+    *(buf+m) = '\0';
+    return (buf) ;
+}
+
 void spiDataRW(int channel, SV* byte_ref, int len){
 
      /*
@@ -473,3 +480,8 @@ int serialDataAvail (fd)
 
 int serialGetchar (fd)
     int fd
+
+char* serialGets(fd, buf, nbytes)
+    int fd
+    char* buf
+    int nbytes
