@@ -470,6 +470,9 @@ int serialOpen (device, baud)
     char* device
     int baud
 
+void serialClose (fd)
+    int fd
+
 void serialFlush (fd)
     int fd
 
