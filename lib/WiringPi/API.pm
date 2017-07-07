@@ -30,7 +30,7 @@ my @wpi_c_functions = qw(
     wiringPiI2CWrite    wiringPiI2CWriteReg8 wiringPiI2CWriteReg16
     pinModeAlt          serialOpen          serialFlush
     serialPutchar       serialPuts          serialDataAvail
-    serialGetchar
+    serialGetchar       pwmSetClock
 );
 
 my @wpi_perl_functions = qw(
@@ -47,7 +47,7 @@ my @wpi_perl_functions = qw(
     i2c_write       i2c_write_byte  i2c_write_word      testChar
     phys_to_wpi     pin_mode_alt    serial_open         serial_flush
     serial_put_char serial_puts     serial_data_avail   serial_get_char 
-    serial_close    serial_gets
+    serial_close    serial_gets     pwm_set_range       pwm_set_clock
 );
 
 our @EXPORT_OK;
@@ -225,6 +225,11 @@ sub pwm_set_range {
     shift if @_ == 2;
     my $range = shift;
     pwmSetRange($range);
+}
+sub pwm_set_clock {
+    shift if @_ > 1;
+    my $divisor = shift;
+    pwmSetClock($divisor);
 }
 
 # lcd functions
