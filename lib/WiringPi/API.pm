@@ -30,7 +30,7 @@ my @wpi_c_functions = qw(
     wiringPiI2CWrite    wiringPiI2CWriteReg8 wiringPiI2CWriteReg16
     pinModeAlt          serialOpen          serialFlush
     serialPutchar       serialPuts          serialDataAvail
-    serialGetchar       pwmSetClock
+    serialGetchar       pwmSetClock         pwmSetMode
 );
 
 my @wpi_perl_functions = qw(
@@ -48,6 +48,7 @@ my @wpi_perl_functions = qw(
     phys_to_wpi     pin_mode_alt    serial_open         serial_flush
     serial_put_char serial_puts     serial_data_avail   serial_get_char 
     serial_close    serial_gets     pwm_set_range       pwm_set_clock
+    pwm_set_mode
 );
 
 our @EXPORT_OK;
@@ -230,6 +231,11 @@ sub pwm_set_clock {
     shift if @_ > 1;
     my $divisor = shift;
     pwmSetClock($divisor);
+}
+sub pwm_set_mode {
+    shift if @_ > 1;
+    my $mode = shift;
+    pwmSetMode($mode);
 }
 
 # lcd functions
@@ -567,7 +573,8 @@ versions, but are still 100% compatible.
     shift_reg_setup bmp180_setup    bmp180_pressure     bmp180_temp
     ads1115_setup   spi_setup       spi_data            phys_to_wpi
     serial_open     serial_flush    serial_put_char     serial_puts
-    serial_get_char serial_close    serial_data_avail
+    serial_get_char serial_close    serial_data_avail   pwm_set_clock
+    pwm_set_mode
 
 =head1 EXPORT_TAGS
 
@@ -870,7 +877,7 @@ Parameters:
 
 Mandatory: The pin number on the physical Raspberry Pi board.
 
-=head2 pwm_set_range($range);
+=head2 pwm_set_range($range)
 
 Maps to C<void pwmSetRange(int range)>
 
@@ -882,6 +889,42 @@ Parameters:
     $range
 
 Mandatory: An integer between C<0> and C<1023>.
+
+=head2 pwm_set_clock($divisor)
+
+Maps to C<void pwmSetClock(int divisor)>.
+
+The PWM clock can be set to control the PWM pulse widths. The PWM clock is
+derived from a 19.2MHz clock. You can set any divider.
+
+For example, say you wanted to drive a DC motor with PWM at about 1kHz, and
+control the speed in 1/1024 increments from 0/1024 (stopped) through to
+1024/1024 (full on). In that case you might set the clock divider to be 16, and
+the RANGE to 1024. The pulse repetition frequency will be
+1.2MHz/1024 = 1171.875Hz.
+
+Parameters:
+
+    $divisor
+
+Mandatory, Integer: An unsigned integer to set the pulse width to.
+
+=head2 pwm_set_mode($mode)
+
+Each PWM channel can run in either Balanced or Mark-Space mode. In Balanced
+mode, the hardware sends a combination of clock pulses that results in an
+overall DATA pulses per RANGE pulses. In Mark-Space mode, the hardware sets the
+output HIGH for DATA clock pulses wide, followed by LOW for RANGE-DATA clock
+pulses.
+
+Parameters:
+
+    $mode
+
+Mandatory, Integer: C<0> for Mark-Space mode, or C<1> for Balanced mode.
+
+Note: If using L<RPi::WiringPi::Constant>, you can use C<PWM_MODE_MS> or
+C<PWM_MODE_BAL>.
 
 =head1 LCD FUNCTIONS
 

@@ -165,7 +165,6 @@ int bmp180Temp(int pin){
     extern          void setPadDrive         (int group, int value) ;
     extern          void pwmToneWrite        (int pin, int freq) ;
     extern          void gpioClockSet        (int pin, int freq) ;
-    extern          void pwmSetMode          (int mode) ;
 
 */
 
@@ -245,6 +244,9 @@ pwmSetRange(range)
 void
 pwmSetClock(divisor)
     int divisor
+
+void pwmSetMode(mode)
+    int mode
 
 #
 # lcd

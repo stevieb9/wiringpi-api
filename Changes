@@ -4,6 +4,7 @@ Revision history for Perl extension WiringPi::API.
         - added t/15-wpi_to_gpio.t to test #12
         - exposed pwm_set_range(), had missed that one previously
         - exposed pwm_set_clock(), maps to pwmSetClock(int divisor) (closes #30)
+        - implemented/exposed pwm_set_mode() to set the PWM mode
 
 2.3613  2017-07-01
         - integrated wiringSerial, providing basic serial interface support
