@@ -13,7 +13,7 @@ use constant {
     PIN     => 18,
     DIVISOR => 192,
     RANGE   => 2000,
-    DELAY   => 0.01,
+    DELAY   => 0.001,
 };
 
 my $continue = 1;

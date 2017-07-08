@@ -223,7 +223,7 @@ sub phys_to_wpi {
     return physPinToWpi($pin);
 }
 sub pwm_set_range {
-    shift if @_ == 2;
+    shift if @_ > 1;
     my $range = shift;
     pwmSetRange($range);
 }
