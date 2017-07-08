@@ -16,6 +16,13 @@ use constant {
     DELAY   => 0.01,
 };
 
+my $continue = 1;
+
+$SIG{INT} = sub {
+    $continue = 0;
+    pwm_write(PIN, LEFT);
+};
+
 setup_gpio();
 
 pin_mode(PIN, PWM_OUT);
@@ -29,16 +36,20 @@ pwm_set_range(PIN, RANGE);
 pwm_write(PIN, LEFT);
 sleep 2;
 
-for (LEFT .. RIGHT){
-    # sweep all the way left to right
-    pwm_write(PIN, $_);
-    select(undef, undef, undef, DELAY);
-}
+while ($continue){
+    for (LEFT .. RIGHT){
+        # sweep all the way left to right
+        pwm_write(PIN, $_);
+        select(undef, undef, undef, DELAY);
+    }
 
-sleep 1;
+    sleep 1;
 
-for (reverse LEFT .. RIGHT){
-    # sweep all the way right to left
-    pwm_write(PIN, $_);
-    select(undef, undef, undef, DELAY);
+    for (reverse LEFT .. RIGHT){
+        # sweep all the way right to left
+        pwm_write(PIN, $_);
+        select(undef, undef, undef, DELAY);
+    }
+
+    sleep 1;
 }
