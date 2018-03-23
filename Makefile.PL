@@ -1,4 +1,13 @@
+use warnings;
+use strict;
+
+use Devel::CheckLib;
 use ExtUtils::MakeMaker;
+
+if (! -f '/usr/include/wiringPi.h' || ! -f '/usr/local/include/wiringPi.h'){
+    print "wiringPi is not installed, exiting...\n";
+    exit;
+}
 
 WriteMakefile(
     NAME              => 'WiringPi::API',

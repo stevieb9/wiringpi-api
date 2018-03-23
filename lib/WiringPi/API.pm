@@ -584,6 +584,14 @@ See L<EXPORT_OK>
 
 Exports all available exportable functions.
 
+=head2 :perl
+
+Export only Perlish snake_case named version of the functions.
+
+=head2 :wiringPi
+
+Export only the C based camelCase version of the function names.
+
 =head1 FUNCTION TABLE OF CONTENTS
 
 =head2 CORE
