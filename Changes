@@ -1,5 +1,8 @@
 Revision history for Perl extension WiringPi::API.
 
+2.3617 UNREL
+        -
+
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks
           for the pull request James Keenan!)
