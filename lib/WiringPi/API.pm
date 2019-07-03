@@ -5,6 +5,8 @@ use warnings;
 
 our $VERSION = '2.3617';
 
+use Carp qw(croak);
+
 require XSLoader;
 XSLoader::load('WiringPi::API', $VERSION);
 
@@ -70,7 +72,7 @@ sub serial_open {
     shift if @_ > 2;
     my ($dev_ptr, $baud) = @_;
     my $fd = serialOpen($dev_ptr, $baud);
-    die "could not open serial device $dev_ptr\n" if $fd == -1;
+    croak "could not open serial device $dev_ptr\n" if $fd == -1;
     return $fd;
 }
 sub serial_close {
@@ -141,7 +143,7 @@ sub pin_mode {
     shift if @_ == 3;
     my ($pin, $mode) = @_;
     if (! grep {$mode == $_} qw(0 1 2 3)){
-        die "pin_mode() requires either 0, 1, 2 or 3 as a param";
+        croak "pin_mode() requires either 0, 1, 2 or 3 as a param";
     }
     pinMode($pin, $mode);
 }
@@ -150,7 +152,7 @@ sub pin_mode_alt {
     my ($pin, $alt) = @_;
 
     if (! grep {$alt == $_} 0..7){
-        die "pin_mode_alt() requires 0-7 as a param";
+        croak "pin_mode_alt() requires 0-7 as a param";
     }
 
     # 0     INPUT
@@ -252,7 +254,7 @@ sub lcd_init {
     my @args;
     for (@required_args){
         if (! defined $params{$_}) {
-            die "\n'$_' is a required param for WiringPi::API::lcd_init()\n";
+            croak "\n'$_' is a required param for WiringPi::API::lcd_init()\n";
         }
         push @args, $params{$_};
     }
@@ -326,15 +328,15 @@ sub shift_reg_setup {
     shift if @_ == 6;
     my ($pin_base, $num_pins, $data_pin, $clock_pin, $latch_pin) = @_;
 
-    die "\$pin_base must be an integer\n" if $pin_base !~ /^\d+$/;
+    croak "\$pin_base must be an integer\n" if $pin_base !~ /^\d+$/;
 
     if ($num_pins < 0 && $num_pins > 32){
-        die "\$num_pins must be between 0 and 32\n"     
+        croak "\$num_pins must be between 0 and 32\n"     
     }
 
     for ($data_pin, $clock_pin, $latch_pin){
         if ($_ < 0 && $_ > 40){
-            die "$data_pin, $clock_pin and $latch_pin must all be valid " .
+            croak "$data_pin, $clock_pin and $latch_pin must all be valid " .
                 "GPIO pin numbers\n";
         }
     }
@@ -349,7 +351,7 @@ sub i2c_setup {
     my ($addr) = @_;
 
     if ($addr !~ /^\d$/){
-        die "address param must be an integer\n";
+        croak "address param must be an integer\n";
     }
 
     # file descriptor
@@ -357,14 +359,14 @@ sub i2c_setup {
     return wiringPiI2CSetup($addr);
 }
 sub i2c_interface {
-    die "i2c_interface() is not available at this time\n";
+    croak "i2c_interface() is not available at this time\n";
 }
 sub i2c_read {
     shift if @_ > 1;
     my ($fd) = @_;
 
     if (! defined $fd){
-        die "i2c_read() requires an \$fd param\n";
+        croak "i2c_read() requires an \$fd param\n";
     }
 
     return wiringPiI2CRead($fd);
@@ -374,10 +376,10 @@ sub i2c_read_byte {
     my ($fd, $reg) = @_;
 
     if (! defined $fd){
-        die "i2c_read_byte() requires an \$fd param\n";
+        croak "i2c_read_byte() requires an \$fd param\n";
     }
     if (! defined $reg){
-        die "i2c_read_byte() requires a \$register param\n";
+        croak "i2c_read_byte() requires a \$register param\n";
     }
 
     return wiringPiI2CReadReg8($fd, $reg);
@@ -387,10 +389,10 @@ sub i2c_read_word {
     my ($fd, $reg) = @_;
 
     if (! defined $fd){
-        die "i2c_read_word() requires an \$fd param\n";
+        croak "i2c_read_word() requires an \$fd param\n";
     }
     if (! defined $reg){
-        die "i2c_read_word() requires a \$register param\n";
+        croak "i2c_read_word() requires a \$register param\n";
     }
 
     return wiringPiI2CReadReg8($fd, $reg);
@@ -400,10 +402,10 @@ sub i2c_write {
     my ($fd, $data) = @_;
 
     if (! defined $fd){
-        die "i2c_write() requires an \$fd param\n";
+        croak "i2c_write() requires an \$fd param\n";
     }
     if (! defined $data){
-        die "i2c_write() requires a \$data param\n";
+        croak "i2c_write() requires a \$data param\n";
 
     }
     return wiringPiI2CWrite($fd, $data);
@@ -413,13 +415,13 @@ sub i2c_write_byte {
     my ($fd, $reg, $data) = @_;
 
     if (! defined $fd){
-        die "i2c_write_byte() requires an \$fd param\n";
+        croak "i2c_write_byte() requires an \$fd param\n";
     }
     if (! defined $reg){
-        die "i2c_write_byte() requires a \$register param\n";
+        croak "i2c_write_byte() requires a \$register param\n";
     }
     if (! defined $data){
-        die "i2c_write_byte() requires a \$data param\n";
+        croak "i2c_write_byte() requires a \$data param\n";
     }
 
     return wiringPiI2CWriteReg8($fd, $reg, $data);
@@ -429,13 +431,13 @@ sub i2c_write_word {
     my ($fd, $reg, $data) = @_;
 
     if (! defined $fd){
-        die "i2c_write_word() requires an \$fd param\n";
+        croak "i2c_write_word() requires an \$fd param\n";
     }
     if (! defined $reg){
-        die "i2c_write_word() requires a \$register param\n";
+        croak "i2c_write_word() requires a \$register param\n";
     }
     if (! defined $data){
-        die "i2c_write_word() requires a \$data param\n";
+        croak "i2c_write_word() requires a \$data param\n";
     }
 
     return wiringPiI2CWriteReg16($fd, $reg, $data);
@@ -448,7 +450,7 @@ sub spi_setup {
     my ($channel, $speed) = @_;
 
     if ($channel != 0 && $channel != 1){
-        die "spi_setup() channel param must be 0 or 1\n";
+        croak "spi_setup() channel param must be 0 or 1\n";
     }
 
     $speed = 1000000 if ! defined $speed;
@@ -460,14 +462,14 @@ sub spi_data {
     my ($chan, $data, $len) = @_;
 
     if ($chan != 0 && $chan != 1){
-        die "spi_data() channel param must be 0 or 1\n";
+        croak "spi_data() channel param must be 0 or 1\n";
     }
 
     if (ref $data ne 'ARRAY'){
-        die "spi_data() data param must be an array reference\n";
+        croak "spi_data() data param must be an array reference\n";
     }
     if (@$data != $len){
-        die "spi_data() array reference must have \$len param count\n";
+        croak "spi_data() array reference must have \$len param count\n";
     }
 
     my $buf;
@@ -486,7 +488,7 @@ sub bmp180_setup {
     my $base = shift;
 
     if (! defined $base || $base !~ /^\d+$/){
-        die "bmp180 setup parametermust be an integer\n";
+        croak "bmp180 setup parametermust be an integer\n";
     }
 
     bmp180Setup($base);
@@ -1523,7 +1525,7 @@ Note that it's wise to do some error checking when attempting to open the SPI
 bus. We return the return value of an C<ioctl()> call, so this does the trick:
 
     if ((spi_setup(0, 1000000) < 0){
-        die "failed to open the SPI bus...\n";
+        croak "failed to open the SPI bus...\n";
     }
 
 =head2 spi_data

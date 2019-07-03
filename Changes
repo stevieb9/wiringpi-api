@@ -1,7 +1,7 @@
 Revision history for Perl extension WiringPi::API.
 
 2.3617 UNREL
-        -
+        - switched from using die() to croak()
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks
