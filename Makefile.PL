@@ -4,7 +4,7 @@ use strict;
 use ExtUtils::MakeMaker;
 use version;
 
-my $min_wpi_ver = 2.36;
+my $min_wpi_ver = 3.18;
 
 if (! -f '/usr/include/wiringPi.h' && ! -f '/usr/local/include/wiringPi.h'){
     print "wiringPi is not installed, exiting...\n";
