@@ -103,39 +103,61 @@ void spiDataRW(int channel, SV* byte_ref, int len){
     inline_stack_done;
 }
 
-static SV *perl_callback_sv = NULL; /* code-ref for ISR */
 static SV *thread_callback_sv = NULL; /* code-ref for thread entry */
 PerlInterpreter * mine;
 
-void interruptHandler(){
-    PERL_SET_CONTEXT(mine);
+/* Per-pin callback storage so multiple interrupts can coexist. */
+#define MAX_PINS 40
+static SV *perl_callbacks[MAX_PINS] = { NULL };
 
-    if (!perl_callback_sv) return;
+/* Generate a small wrapper handler for each pin that dispatches
+ * to the corresponding Perl CODE ref stored in perl_callbacks[].
+ */
 
-    dSP;
-    ENTER;
-    SAVETMPS;
-    PUSHMARK(SP);
-    PUTBACK;
-
-    call_sv(SvRV(perl_callback_sv), G_DISCARD|G_NOARGS);
-
-    FREETMPS;
-    LEAVE;
+#define MAKE_HANDLER(n) \
+static void interruptHandler_##n(void){ \
+    PERL_SET_CONTEXT(mine); \
+    if (! perl_callbacks[n] || ! SvROK(perl_callbacks[n])) return; \
+    SV *cb = SvRV(perl_callbacks[n]); \
+    dSP; ENTER; SAVETMPS; PUSHMARK(SP); PUTBACK; \
+    eval_sv(cb, G_DISCARD|G_NOARGS); \
+    FREETMPS; LEAVE; \
 }
+
+/* Apply macro to every pin index to generate handlers and handler table. */
+#define APPLY_TO_PINS(m) \
+    m(0)  m(1)  m(2)  m(3)  m(4)  m(5)  m(6)  m(7)  \
+    m(8)  m(9)  m(10) m(11) m(12) m(13) m(14) m(15) \
+    m(16) m(17) m(18) m(19) m(20) m(21) m(22) m(23) \
+    m(24) m(25) m(26) m(27) m(28) m(29) m(30) m(31) \
+    m(32) m(33) m(34) m(35) m(36) m(37) m(38) m(39)
+
+/* Generate handlers */
+APPLY_TO_PINS(MAKE_HANDLER)
+
+/* Array of function pointers to pass to wiringPiISR */
+#define HANDLER_PTR(n) interruptHandler_##n,
+static void (*interrupt_handlers[MAX_PINS])(void) = { APPLY_TO_PINS(HANDLER_PTR) };
+
+#undef HANDLER_PTR
+#undef APPLY_TO_PINS
 
 int setInterrupt(int pin, int edge, SV * callback){
     mine = Perl_get_context();
+
+    if (pin < 0 || pin >= MAX_PINS) {
+        croak("pin out of range\n");
+    }
 
     if (!callback || !SvROK(callback) || SvTYPE(SvRV(callback)) != SVt_PVCV) {
         croak("callback param must be a CODE reference\n");
     }
 
-    if (perl_callback_sv) SvREFCNT_dec(perl_callback_sv);
-    perl_callback_sv = callback;
-    SvREFCNT_inc(perl_callback_sv);
+    if (perl_callbacks[pin]) SvREFCNT_dec(perl_callbacks[pin]);
+    perl_callbacks[pin] = callback;
+    SvREFCNT_inc(perl_callbacks[pin]);
 
-    return wiringPiISR(pin, edge, &interruptHandler);
+    return wiringPiISR(pin, edge, interrupt_handlers[pin]);
 }
 
 int initThread(SV * callback){

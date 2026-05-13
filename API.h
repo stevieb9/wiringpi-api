@@ -15,10 +15,10 @@ int bmp180Pressure(int pin);
 int bmp180Temp(int pin);
 
 // threads
-int initThread(char * callback);
+int initThread(SV * callback);
 
 // interrupts
-int setInterrupt(int pin, int edge, char* callback);
+int setInterrupt(int pin, int edge, SV * callback);
 void interruptHandler();
 
 // setup routines
