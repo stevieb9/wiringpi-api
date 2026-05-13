@@ -1180,7 +1180,7 @@ Mandatory: C<1> (lowering), C<2> (raising) or C<3> (both).
 
     $callback
 
-Mandatory: The string name of a subroutine previously written in your user code
+Mandatory: A code reference to a Perl subroutine in your own code 
 that will be called when the interrupt is triggered. This is your interrupt
 handler.
 

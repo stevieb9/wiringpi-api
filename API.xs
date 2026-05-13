@@ -103,11 +103,14 @@ void spiDataRW(int channel, SV* byte_ref, int len){
     inline_stack_done;
 }
 
-char * perl_callback; // dynamically set perl callback for interrupt handler
+static SV *perl_callback_sv = NULL; /* code-ref for ISR */
+static SV *thread_callback_sv = NULL; /* code-ref for thread entry */
 PerlInterpreter * mine;
 
 void interruptHandler(){
     PERL_SET_CONTEXT(mine);
+
+    if (!perl_callback_sv) return;
 
     dSP;
     ENTER;
@@ -115,30 +118,46 @@ void interruptHandler(){
     PUSHMARK(SP);
     PUTBACK;
 
-    call_pv(perl_callback, G_DISCARD|G_NOARGS);
+    call_sv(SvRV(perl_callback_sv), G_DISCARD|G_NOARGS);
 
     FREETMPS;
     LEAVE;
 }
 
-int setInterrupt(int pin, int edge, char * callback){
+int setInterrupt(int pin, int edge, SV * callback){
     mine = Perl_get_context();
-    perl_callback = callback;
-    int interrupt = wiringPiISR(pin, edge, &interruptHandler);
-    return interrupt;
+
+    if (!callback || !SvROK(callback) || SvTYPE(SvRV(callback)) != SVt_PVCV) {
+        croak("callback param must be a CODE reference\n");
+    }
+
+    if (perl_callback_sv) SvREFCNT_dec(perl_callback_sv);
+    perl_callback_sv = callback;
+    SvREFCNT_inc(perl_callback_sv);
+
+    return wiringPiISR(pin, edge, &interruptHandler);
 }
 
-int initThread(char * callback){
+int initThread(SV * callback){
     mine = Perl_get_context();
 
+    if (!callback || !SvROK(callback) || SvTYPE(SvRV(callback)) != SVt_PVCV) {
+        croak("callback param must be a CODE reference\n");
+    }
+
+    if (thread_callback_sv) SvREFCNT_dec(thread_callback_sv);
+    thread_callback_sv = callback;
+    SvREFCNT_inc(thread_callback_sv);
+
     PI_THREAD (myThread){
+        PERL_SET_CONTEXT(mine);
         dSP;
         ENTER;
         SAVETMPS;
         PUSHMARK(SP);
         PUTBACK;
 
-        call_pv(callback, G_DISCARD|G_NOARGS);
+        call_sv(SvRV(thread_callback_sv), G_DISCARD|G_NOARGS);
 
         FREETMPS;
         LEAVE;
@@ -373,14 +392,14 @@ int
 setInterrupt(pin, edge, callback)
     int pin
     int edge
-    char * callback
+    SV * callback
 
 void
 interruptHandler()
 
 int
 initThread(callback)
-    char * callback
+    SV * callback
 
 int
 physPinToWpi(wpi_pin)
