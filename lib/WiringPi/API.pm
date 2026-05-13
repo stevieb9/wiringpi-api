@@ -1163,8 +1163,8 @@ IMPORTANT: The interrupt functionality requires that your Perl can be used
 in pthreads. If you do not have a threaded Perl, the program will cause a
 segmentation fault.
 
-Wrapper around wiringPi's C<wiringPiISR()> that allows you to send in the name
-of a Perl sub in your own code that will be called if an interrupt is
+Wrapper around wiringPi's C<wiringPiISR()> that allows you to send in a code
+reference to a Perl sub in your own code that will be called if an interrupt is
 triggered.
 
 Parameters:
@@ -1176,7 +1176,7 @@ C<setup*()> routine you used.
 
     $edge
 
-Mandatory: C<1> (lowering), C<2> (raising) or C<3> (both).
+Mandatory: C<1> (C<EDGE_FALLING>), C<2> (C<EDGE_RISING>) or C<3> (C<EDGE_BOTH>).
 
     $callback
 
@@ -1184,7 +1184,7 @@ Mandatory: A code reference to a Perl subroutine in your own code
 that will be called when the interrupt is triggered. This is your interrupt
 handler.
 
-=head1 ADC FUNCTIONS
+ =head1 ADC FUNCTIONS
 
 Analog to digital converters (ADC) allow you to read analog data on the
 Raspberry Pi, as the Pi doesn't have any analog input pins.
