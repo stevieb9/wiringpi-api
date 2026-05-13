@@ -104,15 +104,17 @@ void spiDataRW(int channel, SV* byte_ref, int len){
     inline_stack_done;
 }
 
+// Used for interrupts and threads
+
 PerlInterpreter * mine;
 
-static SV *thread_callback_sv = NULL; /* code-ref for thread entry */
-
 /* Per-pin callback storage so multiple interrupts can coexist. */
+
 #define MAX_PINS 40
 static SV *perl_callbacks[MAX_PINS] = { NULL };
 
 /* Event queue for ISR -> dispatcher communication */
+
 #define EVENT_QUEUE_SIZE 256
 typedef struct {
     int events[EVENT_QUEUE_SIZE];
@@ -128,7 +130,7 @@ static pthread_t dispatcher_thread;
 static int dispatcher_started = 0;
 static int dispatcher_shutdown = 0;
 
-static void enqueue_event(int pin){
+static void ISR_enqueue_event(int pin){
     pthread_mutex_lock(&event_mutex);
     if (event_queue.count < EVENT_QUEUE_SIZE) {
         event_queue.events[event_queue.tail] = pin;
@@ -139,7 +141,7 @@ static void enqueue_event(int pin){
     pthread_mutex_unlock(&event_mutex);
 }
 
-static int dequeue_event(int *pin){
+static int ISR_dequeue_event(int *pin){
     pthread_mutex_lock(&event_mutex);
     while (event_queue.count == 0 && !dispatcher_shutdown) {
         pthread_cond_wait(&event_cond, &event_mutex);
@@ -155,10 +157,10 @@ static int dequeue_event(int *pin){
     return 1;
 }
 
-static void *dispatcher_main(void *arg){
+static void *ISR_dispatcher_main(void *arg){
     int pin;
     PERL_SET_CONTEXT(mine);
-    while (dequeue_event(&pin)){
+    while (ISR_dequeue_event(&pin)){
         if (pin < 0 || pin >= MAX_PINS) continue;
 
         if (! perl_callbacks[pin]) continue;
@@ -172,12 +174,14 @@ static void *dispatcher_main(void *arg){
 }
 
 /* Generate a small wrapper handler for each pin that enqueues the pin */
+
 #define MAKE_HANDLER(n) \
 static void interruptHandler_##n(void){ \
-    enqueue_event(n); \
+    ISR_enqueue_event(n); \
 }
 
 /* Apply macro to every pin index to generate handlers and handler table. */
+
 #define APPLY_TO_PINS(m) \
     m(0)  m(1)  m(2)  m(3)  m(4)  m(5)  m(6)  m(7)  \
     m(8)  m(9)  m(10) m(11) m(12) m(13) m(14) m(15) \
@@ -186,9 +190,11 @@ static void interruptHandler_##n(void){ \
     m(32) m(33) m(34) m(35) m(36) m(37) m(38) m(39)
 
 /* Generate handlers */
+
 APPLY_TO_PINS(MAKE_HANDLER)
 
 /* Array of function pointers to pass to wiringPiISR */
+
 #define HANDLER_PTR(n) interruptHandler_##n,
 static void (*interrupt_handlers[MAX_PINS])(void) = { APPLY_TO_PINS(HANDLER_PTR) };
 
@@ -202,7 +208,7 @@ int setInterrupt(int pin, int edge, SV * callback){
         croak("pin out of range\n");
     }
 
-    if (!callback || !SvROK(callback) || SvTYPE(SvRV(callback)) != SVt_PVCV) {
+    if (! callback || ! SvROK(callback) || SvTYPE(SvRV(callback)) != SVt_PVCV) {
         croak("callback param must be a CODE reference\n");
     }
 
@@ -211,9 +217,10 @@ int setInterrupt(int pin, int edge, SV * callback){
     SvREFCNT_inc(perl_callbacks[pin]);
 
     /* Start dispatcher once (captures `mine` above). */
-    if (!dispatcher_started) {
+
+    if (! dispatcher_started) {
         dispatcher_shutdown = 0;
-        if (pthread_create(&dispatcher_thread, NULL, dispatcher_main, NULL) == 0) {
+        if (pthread_create(&dispatcher_thread, NULL, ISR_dispatcher_main, NULL) == 0) {
             dispatcher_started = 1;
         }
     }
@@ -221,10 +228,12 @@ int setInterrupt(int pin, int edge, SV * callback){
     return wiringPiISR(pin, edge, interrupt_handlers[pin]);
 }
 
+static SV *thread_callback_sv = NULL; /* code-ref for thread entry */
+
 int initThread(SV * callback){
     mine = Perl_get_context();
 
-    if (!callback || !SvROK(callback) || SvTYPE(SvRV(callback)) != SVt_PVCV) {
+    if (! callback || ! SvROK(callback) || SvTYPE(SvRV(callback)) != SVt_PVCV) {
         croak("callback param must be a CODE reference\n");
     }
 
