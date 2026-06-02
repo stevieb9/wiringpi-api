@@ -1,7 +1,7 @@
 # Plan: Upgrade WiringPi::API to wiringPi 3.18
 
 > NEXT ACTION: V1 — baseline build against wiringPi 3.18 on the Pi (when home) to see what currently breaks
-> LAST SESSION: Added the "Downstream verification (RPi::WiringPi + subsidiaries)" section + cross-repo gate V33 — hybrid split: the test/impact matrix lives here, downstream edits get committed in the consumer repos. RPi::WiringPi `use parent`-inherits from this module and its `t/` suite is the Pi integration gate (transitively exercises the i2c/lcd/serial/spi subsidiaries). Subsidiary dists aren't under ~/repos — discover on the Pi. (Phase 4 V26-V32 remains ⏸ HOLD.) Nothing runs on the current machine.
+> LAST SESSION: Two decisions captured (no code changed). (1) Enriched F12/V24 with the ISR2 refactor constraints — carry the user's pin via `userdata` not `wfiStatus.pinBCM`, and keep the single dispatcher for interpreter safety. (2) New direction: only `setup()`/`setup_gpio()` supported — `setup_sys`/`setup_phys` to be **removed** (added **V34** in Phase 1, before the V7 gate; flipped the old "NOT doing" note, logged the BREAKING Public API impact). ⚠ V34 breaks RPi::WiringPi (`RPi/WiringPi.pm:52` calls `setup_phys()`) — downstream edit tracked under V33. Phase 4 V26-V32 stays ⏸ HOLD; NEXT ACTION unchanged (V1). Nothing runs on the current machine.
 > ARCHIVE: See UPGRADE-3.18-archive.md for completed V tasks
 
 ## Goal
@@ -10,7 +10,7 @@ The distribution currently wraps an older wiringPi (the POD/Makefile reference
 2.36+). Upstream is now **3.18** (`~/repos/wiringPi`, `VERSION` = 3.18). Bring
 this XS module fully in line with 3.18 in three phases:
 
-- **Phase 1 — Compatibility (V1–V7):** make every call we *already* wrap build,
+- **Phase 1 — Compatibility (V1–V7, plus V34):** make every call we *already* wrap build,
   link and behave correctly against 3.18; fix broken exports and stale version
   metadata.
 - **Phase 2 — Coverage (V8–V17):** wrap useful 3.18 calls we don't expose yet
@@ -63,13 +63,14 @@ hardware, no compiler for the XS here). Two tiers of check, both on the Pi:
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V1 | Baseline build against 3.18 on the Pi — see exactly what currently compiles, links or fails, and capture the errors as the concrete Phase 1 worklist | `perl Makefile.PL && make 2>&1 \| tee /tmp/wpi-baseline.log` | build runs to completion or fails with errors recorded to drive V2-V6 | ⏳ |
+| V1 | Baseline build against 3.18 on the Pi — see exactly what currently compiles, links or fails, and capture the errors as the concrete Phase 1 worklist; explicitly scan the link/load output for an undefined `interruptHandler` symbol (F22) | `perl Makefile.PL && make 2>&1 \| tee /tmp/wpi-baseline.log` | build runs to completion or fails with errors recorded to drive V2-V6 | ⏳ |
 | V2 | Fix camelCase export mismatches in `@wpi_c_functions` (API.pm:16-36): `wpiToGpio`→`wpiPinToGpio`, `lcdDefChar`→`lcdCharDef`, `lcdPutChar`→`lcdPutchar`. Every name in the C export list must resolve to a real XS sub in API.xs. ⚠ consumer-facing (see Public API impact) | `perl -c -Ilib lib/WiringPi/API.pm` then for each C-export name grep it in API.xs | syntax OK; every C export found as an XS sub | ⏳ |
-| V3 | Implement `wiringPiVersion` (exported at API.pm:28 but **never defined** in XS). 3.18 signature is `void wiringPiVersion(int *major, int *minor)` — add an XS wrapper that returns major/minor (string `"3.18"` or a 2-elem list) + a Perl wrapper + correct export/POD | `perl -MExtUtils::ParseXS=process_file -e 'process_file(filename=>"API.xs",output=>"/tmp/API_check.c")'` && `perl -c -Ilib lib/WiringPi/API.pm` | XS parses; symbol present; syntax OK | ⏳ |
+| V3 | Implement `wiringPiVersion` (exported at API.pm:28 but **never defined** in XS). 3.18 signature is `void wiringPiVersion(int *major, int *minor)`. **Decided: Option A (string)** — the XS wrapper returns `"3.18"` as a `char *` (`T_PV` copies the buffer, so a stack buf is safe): a CODE block declares local `int major, minor`, calls `wiringPiVersion(&major, &minor)`, `snprintf`s `"%d.%d"` into the buf, sets `RETVAL`. Keeps the exported camelCase `wiringPiVersion()` sane in scalar context. Add a snake_case `wiringpi_version` wrapper to `@wpi_perl_functions` returning the string in scalar context and the `(major, minor)` pair in list context (`wantarray`); `wiringPiVersion` is already in `@wpi_c_functions`. POD documents the return shape and notes it reports the **wiringPi library** version, not the Perl dist `$VERSION` (V6). | `perl -MExtUtils::ParseXS=process_file -e 'process_file(filename=>"API.xs",output=>"/tmp/API_check.c")'` && `perl -c -Ilib lib/WiringPi/API.pm` | XS parses; symbol present; syntax OK | ⏳ |
 | V4 | Align XS prototypes with 3.18 headers: `lcdSendCommand` 2nd arg `char`→`unsigned char` (API.xs:408-410 vs devLib/lcd.h:38); verify SPI / I2C / serial / lcd / softPwm / sr595 signatures in API.xs still match `~/repos/wiringPi/**/*.h` exactly | review each XS prototype against its header + `process_file` XS parse | every wrapped signature matches its 3.18 header; XS parses | ⏳ |
 | V5 | Makefile.PL: fix stale fallback message "Ensure version 2.36+" (Makefile.PL:31); confirm `LIBS => -lwiringPi -lwiringPiDev -lrt` and `INC` are still correct for 3.18 | `perl -c Makefile.PL` | syntax OK; message references 3.18 | ⏳ |
-| V6 | Version/metadata refresh: bump `$VERSION` 2.3617→3.1801 (API.pm:6, consumed by Makefile.PL `VERSION_FROM`); update POD DESCRIPTION "version 2.36+" → 3.18 (API.pm:550-552); refresh copyright year; sweep README for version refs. ⚠ consumer-facing (see Public API impact) | `perl -c -Ilib lib/WiringPi/API.pm && podchecker lib/WiringPi/API.pm` | OK; no 2.36 references remain | ⏳ |
-| V7 | **Full gate** — Phase 1 exit: build, link and run the suite on a Pi with wiringPi 3.18; every previously-wrapped call still works | `perl Makefile.PL && make && make test` (on Pi) | compiles, links clean, tests pass | ⏳ |
+| V6 | Version/metadata refresh: bump `$VERSION` 2.3617→3.1801 (API.pm:6, consumed by Makefile.PL `VERSION_FROM`); update POD DESCRIPTION "version 2.36+" → 3.18 (API.pm:550-552); refresh copyright year; sweep README for version refs. ⚠ consumer-facing (see Public API impact). **➡ NEXT IS V34, NOT V7** — V34 sits between V6 and V7 (out of numeric sequence) and must run before the V7 gate; on completing V6, set NEXT ACTION to V34. | `perl -c -Ilib lib/WiringPi/API.pm && podchecker lib/WiringPi/API.pm` | OK; no 2.36 references remain | ⏳ |
+| V34 | **Remove unsupported setup modes (BREAKING)** — delete the `wiringPiSetupSys`/`wiringPiSetupPhys` XS wraps (API.xs:293-294,299) + the `setup_sys`/`setup_phys` Perl wrappers (API.pm:130-135) + their `@EXPORT_OK`/tag entries + POD; sweep README. Only `setup()`/`setup_gpio()` remain. ⚠ consumer-facing — **breaks RPi::WiringPi** (`RPi/WiringPi.pm:52`); make the downstream edit (drop the `/^p/` phys branch) **alongside V34 — don't wait for V33** (V34 lands in Phase 1 but V33 isn't gated until after V25, so deferring leaves RPi::WiringPi broken across the whole window); still verify it under V33. Note: the phys *translation* helpers (`phys_to_wpi`/`physPinToWpi`, `physPinToGpio`) are independent of the removed phys *mode* — decide their fate separately (ties to F9/V31). | `perl -c -Ilib lib/WiringPi/API.pm` + grep that each removed name is gone from XS/exports/POD | only `setup`/`setup_gpio` remain; no dangling refs; this module's `t/` still passes | ⏳ |
+| V7 | **Full gate** — Phase 1 exit: build, link and run the suite on a Pi with wiringPi 3.18; every previously-wrapped call still works. **Precondition — V34 must already be done:** grep that `setup_sys`/`setup_phys`/`wiringPiSetupSys`/`wiringPiSetupPhys` are absent from API.pm/API.xs/README/POD/exports; if any remain, V34 was skipped — complete V34 (and its downstream RPi::WiringPi edit) before this gate. | `perl Makefile.PL && make && make test` (on Pi) | compiles, links clean, tests pass; no `setup_sys`/`setup_phys` symbols remain (V34 confirmed) | ⏳ |
 
 ### Phase 2 — Coverage (wrap 3.18 calls we don't expose yet)
 
@@ -96,7 +97,7 @@ hardware, no compiler for the XS here). Two tiers of check, both on the Pi:
 | V21 | Fix **F4/F5**: replace `exit()` calls in XS `serialGets` (API.xs:40) and `spiDataRW` (API.xs:85-86) with `croak` — they currently kill the interpreter; drop the VLA `unsigned char buf[num_bytes]` (API.xs:75) | XS `process_file` parse | parses; no `exit(` in those fns | ⏳ |
 | V22 | Fix **F6**: `#define PERL_NO_GET_CONTEXT` sits *after* the perl.h include (API.xs:30) so it has no effect; move it above the perl headers | XS `process_file` parse | parses; macro precedes perl.h | ⏳ |
 | V23 | Fix **F7/F8/F10**: remove duplicate `pwm_set_range` in `@wpi_perl_functions` (API.pm:42 & 52); review/justify or drop the stray `lcdPuts($fd,"\n")` in `lcd_char_def` (API.pm:301); delete the dead no-op `interruptHandler()` XS export (API.xs:489-490). ⚠ consumer-facing (see Public API impact) | `perl -c` + XS parse | OK | ⏳ |
-| V24 | Formal review pass: interrupt subsystem (dispatcher thread lifecycle, per-pin callback refcounting at API.xs:204-229, shutdown path; **F12** — evaluate replacing the 40 trampolines + global callback array with `wiringPiISR2` userdata once V13 lands) and **F9** — audit the hardcoded `phys_wpi_map` (API.h:64-99) for Pi5/RP1 correctness (wiringPi warns against wpi/phys mapping outside 0-63 on RP1). Log any new findings as F22+ | review (record findings in `## Review Findings`) | findings logged; fixes scheduled as new V#/B# | ⏳ |
+| V24 | Formal review pass: interrupt subsystem (dispatcher thread lifecycle, per-pin callback refcounting at API.xs:204-229, shutdown path; **F12** — evaluate replacing the 40 trampolines + global callback array with one generic `wiringPiISR2` handler once V13 lands; carry the user-scheme pin via `userdata`, **not** `wfiStatus.pinBCM`, and keep the single dispatcher — see F12) and **F9** — audit the hardcoded `phys_wpi_map` (API.h:64-99) for Pi5/RP1 correctness (wiringPi warns against wpi/phys mapping outside 0-63 on RP1). Log any new findings as F22+ | review (record findings in `## Review Findings`) | findings logged; fixes scheduled as new V#/B# | ⏳ |
 | V25 | **Full gate** — Phase 3 exit: final `perl Makefile.PL && make && make test` on a Pi plus targeted hardware sanity; update Changes (bottom of the `3.1801 UNREL` section) | `perl Makefile.PL && make && make test` (on Pi) | all green; Changes updated | ⏳ |
 
 ### Phase 4 — Custom-XS behavior audit & hardening (⏸ HOLD — work live on a Pi)
@@ -147,7 +148,8 @@ consumer-visible changes.
   `:all` / `:perl` / `:wiringPi` tags. Only theoretical risk: a `:all` consumer who
   already defined a same-named sub (the standard `:all` caveat).
 - **`wiringPiVersion` starts working** (V3) — today it is exported but undefined, so
-  calling it dies; the return shape is our choice, so no working code depends on it.
+  calling it dies; it returns the wiringPi *library* version as a `"3.18"` string
+  (Option A), so no working code depends on the new shape.
 - **`i2c_interface` starts working** (V14) — previously always croaked "not available".
 - **`i2c_setup` accepts more addresses** (V19) — addresses it wrongly rejected now
   succeed; no previously-valid call starts failing.
@@ -155,6 +157,13 @@ consumer-visible changes.
   errors become catchable instead of killing the whole process.
 
 **Behavior / signature changes to call out (could affect a consumer):**
+
+- **`setup_sys` / `setup_phys` removed — BREAKING** (V34): `wiringPiSetupSys()` /
+  `wiringPiSetupPhys()` and their Perl wrappers `setup_sys()` / `setup_phys()` are
+  deleted (XS, exports, POD). Only `setup()` (`wiringPiSetup`, wiringPi numbering)
+  and `setup_gpio()` (`wiringPiSetupGpio`, BCM) remain. Calling a removed name dies;
+  an `:all`/explicit import of it fails at `use` time. **Breaks RPi::WiringPi**
+  (`RPi/WiringPi.pm:52` calls `setup_phys()`) — see Downstream verification.
 
 - **`$VERSION` jumps 2.3617 → 3.1801** (V6). A `use WiringPi::API 2.36xx` lower
   bound is still satisfied (3.18 > 2.36), but the 2.x→3.x scheme change matters for
@@ -223,13 +232,17 @@ when discovered on the Pi.
 | F9 / F21 / V24 / V31 `phys_wpi_map` | `t/105-pin.t`, `t/106-pin_map.t` | pin translation correct on this Pi/RP1 |
 | F11 / B7 `bmp180Pressure`/`Temp` | `t/340-bmp.t`, `build_testing/bmp.pl` | raw reads unchanged |
 | V6 `$VERSION` 2.36→3.18 | install / `Makefile.PL` prereq | bump prereq 2.3616→3.1801 (downstream edit) |
+| V34 `setup_sys`/`setup_phys` removed | `RPi/WiringPi.pm:51-54` (phys branch), POD refs (`Core.pm:512,518`; `WiringPi.pm:898,902`) | phys init path dropped/redirected; no calls to removed subs; POD mentions of `setup_sys()` cleaned |
 
 ### Required downstream changes (committed in the consumer repos)
 
 - **RPi::WiringPi `Makefile.PL`** — bump prereq `WiringPi::API => 2.3616` →
   `3.1801` when you want to *require* the fixes (install is already satisfied since
   3.18 > 2.36). Tracked + committed in the rpi-wiringpi repo.
-- **RPi::WiringPi code** — none forced: it uses no renamed export, and its
+- **RPi::WiringPi code** — **V34 forces one change:** it calls `setup_phys()`
+  (`RPi/WiringPi.pm:52`), which V34 removes — drop/redirect the `/^p/` phys branch
+  (`RPi/WiringPi.pm:51-54`) and clean the POD mentions of `setup_sys()` (`Core.pm:512,518`;
+  `WiringPi.pm:898,902`). Otherwise none forced: it uses no renamed export, and its
   `shift_reg_setup` / `pwm_set_range` / `lcd_char_def` calls stay source-compatible
   (only `shift_reg_setup`'s *error* path tightens). Re-run `t/` to confirm.
 - **Subsidiary dists (TODO — discover on the Pi)** — the i2c/lcd/serial changes
@@ -296,9 +309,9 @@ V24 review pass append here as F11+.
 - **F7** (→V23): `pwm_set_range` appears twice in `@wpi_perl_functions`. API.pm:42 and 52.
 - **F8** (→V23): `lcd_char_def` issues `lcdPuts($fd, "\n")` before defining the char (API.pm:301) — an undocumented side-effect that writes to the display.
 - **F9** (→V24): `phys_wpi_map` is a hardcoded 64-entry physical→wiringPi table (API.h:64-99). Likely stale/incorrect for Pi5/RP1; upstream advises against wpi/phys mapping outside 0-63 on RP1.
-- **F10** (→V23): Leftover no-op `interruptHandler()` XS export (API.xs:489-490), superseded by the per-pin generated handlers + dispatcher. Dead surface.
+- **F10** (→V23): Leftover `interruptHandler()` XS export (API.xs:489-490), superseded by the per-pin generated handlers + dispatcher. **Not a harmless no-op — see F22:** it has no C definition at all, so it is an unresolved symbol. Dead surface to remove.
 - **F11** (→B7): XS `bmp180Pressure`/`bmp180Temp` (API.xs:265-271) are pure `analogRead` aliases — duplicated functionality. Exported + documented as raw accessors, so deprecate rather than delete.
-- **F12** (→V24): The 40 generated interrupt trampolines + `perl_callbacks[MAX_PINS]` global (API.xs:111-229) are only needed because `wiringPiISR()` has no userdata; `wiringPiISR2()` (V13) makes them obsolete and replaceable by one generic handler.
+- **F12** (→V24): The 40 generated interrupt trampolines + `perl_callbacks[MAX_PINS]` global (API.xs:111-229) are only needed because `wiringPiISR()` has no userdata; `wiringPiISR2()` (V13) makes them obsolete — one generic handler replaces all 40. Two constraints confirmed against `wiringPi.c`: **(a) carry the user's pin (or the SV) via `userdata`, NOT `wfiStatus.pinBCM`.** `pinBCM` is always BCM (wiringPi.c:3015, after `ToBCMPin`), but our callbacks are keyed by the user's pin in their setup scheme — under `setup()` (wiringPi numbering) BCM ≠ user pin, so keying off `pinBCM` fires the wrong callback (only `setup_gpio()`/BCM happens to match — and per V34 those are the only two modes left). **(b) keep the single dispatcher thread + queue.** The generic ISR2 handler runs in wiringPi's per-pin thread and must still only *enqueue*; the lone dispatcher stays the only thread that calls `call_sv`, so exactly one thread ever enters the interpreter (calling Perl directly from N per-pin threads is unsafe). Net: delete the trampolines + `interrupt_handlers[]` table; the per-pin SV store can stay (small) or move into `userdata`.
 
 Phase 4 (custom-XS audit — all ⏸ HOLD for live Pi work):
 
@@ -311,6 +324,13 @@ Phase 4 (custom-XS audit — all ⏸ HOLD for live Pi work):
 - **F19** (→V29): The dispatcher thread is never shut down or joined (`dispatcher_shutdown` only set to 0; API.xs:130-131, 221-226) and `wiringPiISRStop` is never called → thread/ISR/held-SV leak at teardown.
 - **F20** (→V30): `initThread` uses a single global `thread_callback_sv` (one callback only; same race) and a GCC nested function (`PI_THREAD(myThread){...}`, non-standard C) as the thread entry. API.xs:231-259.
 - **F21** (→V31): `physPinToWpi(p)` indexes `phys_wpi_map[64]` with no bounds check (API.xs:261-263) → OOB read for `p<0` or `p>=64`.
+
+Interrupt/ISR cursory review (off-Pi, 2026-06-02) — F22-F25:
+
+- **F22** (interrupt review; refines F10/→V23): The exported `interruptHandler()` (XS API.xs:489-490, declared API.h:22) has **no C definition** — only the macro-generated `interruptHandler_0..39` exist (API.xs:178-199). It is an unresolved symbol: with default lazy-bound XS linking the `.so` still builds/loads, but calling the Perl `WiringPi::API::interruptHandler()` sub hits the undefined symbol (and under `--no-undefined`/bind-now the link or load fails outright). So it is not the harmless no-op F10 implied. Removing it (V23) also de-risks the build — watch the V1/V7 link output for an undefined-symbol warning.
+- **F23** (interrupt review; minor): Neither `set_interrupt` (API.pm:119-123) nor XS `setInterrupt` (API.xs:204-229) validates `$edge`. `$pin` and `$callback` are checked, but `edge` is passed straight to `wiringPiISR()`, so out-of-range/garbage edge values reach the C layer silently. Add a guard (INT_EDGE_FALLING=1, RISING=2, BOTH=3; SETUP=0 if intended).
+- **F24** (interrupt review; fold into V28/V29): `ISR_enqueue_event` silently drops interrupts once the ring buffer is full (`if (event_queue.count < EVENT_QUEUE_SIZE)` with no else branch, API.xs:135-141) — no overflow flag, counter or diagnostic, so bursty interrupts are lost invisibly. Consider an overflow counter exposed to Perl and/or documenting the coalescing/loss semantics.
+- **F25** (interrupt review; depends on V13, fold into V29): Re-arming a pin leaks/duplicates the wiringPi listener. `setInterrupt` always ends with `wiringPiISR(pin, edge, handler)` (API.xs:228) and never calls `wiringPiISRStop(pin)` first, so calling `set_interrupt` twice on the same pin re-registers it — in 3.18 this risks a second internal waitForInterrupt thread / stacked registration for that pin. Once V13 lands, call `wiringPiISRStop(pin)` before re-arming. (Minor, same area: the `dispatcher_started` check-then-create at API.xs:221-226 is a TOCTOU if `set_interrupt` is ever called from multiple ithreads, and the global `mine` is overwritten on every call.)
 
 ## Backlog
 
@@ -331,6 +351,6 @@ B7: Deprecate the redundant XS `bmp180Pressure`/`bmp180Temp` aliases (F11) — t
 ## Explicitly NOT doing
 
 - PiFace support (`wiringPiSetupPiFace*`, wiringPi.h:271-272) — deprecated upstream.
-- Removing `setup_sys`/`wiringPiSetupSys` — kept for legacy callers; only its deprecated status is documented.
+- ~~Removing `setup_sys`/`wiringPiSetupSys` — kept for legacy callers~~ — **reversed 2026-06-02:** only `setup()`/`setup_gpio()` will be supported; `setup_sys`/`wiringPiSetupSys` **and** `setup_phys`/`wiringPiSetupPhys` are now being removed. Tracked as **V34**.
 - Wrapping the `gpio` CLI or the `wiringPiD` daemon — out of scope for this binding library.
 - Replacing the existing `wiringPiISR` interrupt model with `wiringPiISR2` — ISR2 is added *alongside* (V13), not as a replacement, to preserve backward compatibility.
