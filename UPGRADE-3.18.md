@@ -1,8 +1,8 @@
 # Plan: Upgrade WiringPi::API to wiringPi 3.18
 
-> NEXT ACTION: V1 — baseline build against wiringPi 3.18 on the Pi (when home) to see what currently breaks
-> LAST SESSION: Two decisions captured (no code changed). (1) Enriched F12/V24 with the ISR2 refactor constraints — carry the user's pin via `userdata` not `wfiStatus.pinBCM`, and keep the single dispatcher for interpreter safety. (2) New direction: only `setup()`/`setup_gpio()` supported — `setup_sys`/`setup_phys` to be **removed** (added **V34** in Phase 1, before the V7 gate; flipped the old "NOT doing" note, logged the BREAKING Public API impact). ⚠ V34 breaks RPi::WiringPi (`RPi/WiringPi.pm:52` calls `setup_phys()`) — downstream edit tracked under V33. Phase 4 V26-V32 stays ⏸ HOLD; NEXT ACTION unchanged (V1). Nothing runs on the current machine.
-> ARCHIVE: See UPGRADE-3.18-archive.md for completed V tasks
+> **NEXT ACTION:** V1 — baseline build against wiringPi 3.18 on the Pi (when home) to see what currently breaks
+> **LAST SESSION:** Two decisions captured (no code changed). (1) Enriched F12/V24 with the ISR2 refactor constraints — carry the user's pin via `userdata` not `wfiStatus.pinBCM`, and keep the single dispatcher for interpreter safety. (2) New direction: only `setup()`/`setup_gpio()` supported — `setup_sys`/`setup_phys` to be **removed** (added **V34** in Phase 1, before the V7 gate; flipped the old "NOT doing" note, logged the BREAKING Public API impact). ⚠ V34 breaks RPi::WiringPi (`RPi/WiringPi.pm:52` calls `setup_phys()`) — downstream edit tracked under V33. Phase 4 V26-V32 stays ⏸ HOLD; NEXT ACTION unchanged (V1). Nothing runs on the current machine.
+> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks
 
 ## Goal
 
@@ -69,7 +69,7 @@ hardware, no compiler for the XS here). Two tiers of check, both on the Pi:
 | V4 | Align XS prototypes with 3.18 headers: `lcdSendCommand` 2nd arg `char`→`unsigned char` (API.xs:408-410 vs devLib/lcd.h:38); verify SPI / I2C / serial / lcd / softPwm / sr595 signatures in API.xs still match `~/repos/wiringPi/**/*.h` exactly | review each XS prototype against its header + `process_file` XS parse | every wrapped signature matches its 3.18 header; XS parses | ⏳ |
 | V5 | Makefile.PL: fix stale fallback message "Ensure version 2.36+" (Makefile.PL:31); confirm `LIBS => -lwiringPi -lwiringPiDev -lrt` and `INC` are still correct for 3.18 | `perl -c Makefile.PL` | syntax OK; message references 3.18 | ⏳ |
 | V6 | Version/metadata refresh: bump `$VERSION` 2.3617→3.1801 (API.pm:6, consumed by Makefile.PL `VERSION_FROM`); update POD DESCRIPTION "version 2.36+" → 3.18 (API.pm:550-552); refresh copyright year; sweep README for version refs. ⚠ consumer-facing (see Public API impact). **➡ NEXT IS V34, NOT V7** — V34 sits between V6 and V7 (out of numeric sequence) and must run before the V7 gate; on completing V6, set NEXT ACTION to V34. | `perl -c -Ilib lib/WiringPi/API.pm && podchecker lib/WiringPi/API.pm` | OK; no 2.36 references remain | ⏳ |
-| V34 | **Remove unsupported setup modes (BREAKING)** — delete the `wiringPiSetupSys`/`wiringPiSetupPhys` XS wraps (API.xs:293-294,299) + the `setup_sys`/`setup_phys` Perl wrappers (API.pm:130-135) + their `@EXPORT_OK`/tag entries + POD; sweep README. Only `setup()`/`setup_gpio()` remain. ⚠ consumer-facing — **breaks RPi::WiringPi** (`RPi/WiringPi.pm:52`); make the downstream edit (drop the `/^p/` phys branch) **alongside V34 — don't wait for V33** (V34 lands in Phase 1 but V33 isn't gated until after V25, so deferring leaves RPi::WiringPi broken across the whole window); still verify it under V33. Note: the phys *translation* helpers (`phys_to_wpi`/`physPinToWpi`, `physPinToGpio`) are independent of the removed phys *mode* — decide their fate separately (ties to F9/V31). | `perl -c -Ilib lib/WiringPi/API.pm` + grep that each removed name is gone from XS/exports/POD | only `setup`/`setup_gpio` remain; no dangling refs; this module's `t/` still passes | ⏳ |
+| V34 | **Remove unsupported setup modes (BREAKING)** — delete the `wiringPiSetupSys`/`wiringPiSetupPhys` XS wraps (API.xs:293-294,299) + the `setup_sys`/`setup_phys` Perl wrappers (API.pm:130-135) + their `@EXPORT_OK`/tag entries + POD; sweep README. Only `setup()`/`setup_gpio()` remain. ⚠ consumer-facing — **breaks RPi::WiringPi** (`RPi/WiringPi.pm:52`); make the downstream edit (drop the `/^p/` phys branch) **alongside V34 — don't wait for V33** (V34 lands in Phase 1 but V33 isn't gated until after V25, so deferring leaves RPi::WiringPi broken across the whole window); still verify it under V33. **Downstream edit now tracked in rpi-wiringpi by `refactor-setup-modes.md` (V1/V4).** Note: the phys *translation* helpers (`phys_to_wpi`/`physPinToWpi`, `physPinToGpio`) are independent of the removed phys *mode* — decide their fate separately (ties to F9/V31). | `perl -c -Ilib lib/WiringPi/API.pm` + grep that each removed name is gone from XS/exports/POD | only `setup`/`setup_gpio` remain; no dangling refs; this module's `t/` still passes | ⏳ |
 | V7 | **Full gate** — Phase 1 exit: build, link and run the suite on a Pi with wiringPi 3.18; every previously-wrapped call still works. **Precondition — V34 must already be done:** grep that `setup_sys`/`setup_phys`/`wiringPiSetupSys`/`wiringPiSetupPhys` are absent from API.pm/API.xs/README/POD/exports; if any remain, V34 was skipped — complete V34 (and its downstream RPi::WiringPi edit) before this gate. | `perl Makefile.PL && make && make test` (on Pi) | compiles, links clean, tests pass; no `setup_sys`/`setup_phys` symbols remain (V34 confirmed) | ⏳ |
 
 ### Phase 2 — Coverage (wrap 3.18 calls we don't expose yet)
@@ -232,7 +232,7 @@ when discovered on the Pi.
 | F9 / F21 / V24 / V31 `phys_wpi_map` | `t/105-pin.t`, `t/106-pin_map.t` | pin translation correct on this Pi/RP1 |
 | F11 / B7 `bmp180Pressure`/`Temp` | `t/340-bmp.t`, `build_testing/bmp.pl` | raw reads unchanged |
 | V6 `$VERSION` 2.36→3.18 | install / `Makefile.PL` prereq | bump prereq 2.3616→3.1801 (downstream edit) |
-| V34 `setup_sys`/`setup_phys` removed | `RPi/WiringPi.pm:51-54` (phys branch), POD refs (`Core.pm:512,518`; `WiringPi.pm:898,902`) | phys init path dropped/redirected; no calls to removed subs; POD mentions of `setup_sys()` cleaned |
+| V34 `setup_sys`/`setup_phys` removed | `RPi/WiringPi.pm:51-54` (phys branch), POD refs (`Core.pm:512,518`; `WiringPi.pm:898,902`) | phys init path dropped/redirected; no calls to removed subs; POD mentions of `setup_sys()` cleaned — tracked by `refactor-setup-modes.md` (V1/V4) in the rpi-wiringpi repo |
 
 ### Required downstream changes (committed in the consumer repos)
 
@@ -242,7 +242,10 @@ when discovered on the Pi.
 - **RPi::WiringPi code** — **V34 forces one change:** it calls `setup_phys()`
   (`RPi/WiringPi.pm:52`), which V34 removes — drop/redirect the `/^p/` phys branch
   (`RPi/WiringPi.pm:51-54`) and clean the POD mentions of `setup_sys()` (`Core.pm:512,518`;
-  `WiringPi.pm:898,902`). Otherwise none forced: it uses no renamed export, and its
+  `WiringPi.pm:898,902`). **This downstream edit is now tracked in the rpi-wiringpi
+  repo by its `refactor-setup-modes.md` plan** — its V1 drops the `/^p/` phys dispatch
+  branch (`RPi/WiringPi.pm:51-54`), V4 cleans the `setup_sys()`/`setup_phys()` POD in
+  `Core.pm` + `WiringPi.pm`. Otherwise none forced: it uses no renamed export, and its
   `shift_reg_setup` / `pwm_set_range` / `lcd_char_def` calls stay source-compatible
   (only `shift_reg_setup`'s *error* path tightens). Re-run `t/` to confirm.
 - **Subsidiary dists (TODO — discover on the Pi)** — the i2c/lcd/serial changes
