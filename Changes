@@ -13,6 +13,9 @@ Revision history for Perl extension WiringPi::API.
           string in scalar context, a (major, minor) pair in list context)
         - added t/20-board_map_precheck.t validating the phys/wpi/gpio pin maps
           against the installed wiringPi, and t/25-wiringpi_version.t
+        - aligned XS prototypes with the wiringPi 3.18 headers: lcdSendCommand()
+          second arg char -> unsigned char, and digitalReadByte() return type
+          int -> unsigned int
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

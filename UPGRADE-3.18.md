@@ -1,8 +1,8 @@
 # Plan: Upgrade WiringPi::API to wiringPi 3.18
 
-> **NEXT ACTION:** V4 — align XS prototypes with 3.18 headers (`lcdSendCommand` 2nd arg `char`→`unsigned char`; verify SPI/I2C/serial/lcd/softPwm/sr595 signatures match `~/repos/wiringPi/**/*.h`)
-> **LAST SESSION (2026-06-04):** Ran **V3 on `rpi1` — PASS**. Implemented `wiringPiVersion` XS (Option A string, CODE block) + snake_case `wiringpi_version` wrapper (scalar=string, list=`(major,minor)`) + POD; builds clean, returns `"3.18"`/`(3,18)`. New test `t/25-wiringpi_version.t` (7 assertions). Filed **B8** for pre-existing POD errors (2 unresolved internal links + whitespace warnings — not introduced by V3, candidate for V6's POD sweep). Prior: V1-V2 PASS. Full `t/` suite green (54 tests). Standing flags: V34 breaks RPi::WiringPi (downstream tracked under V33 + rpi-wiringpi's `refactor-setup-modes.md`); Phase 4 V26-V32 ⏸ HOLD.
-> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V3 archived)
+> **NEXT ACTION:** V5 — Makefile.PL: fix stale fallback message "Ensure version 2.36+" (Makefile.PL:31); confirm `LIBS`/`INC` still correct for 3.18
+> **LAST SESSION (2026-06-04):** Ran **V4 on `rpi1` — PASS**. Aligned XS prototypes with 3.18 headers: `lcdSendCommand` 2nd arg `char`→`unsigned char`, plus found+fixed `digitalReadByte` return `int`→`unsigned int`. Audited all other wrapped signatures (core/lcd/softPwm/sr595/i2c/spi/serial/bmp180/ads1115/pseudoPins) against installed `/usr/local/include` 3.18 headers — all match. XS parses; rebuilt clean; suite green (54 tests). Prior: V1-V3 PASS. Standing flags: V34 breaks RPi::WiringPi (downstream tracked under V33 + rpi-wiringpi's `refactor-setup-modes.md`); Phase 4 V26-V32 ⏸ HOLD; pre-existing POD errors tracked as B8.
+> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V4 archived)
 
 ## Goal
 
@@ -54,10 +54,11 @@ caveat assumed a different dev box and no longer applies.) Note: this is a
 
 ## Maintenance rules
 
-- V task ✅: do all three:
+- V task ✅: do all four:
   1. Set Actual to `✅ YYYY-MM-DD attempt N: PASS`.
   2. Append a new bullet at the bottom of UPGRADE-3.18-archive.md's "Archived V Tasks" section: `- V#: description — ✅ YYYY-MM-DD attempt N: PASS`. One bullet per entry — never run two entries together.
   3. **Delete the V# row from this file's Validation Table.**
+  4. **Add a Changes entry** at the bottom of the current `3.1801 UNREL` section for any consumer-visible change (new/fixed/changed function, behavior, exports, tests). Skip only for purely internal no-ops (e.g. a precheck that changed no code); when skipping, note why in the archive bullet.
 - V task ❌: update Actual with `❌ YYYY-MM-DD attempt N: reason`. Rerun same V# with attempt N+1. Do NOT create a new V#.
 - Update ARCHIVE pointer to reflect what's archived (e.g., `V1-V2` → `V1-V3`)
 - Update NEXT ACTION to next ⏳ row; update LAST SESSION
@@ -76,7 +77,6 @@ caveat assumed a different dev box and no longer applies.) Note: this is a
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V4 | Align XS prototypes with 3.18 headers: `lcdSendCommand` 2nd arg `char`→`unsigned char` (API.xs:408-410 vs devLib/lcd.h:38); verify SPI / I2C / serial / lcd / softPwm / sr595 signatures in API.xs still match `~/repos/wiringPi/**/*.h` exactly | review each XS prototype against its header + `process_file` XS parse | every wrapped signature matches its 3.18 header; XS parses | ⏳ |
 | V5 | Makefile.PL: fix stale fallback message "Ensure version 2.36+" (Makefile.PL:31); confirm `LIBS => -lwiringPi -lwiringPiDev -lrt` and `INC` are still correct for 3.18 | `perl -c Makefile.PL` | syntax OK; message references 3.18 | ⏳ |
 | V6 | Version/metadata refresh: bump `$VERSION` 2.3617→3.1801 (API.pm:6, consumed by Makefile.PL `VERSION_FROM`); update POD DESCRIPTION "version 2.36+" → 3.18 (API.pm:550-552); refresh copyright year; sweep README for version refs. ⚠ consumer-facing (see Public API impact). **➡ NEXT IS V34, NOT V7** — V34 sits between V6 and V7 (out of numeric sequence) and must run before the V7 gate; on completing V6, set NEXT ACTION to V34. | `perl -c -Ilib lib/WiringPi/API.pm && podchecker lib/WiringPi/API.pm` | OK; no 2.36 references remain | ⏳ |
 | V34 | **Remove unsupported setup modes (BREAKING)** — delete the `wiringPiSetupSys`/`wiringPiSetupPhys` XS wraps (API.xs:293-294,299) + the `setup_sys`/`setup_phys` Perl wrappers (API.pm:130-135) + their `@EXPORT_OK`/tag entries + POD; sweep README. Only `setup()`/`setup_gpio()` remain. ⚠ consumer-facing — **breaks RPi::WiringPi** (`RPi/WiringPi.pm:52`); make the downstream edit (drop the `/^p/` phys branch) **alongside V34 — don't wait for V33** (V34 lands in Phase 1 but V33 isn't gated until after V25, so deferring leaves RPi::WiringPi broken across the whole window); still verify it under V33. **Downstream edit now tracked in rpi-wiringpi by `refactor-setup-modes.md` (V1/V4).** Note: the phys *translation* helpers (`phys_to_wpi`/`physPinToWpi`, `physPinToGpio`) are independent of the removed phys *mode* — decide their fate separately (ties to F9/V31). | `perl -c -Ilib lib/WiringPi/API.pm` + grep that each removed name is gone from XS/exports/POD | only `setup`/`setup_gpio` remain; no dangling refs; this module's `t/` still passes | ⏳ |

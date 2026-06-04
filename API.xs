@@ -419,7 +419,7 @@ lcdCursorBlink(fd, state)
 void
 lcdSendCommand(fd, command)
     int fd
-    char command
+    unsigned char command
 
 void
 lcdPosition(fd, x, y)
@@ -523,7 +523,7 @@ pinModeAlt(pin, mode)
     int pin
     int mode
 
-int
+unsigned int
 digitalReadByte()
 
 unsigned int
