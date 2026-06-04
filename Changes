@@ -29,6 +29,9 @@ Revision history for Perl extension WiringPi::API.
           pi_lock/pi_unlock, and digital_read_byte/digital_read_byte2/
           digital_write_byte/digital_write_byte2 (the byte-bank ops are
           unsupported on the Raspberry Pi 5 - see POD)
+        - wrapped the timing/scheduling core: delay, delayMicroseconds
+          (delay_microseconds), millis, micros, piMicros64 (pi_micros64) and
+          piHiPri (pi_hi_pri) - XS + Perl + POD
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

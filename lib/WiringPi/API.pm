@@ -33,6 +33,8 @@ my @wpi_c_functions = qw(
     pinModeAlt          serialOpen          serialFlush
     serialPutchar       serialPuts          serialDataAvail
     serialGetchar       pwmSetClock         pwmSetMode
+    delay               delayMicroseconds   millis
+    micros              piMicros64          piHiPri
 );
 
 my @wpi_perl_functions = qw(
@@ -54,6 +56,7 @@ my @wpi_perl_functions = qw(
     soft_pwm_create soft_pwm_write   soft_pwm_stop       pi_lock
     pi_unlock       digital_read_byte                    digital_read_byte2
     digital_write_byte                  digital_write_byte2
+    delay_microseconds                  pi_micros64         pi_hi_pri
 );
 
 our @EXPORT_OK;
@@ -292,6 +295,25 @@ sub pi_unlock {
     shift if @_ == 2;
     my ($key) = @_;
     piUnlock($key);
+}
+
+# timing functions
+
+# delay(), millis(), micros() are exported directly as their wiringPi C names
+# (under the :wiringPi tag); a same-named Perl wrapper would shadow the XS sub.
+
+sub delay_microseconds {
+    shift if @_ == 2;
+    my ($us) = @_;
+    delayMicroseconds($us);
+}
+sub pi_micros64 {
+    return piMicros64();
+}
+sub pi_hi_pri {
+    shift if @_ == 2;
+    my ($pri) = @_;
+    return piHiPri($pri);
 }
 
 # lcd functions
@@ -1106,6 +1128,60 @@ Parameters:
     $key
 
 Mandatory: The lock number, C<0> to C<3>.
+
+=head1 TIMING FUNCTIONS
+
+wiringPi timing and scheduling helpers. See
+L<wiringPi timing page|http://wiringpi.com/reference/timing/>.
+
+C<delay()>, C<millis()> and C<micros()> are exported under the C<:wiringPi> tag
+as their native wiringPi names.
+
+=head2 delay($ms)
+
+Maps to C<void delay(unsigned int ms)>
+
+Pauses execution for at least C<$ms> milliseconds.
+
+=head2 delay_microseconds($us)
+
+Maps to C<void delayMicroseconds(unsigned int us)>
+
+Pauses execution for at least C<$us> microseconds.
+
+=head2 millis()
+
+Maps to C<unsigned int millis()>
+
+Returns the number of milliseconds elapsed since the program called one of the
+C<setup*()> routines, as an integer.
+
+=head2 micros()
+
+Maps to C<unsigned int micros()>
+
+Returns the number of microseconds elapsed since the program called one of the
+C<setup*()> routines, as an integer.
+
+=head2 pi_micros64()
+
+Maps to C<unsigned long long piMicros64()>
+
+As C<micros()>, but returns a 64-bit microsecond count (does not wrap as
+quickly). Requires a 64-bit Perl (C<use64bitint>).
+
+=head2 pi_hi_pri($priority)
+
+Maps to C<int piHiPri(const int pri)>
+
+Attempts to set a high (real-time) scheduling priority for the running program.
+Returns C<0> on success, C<-1> on failure (e.g. insufficient privileges).
+
+Parameters:
+
+    $priority
+
+Mandatory: The priority, C<0> (lowest) to C<99> (highest).
 
 =head1 LCD FUNCTIONS
 

@@ -471,6 +471,29 @@ piLock(keyNum)
 void piUnlock(keyNum)
     int keyNum
 
+# timing / scheduling
+
+void
+delay(ms)
+    unsigned int ms
+
+void
+delayMicroseconds(us)
+    unsigned int us
+
+unsigned int
+millis()
+
+unsigned int
+micros()
+
+uint64_t
+piMicros64()
+
+int
+piHiPri(pri)
+    int pri
+
 # bmp180 pressure sensor
 
 int
