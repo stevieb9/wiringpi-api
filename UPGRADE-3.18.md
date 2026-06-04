@@ -1,7 +1,7 @@
 # Plan: Upgrade WiringPi::API to wiringPi 3.18
 
 > **NEXT ACTION:** V1 — baseline build against wiringPi 3.18 on the Pi (when home) to see what currently breaks
-> **LAST SESSION:** Enriched **V1** with a board-map precheck gate (per request): before the baseline build, confirm `physPinToWpi()` (custom `phys_wpi_map`) and `physPinToGpio()` (wiringPi-native; the upstream header cautions against use outside pins 0-63 / on RP1) map correctly **regardless of board/model** (Pi5/RP1). It's the early gate for **F9** — if either map is wrong or unverifiable, raise a new F# and resolve it **before carrying on** (don't defer to V24/V31). NEXT ACTION unchanged (V1). Standing flags: V34 breaks RPi::WiringPi (downstream tracked under V33 + rpi-wiringpi's `refactor-setup-modes.md`); Phase 4 V26-V32 ⏸ HOLD. Nothing runs on the current machine.
+> **LAST SESSION (2026-06-04):** Discovered **this machine IS the validation Pi** — hostname `rpi1`, a Raspberry Pi 5 / RP1 with wiringPi 3.18, headers, libs and the full gcc/make/perl toolchain all present. Rewrote the **Validation environment** section accordingly: the long-standing "nothing runs on the current machine" caveat was stale (wrong dev box) and is removed — V1/V7/V17/V25 and the Phase 4 valgrind work all run here. This is a Pi5/RP1, the exact board F9/V1 flag as highest-risk for `phys_wpi_map`. NEXT ACTION unchanged (V1) — now actually runnable locally. Standing flags: V34 breaks RPi::WiringPi (downstream tracked under V33 + rpi-wiringpi's `refactor-setup-modes.md`); Phase 4 V26-V32 ⏸ HOLD.
 > **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks
 
 ## Goal
@@ -21,9 +21,22 @@ this XS module fully in line with 3.18 in three phases:
 
 ## Validation environment
 
-All work happens on the **Raspberry Pi** at home, with wiringPi 3.18 installed —
-**nothing in this plan runs on the current machine** (no wiringPi headers, no
-hardware, no compiler for the XS here). Two tiers of check, both on the Pi:
+**This machine IS the validation Pi.** Confirmed 2026-06-04: hostname `rpi1`, a
+**Raspberry Pi 5 Model B Rev 1.1** (revision `d04171`, **RP1** present —
+`rp1_firmware`/`rp1_vdd_3v3` in the device tree), with the full toolchain
+installed:
+
+- wiringPi **3.18** (`gpio version: 3.18`)
+- headers at `/usr/local/include/wiringPi.h`; libs `libwiringPi.so.3.18` +
+  `libwiringPiDev.so.3.18` in `/usr/local/lib`
+- gcc 14.2.0, GNU Make 4.4.1, perl 5.42.0 (aarch64)
+
+So **every task here runs on this box** — the build/link/test full gates (V7,
+V17, V25), the board-map precheck (V1), and the Phase 4 `valgrind`/`helgrind`
+work all execute locally. (The earlier "nothing runs on the current machine"
+caveat assumed a different dev box and no longer applies.) Note: this is a
+**Pi 5 / RP1** — precisely the board F9/V1 flag as the highest risk for
+`phys_wpi_map`/`physPinToWpi` correctness. Two tiers of check:
 
 - **Quick checks** (fast iteration while editing, before a full build):
   - Perl syntax: `perl -c -Ilib lib/WiringPi/API.pm` (the `XSLoader::load` is a
@@ -32,8 +45,8 @@ hardware, no compiler for the XS here). Two tiers of check, both on the Pi:
   - XS parse (catches XS/typemap syntax errors before compiling):
     `perl -MExtUtils::ParseXS=process_file -e 'process_file(filename=>"API.xs", output=>"/tmp/API_check.c")'`
 - **Full gate** (phase exit): `perl Makefile.PL && make && make test` — the real
-  compile, link and test against wiringPi 3.18 and any attached hardware. Tasks
-  marked **Full gate** are the phase exit criteria.
+  compile, link and test against wiringPi 3.18 and any attached hardware, run
+  here on `rpi1`. Tasks marked **Full gate** are the phase exit criteria.
 
 ## Execution rules
 
