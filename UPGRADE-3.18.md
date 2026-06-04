@@ -1,8 +1,8 @@
 # Plan: Upgrade WiringPi::API to wiringPi 3.18
 
-> **NEXT ACTION:** V11 — wrap board/identity helpers: `piBoardId`, `piBoard40Pin`, `piRP1Model`, `getPinModeAlt`, `wiringPiGlobalMemoryAccess`, `wiringPiUserLevelAccess`.
-> **LAST SESSION (2026-06-04):** Ran **V10 on `rpi1` — PASS**. Wrapped setPadDrive/setPadDrivePin/pwmToneWrite/gpioClockSet (XS+Perl+POD), deleted the stale "not yet implemented" comment. New test `t/40-pad_tone_clock.t` (can()-only — hardware-driving/possibly Pi5-unsupported); `make test` 86 tests pass. Prior: V1-V9 + V34 PASS. Standing flags: Phase 4 V26-V32 ⏸ HOLD; B8/B9; V35 (testChar); V33 downstream gate (installed WiringPi::API has an unrelated "executable stack" load error to investigate at V33); rpi-wiringpi cleanup continues under `refactor-setup-modes.md` V2-V9.
-> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V10, V34 archived)
+> **NEXT ACTION:** V12 — wrap the new 3.3 setup variants: `wiringPiSetupPinType`, `wiringPiSetupGpioDevice`, `wiringPiGpioDeviceGetFd`; expose `enum WPIPinType` constants.
+> **LAST SESSION (2026-06-04):** Ran **V11 on `rpi1` — PASS**. Wrapped board/identity helpers piBoardId(pi_board_id, list/hashref)/piBoard40Pin/piRP1Model/getPinModeAlt/wiringPiGlobalMemoryAccess/wiringPiUserLevelAccess (XS+Perl+POD). Functional: pi_board_id=(23,1,5,0,0)=Pi5, pi_rp1_model=1. New test `t/45-board_id.t`; `make test` 115 tests pass. **B9 now actionable** (pi_rp1_model available for a Pi5 byte-op guard). Prior: V1-V10 + V34 PASS. Standing flags: Phase 4 V26-V32 ⏸ HOLD; B8/B9; V35 (testChar); V33 downstream gate (installed WiringPi::API "executable stack" load error to investigate at V33); rpi-wiringpi cleanup under `refactor-setup-modes.md` V2-V9.
+> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V11, V34 archived)
 
 ## Goal
 
@@ -82,7 +82,6 @@ caveat assumed a different dev box and no longer applies.) Note: this is a
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V11 | Wrap board/identity helpers: `piBoardId`, `piBoard40Pin` (V3.7), `piRP1Model` (V3.14), `getPinModeAlt` (V3.5), `wiringPiGlobalMemoryAccess` (V3.3), `wiringPiUserLevelAccess` (wiringPi.h:228-289) | XS parse + `perl -c` | parses | ⏳ |
 | V12 | Wrap the new 3.3 setup variants: `wiringPiSetupPinType`, `wiringPiSetupGpioDevice`, `wiringPiGpioDeviceGetFd` (wiringPi.h:235-257); expose `enum WPIPinType` constants | XS parse + `perl -c` | parses | ⏳ |
 | V13 | Wrap interrupt additions: `wiringPiISRStop` (V3.2 — needed for clean teardown of our dispatcher), `wiringPiISR2` + `waitForInterrupt2` (V3.16, `struct WPIWfiStatus`) (wiringPi.h:306-310) | XS parse + `perl -c` | parses | ⏳ |
 | V14 | Wrap I2C additions (wiringPiI2C.h:34-43): `wiringPiI2CReadBlockData`, `wiringPiI2CRawRead`, `wiringPiI2CWriteBlockData`, `wiringPiI2CRawWrite`; implement `i2c_interface`/`wiringPiI2CSetupInterface` (XS sub exists; Perl wrapper currently just croaks "not available" at API.pm:361-363) | XS parse + `perl -c` | parses; `i2c_interface` no longer croaks | ⏳ |

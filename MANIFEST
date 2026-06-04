@@ -21,6 +21,7 @@ t/25-wiringpi_version.t
 t/30-v8_wrappers.t
 t/35-timing.t
 t/40-pad_tone_clock.t
+t/45-board_id.t
 t/manifest.t
 t/pod-coverage.t
 t/pod.t

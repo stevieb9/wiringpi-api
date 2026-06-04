@@ -507,6 +507,36 @@ gpioClockSet(pin, freq)
     int pin
     int freq
 
+# board / identity
+
+int
+wiringPiGlobalMemoryAccess()
+
+int
+wiringPiUserLevelAccess()
+
+int
+getPinModeAlt(pin)
+    int pin
+
+int
+piBoard40Pin()
+
+int
+piRP1Model()
+
+void
+piBoardId()
+    PPCODE:
+        int model, rev, mem, maker, overVolted;
+        piBoardId(&model, &rev, &mem, &maker, &overVolted);
+        EXTEND(SP, 5);
+        mPUSHi(model);
+        mPUSHi(rev);
+        mPUSHi(mem);
+        mPUSHi(maker);
+        mPUSHi(overVolted);
+
 # bmp180 pressure sensor
 
 int

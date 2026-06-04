@@ -36,7 +36,9 @@ my @wpi_c_functions = qw(
     delay               delayMicroseconds   millis
     micros              piMicros64          piHiPri
     setPadDrive         setPadDrivePin      pwmToneWrite
-    gpioClockSet
+    gpioClockSet        piBoardId           piBoard40Pin
+    piRP1Model          getPinModeAlt       wiringPiGlobalMemoryAccess
+    wiringPiUserLevelAccess
 );
 
 my @wpi_perl_functions = qw(
@@ -60,6 +62,8 @@ my @wpi_perl_functions = qw(
     digital_write_byte                  digital_write_byte2
     delay_microseconds                  pi_micros64         pi_hi_pri
     set_pad_drive   set_pad_drive_pin   pwm_tone_write      gpio_clock_set
+    pi_board_id     pi_board40_pin      pi_rp1_model        get_pin_mode_alt
+    wiringpi_global_memory_access        wiringpi_user_level_access
 );
 
 our @EXPORT_OK;
@@ -340,6 +344,41 @@ sub gpio_clock_set {
     shift if @_ == 3;
     my ($pin, $freq) = @_;
     gpioClockSet($pin, $freq);
+}
+
+# board / identity functions
+
+sub pi_board_id {
+    my ($model, $rev, $mem, $maker, $over_volted) = piBoardId();
+
+    if (wantarray) {
+        return ($model, $rev, $mem, $maker, $over_volted);
+    }
+
+    return {
+        model       => $model,
+        rev         => $rev,
+        mem         => $mem,
+        maker       => $maker,
+        over_volted => $over_volted,
+    };
+}
+sub pi_board40_pin {
+    return piBoard40Pin();
+}
+sub pi_rp1_model {
+    return piRP1Model();
+}
+sub get_pin_mode_alt {
+    shift if @_ == 2;
+    my ($pin) = @_;
+    return getPinModeAlt($pin);
+}
+sub wiringpi_global_memory_access {
+    return wiringPiGlobalMemoryAccess();
+}
+sub wiringpi_user_level_access {
+    return wiringPiUserLevelAccess();
 }
 
 # lcd functions
@@ -1275,6 +1314,58 @@ Mandatory: The pin number.
     $freq
 
 Mandatory: The clock frequency in Hz.
+
+=head1 BOARD IDENTITY FUNCTIONS
+
+=head2 pi_board_id()
+
+Maps to C<void piBoardId(int *model, int *rev, int *mem, int *maker, int *overVolted)>
+
+Returns identifying information about the board. In list context, returns
+C<($model, $rev, $mem, $maker, $over_volted)>. In scalar context, returns a hash
+reference with keys C<model>, C<rev>, C<mem>, C<maker> and C<over_volted>. The
+values are the integer codes used by wiringPi.
+
+=head2 pi_board40_pin()
+
+Maps to C<int piBoard40Pin()>
+
+Returns true if the board has the standard 40-pin GPIO header.
+
+=head2 pi_rp1_model()
+
+Maps to C<int piRP1Model()>
+
+Returns the RP1 model code on boards that use the RP1 I/O controller (e.g. the
+Raspberry Pi 5), or a falsey value on boards without one.
+
+=head2 get_pin_mode_alt($pin)
+
+Maps to C<enum WPIPinAlt getPinModeAlt(int pin)>
+
+Like C<get_alt()>, but returns the pin's current mode as a C<WPIPinAlt> enum
+value: C<-1> (unknown), C<0> (input), C<1> (output), then the C<ALT> modes.
+
+Parameters:
+
+    $pin
+
+Mandatory: The pin number, in the pin numbering scheme dictated by whichever
+C<setup*()> routine you used.
+
+=head2 wiringpi_global_memory_access()
+
+Maps to C<int wiringPiGlobalMemoryAccess()>
+
+Returns a value indicating the level of direct GPIO memory access available to
+the current process (C<0> if none).
+
+=head2 wiringpi_user_level_access()
+
+Maps to C<int wiringPiUserLevelAccess()>
+
+Returns true if user-level (non-root) GPIO access is available (e.g. via
+C</dev/gpiomem>).
 
 =head1 LCD FUNCTIONS
 

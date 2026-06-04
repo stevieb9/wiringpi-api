@@ -35,6 +35,11 @@ Revision history for Perl extension WiringPi::API.
         - implemented the previously-unimplemented setPadDrive (set_pad_drive),
           setPadDrivePin (set_pad_drive_pin), pwmToneWrite (pwm_tone_write) and
           gpioClockSet (gpio_clock_set) - XS + Perl + POD
+        - wrapped board/identity helpers: piBoardId (pi_board_id, returns a list
+          or hashref), piBoard40Pin (pi_board40_pin), piRP1Model (pi_rp1_model),
+          getPinModeAlt (get_pin_mode_alt), wiringPiGlobalMemoryAccess
+          (wiringpi_global_memory_access) and wiringPiUserLevelAccess
+          (wiringpi_user_level_access) - XS + Perl + POD
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks
