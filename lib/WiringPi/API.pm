@@ -3,7 +3,7 @@ package WiringPi::API;
 use strict;
 use warnings;
 
-our $VERSION = '2.3617';
+our $VERSION = '3.1801';
 
 use Carp qw(croak);
 
@@ -558,7 +558,7 @@ you must initialize the software by calling one of the C<setup*()> routines.
 =head1 DESCRIPTION
 
 This is an XS-based module, and requires L<wiringPi|http://wiringpi.com> version
-2.36+ to be installed. The C<wiringPiDev> shared library is also required (for
+3.18+ to be installed. The C<wiringPiDev> shared library is also required (for
 the LCD functionality), but it's installed by default with C<wiringPi>.
 
 See the documentation on the L<wiringPi|http://wiringpi.com> website for a more
@@ -1713,7 +1713,7 @@ Steve Bertrand, E<lt>steveb@cpan.orgE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2017 by Steve Bertrand
+Copyright (C) 2017-2026 by Steve Bertrand
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.18.2 or,

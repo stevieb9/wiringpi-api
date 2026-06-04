@@ -18,6 +18,9 @@ Revision history for Perl extension WiringPi::API.
           int -> unsigned int
         - Makefile.PL: corrected the stale "version 2.36+" message to report the
           actual minimum required wiringPi version (3.18)
+        - bumped $VERSION 2.3617 -> 3.1801 (note: 2.x -> 3.x scheme change for
+          downstream version pins); refreshed POD/README version references from
+          2.36 to 3.18 and updated the copyright year
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

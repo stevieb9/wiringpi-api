@@ -15,4 +15,6 @@ that file for the live Validation Table, rules and tracking.
 
 - V5: Makefile.PL stale message + LIBS/INC confirmation — ✅ 2026-06-04 attempt 1: PASS. Replaced the hardcoded "Ensure version 2.36+" fallback (Makefile.PL:31) with the `$min_wpi_ver` variable so it now reports "3.18+" and can't go stale again (also fixed a double-space typo). Confirmed `LIBS => -lwiringPi -lwiringPiDev -lrt` all resolve (libwiringPi/libwiringPiDev in /usr/lib, librt.so.1) and `INC => -I.` finds the header — clean `perl Makefile.PL && make` links with all three libs, exit 0, no warnings. `perl -c Makefile.PL` OK; no `2.36` refs remain.
 
+- V6: Version/metadata refresh — ✅ 2026-06-04 attempt 1: PASS. Bumped `$VERSION` `2.3617`→`3.1801` (API.pm:6); updated POD DESCRIPTION "2.36+"→"3.18+" (API.pm:561) and README version ref; refreshed copyright to "2017-2026" across API.pm POD, README, API.h and API.xs (xs was "2026", h/pm were "2017" — now consistent). Rebuilt so `XS_VERSION`/`VERSION` compile as `3.1801` (required — else `XSLoader::load($VERSION)` would fail the bootstrap version check); confirmed module reports `$VERSION = 3.1801` and XSLoader bootstrap passes. No `2.36`/`2.3617` refs remain anywhere. `perl -c` OK; podchecker shows only pre-existing B8 issues; full `t/` suite green (54 tests).
+
 ## Archived Fixes

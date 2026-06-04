@@ -24,7 +24,7 @@ SYNOPSIS
 DESCRIPTION
 
     This is an XS-based module, and requires wiringPi <http://wiringpi.com>
-    version 2.36+ to be installed. The wiringPiDev shared library is also
+    version 3.18+ to be installed. The wiringPiDev shared library is also
     required (for the LCD functionality), but it's installed by default
     with wiringPi.
 
@@ -1154,7 +1154,7 @@ AUTHOR
 
 COPYRIGHT AND LICENSE
 
-    Copyright (C) 2017 by Steve Bertrand
+    Copyright (C) 2017-2026 by Steve Bertrand
 
     This library is free software; you can redistribute it and/or modify it
     under the same terms as Perl itself, either Perl version 5.18.2 or, at
