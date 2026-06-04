@@ -291,12 +291,7 @@ int
 wiringPiSetup()
 
 int
-wiringPiSetupSys()
-
-int
 wiringPiSetupGpio()
-
-int wiringPiSetupPhys()
 
 void
 pinMode(pin, mode)
@@ -497,9 +492,6 @@ setInterrupt(pin, edge, callback)
     int pin
     int edge
     SV * callback
-
-void
-interruptHandler()
 
 int
 initThread(callback)

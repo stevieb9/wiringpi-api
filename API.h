@@ -19,7 +19,6 @@ int initThread(SV * callback);
 
 // interrupts
 int setInterrupt(int pin, int edge, SV * callback);
-void interruptHandler();
 
 // setup routines
 int wiringPiI2CSetup (int devId);

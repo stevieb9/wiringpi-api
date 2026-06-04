@@ -14,8 +14,8 @@ require Exporter;
 our @ISA = qw(Exporter);
 
 my @wpi_c_functions = qw(
-    wiringPiSetup       wiringPiSetupSys    wiringPiSetupGpio
-    wiringPiSetupPhys   pinMode             pullUpDnControl
+    wiringPiSetup       wiringPiSetupGpio   pinMode
+    pullUpDnControl
     digitalRead         digitalWrite        digitalWriteByte
     pwmWrite            getAlt              piGpioLayout
     wpiPinToGpio        physPinToGpio       pwmSetRange
@@ -36,8 +36,8 @@ my @wpi_c_functions = qw(
 );
 
 my @wpi_perl_functions = qw(
-    setup           setup_sys       setup_phys          setup_gpio 
-    pull_up_down    read_pin        write_pin           pwm_write
+    setup           setup_gpio      pull_up_down        read_pin
+    write_pin       pwm_write
     get_alt         gpio_layout     wpi_to_gpio         phys_to_gpio
     pwm_set_range   lcd_init        lcd_home            lcd_clear
     lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
@@ -126,12 +126,6 @@ sub set_interrupt {
 
 sub setup {
     return wiringPiSetup();
-}
-sub setup_sys {
-    return wiringPiSetupSys();
-}
-sub setup_phys {
-    return wiringPiSetupPhys();
 }
 sub setup_gpio {
     return wiringPiSetupGpio();
@@ -575,8 +569,8 @@ Perl wrapper functions for the XS functions. Not all of these are direct
 wrappers; several have additional/modified functionality than the wrapped
 versions, but are still 100% compatible.
 
-    setup           setup_sys       setup_phys          setup_gpio 
-    pull_up_down    read_pin        write_pin           pwm_write
+    setup           setup_gpio      pull_up_down        read_pin
+    write_pin       pwm_write
     get_alt         gpio_layout     wpi_to_gpio         phys_to_gpio
     pwm_set_range   lcd_init        lcd_home            lcd_clear
     lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
@@ -674,24 +668,6 @@ Sets the pin numbering scheme to C<GPIO>.
 
 Personally, this is the setup routine that I always use, due to the GPIO numbers
 physically printed right on the Pi board.
-
-=head2 setup_phys()
-
-Maps to C<int wiringPiSetupPhys()>
-
-Sets the pin mapping to use the physical pin position number on the board.
-
-=head2 setup_sys()
-
-Maps to C<int wiringPiSetupSys()>
-
-DEPRECATED.
-
-This function is here for legacy purposes only, to provide non-root user access
-to the GPIO. It required exporting the pins manually before use. wiringPi now
-uses C</dev/gpiomem> by default, which does not require root level access.
-
-Sets the pin numbering scheme to C<GPIO>.
 
 =head2 wiringpi_version()
 

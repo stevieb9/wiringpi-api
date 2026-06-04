@@ -1,8 +1,8 @@
 # Plan: Remove all traces of setup_phys() and setup_sys()
 
-> **NEXT ACTION:** V1 — delete the `wiringPiSetupSys` / `wiringPiSetupPhys` XS wraps from `API.xs`
-> **LAST SESSION:** Plan created. Full-tree sweep done; every trace located across API.xs, API.pm (code + exports + POD), README, test/, and Changes (history). Nothing edited yet.
-> **ARCHIVE:** See clean-setup-calls-archive.md for completed V tasks
+> **NEXT ACTION:** COMPLETE — all V1-V10 done (2026-06-04). This plan's local work is finished; UPGRADE-3.18.md V34 is marked done. Remaining downstream cleanup (POD, export_pin, SYS/PHYS handling) continues under rpi-wiringpi's `refactor-setup-modes.md` (V2-V9); downstream test execution is gated on UPGRADE-3.18.md V33 (install upgraded module).
+> **LAST SESSION (2026-06-04):** Executed V1-V10 on `rpi1`. Removed setup_sys/setup_phys + their XS wraps from API.xs/API.pm/POD/README, deleted test/setup_phys.pl, added the BREAKING Changes bullet. `make test` initially failed under bind-now on the F22 `interruptHandler` dangling symbol (Fix 1) — resolved by pulling UPGRADE V23's interruptHandler removal forward; 54 tests then pass. Downstream: dropped the `/^p/` phys dispatch branch on rpi-wiringpi branch `3.18`. Per B1, marked UPGRADE-3.18.md V34 done.
+> **ARCHIVE:** See clean-setup-calls-archive.md for completed V tasks (V1-V10 archived)
 
 ## Goal & scope
 
@@ -48,22 +48,11 @@ grep -rIn 'setup_phys\|setup_sys\|wiringPiSetupSys\|wiringPiSetupPhys' . \
 
 ## Validation Table
 
-| ID | What | Command | Expected | Actual |
-|----|------|---------|----------|--------|
-| V1 | **API.xs** — delete both XS wraps: `int wiringPiSetupSys()` (293-294) and `int wiringPiSetupPhys()` (299). Leave `wiringPiSetup()` / `wiringPiSetupGpio()` intact. | `grep -n 'wiringPiSetupSys\|wiringPiSetupPhys' API.xs` | no output | ⏳ |
-| V2 | **API.pm subs** — delete `sub setup_sys {…}` and `sub setup_phys {…}` (130-135). Keep `setup` / `setup_gpio`. | `grep -n 'sub setup_sys\|sub setup_phys' lib/WiringPi/API.pm` && `perl -c -Ilib lib/WiringPi/API.pm` | no grep output; `syntax OK` | ⏳ |
-| V3 | **API.pm exports** — remove `wiringPiSetupSys` + `wiringPiSetupPhys` from the `@wpi_c_functions` qw() (17-18), and `setup_sys` + `setup_phys` from the `@wpi_perl_functions` qw() (39). Re-flow the qw() rows tidily. `@EXPORT_OK`/`%EXPORT_TAGS` derive from these arrays, so no further export edits needed. | `awk '/qw\(/,/\);/' lib/WiringPi/API.pm \| grep -n 'setup_sys\|setup_phys\|wiringPiSetupSys\|wiringPiSetupPhys'` then `perl -c -Ilib lib/WiringPi/API.pm` | no grep output; `syntax OK` | ⏳ |
-| V4 | **API.pm POD** — drop the two tokens from the EXPORT_OK POD list (568) and delete the `=head2 setup_phys()` and `=head2 setup_sys()` blocks (668-684). Confirm the nearby `=head2 setup_gpio()` and the "only one of the C<setup*()> methods" sentence still read correctly with only `setup`/`setup_gpio` left. | `grep -n 'setup_sys\|setup_phys' lib/WiringPi/API.pm` && `podchecker lib/WiringPi/API.pm` | no grep output; POD `OK` | ⏳ |
-| V5 | **README** — remove `setup_sys`/`setup_phys` from the wrapper table (45) and delete the `setup_phys()` and `setup_sys()` description blocks (137-153). (README reads like `pod2text` output; if it is ever regenerated from POD, V4 must land first — it has, by ordering.) | `grep -n 'setup_sys\|setup_phys\|wiringPiSetupSys\|wiringPiSetupPhys' README` | no output | ⏳ |
-| V6 | **Delete `test/setup_phys.pl`** — entire file is a phys-mode test. Confirm it is not referenced by MANIFEST or any test runner. (No `test/setup_sys.pl` exists.) | `git rm test/setup_phys.pl` && `grep -rn 'setup_phys' MANIFEST t/ test/` | file removed; no remaining references | ⏳ |
-| V7 | **Changes** — add a BREAKING bullet at the **bottom** of the `3.1801 UNREL` section, e.g. `- Removed setup_sys()/setup_phys() (and the wiringPiSetupSys/wiringPiSetupPhys wraps); only setup()/setup_gpio() remain (BREAKING)`. Do **NOT** touch the historical entries at lines 201/223 (shipped releases). | `sed -n '/3.1801  UNREL/,/^$/p' Changes` (visual: new bullet last in section; history untouched) | new UNREL bullet present at section bottom; 201/223 unchanged | ⏳ |
-| V8 | **Mac static gate** — run the full sweep (see Environment note) plus `perl -c` and POD syntax. Confirms zero traces remain anywhere except Changes history + planning docs. | sweep cmd above; then `perl -c -Ilib lib/WiringPi/API.pm`; then `prove -Ilib t/pod.t` | sweep prints nothing; `syntax OK`; `t/pod.t` passes | ⏳ |
-| V9 | **Pi build/run gate (Pi-only)** — on a Pi with wiringPi 3.18, clean-build and run the suite to prove no dangling XS symbol and the module still loads. | `perl Makefile.PL && make && make test` (on Pi) | compiles, links, all tests pass; no `wiringPiSetupSys/Phys` link errors | ⏳ |
-| V10 | **Downstream `RPi::WiringPi` (external repo — tracking)** — removal breaks the consumer. In that distro: drop the phys-mode branch in `RPi/WiringPi.pm:51-54` (the `setup_phys()` call at :52) and clean POD mentions of `setup_sys()`/`setup_phys()` in `Core.pm` (~512,518) and `WiringPi.pm` (~898,902). Cannot be edited from this repo. **Now tracked by the `refactor-setup-modes.md` plan in the `rpi-wiringpi` repo** (added 2026-06-02): its V1 drops the phys-mode dispatch branch (`WiringPi.pm` :51-54), V4 cleans the `setup_sys()`/`setup_phys()` POD in `Core.pm` + `WiringPi.pm`; that plan additionally removes the `RPI_MODE_PHYS` branches in `pin_to_gpio`/`pin_map` (V2) and the `export_pin()`/`unexport_pin()` subs (V3). | (in RPi::WiringPi checkout) `grep -rn 'setup_phys\|setup_sys' lib/` | no calls to removed subs; phys init path dropped/redirected; POD cleaned | ⏳ |
+_All V1-V10 complete — see clean-setup-calls-archive.md. This plan is done._
 
 ## Discovery Tracking
 
-_None yet._
+_Fix 1 resolved — see archive's Archived Fixes (F22 interruptHandler removal pulled forward from UPGRADE-3.18.md V23; `make test` passes)._
 
 ## Backlog
 
