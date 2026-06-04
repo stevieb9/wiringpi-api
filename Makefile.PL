@@ -28,8 +28,8 @@ if (my $path = (grep { -x "$_/gpio" } split /:/, $ENV{PATH})[0]){
     }
 }
 else {
-    print "\ncan not determine wiringPi version. Ensure version 2.36+ " .
-          " is installed. Can't continue\n";
+    print "\ncan not determine wiringPi version. Ensure version " .
+          "$min_wpi_ver+ is installed. Can't continue\n";
     exit;
 }
 

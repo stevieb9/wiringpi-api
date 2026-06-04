@@ -16,6 +16,8 @@ Revision history for Perl extension WiringPi::API.
         - aligned XS prototypes with the wiringPi 3.18 headers: lcdSendCommand()
           second arg char -> unsigned char, and digitalReadByte() return type
           int -> unsigned int
+        - Makefile.PL: corrected the stale "version 2.36+" message to report the
+          actual minimum required wiringPi version (3.18)
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks
