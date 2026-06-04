@@ -50,7 +50,7 @@ my @wpi_perl_functions = qw(
     phys_to_wpi     pin_mode_alt    serial_open         serial_flush
     serial_put_char serial_puts     serial_data_avail   serial_get_char 
     serial_close    serial_gets     pwm_set_range       pwm_set_clock
-    pwm_set_mode
+    pwm_set_mode    wiringpi_version
 );
 
 our @EXPORT_OK;
@@ -135,6 +135,16 @@ sub setup_phys {
 }
 sub setup_gpio {
     return wiringPiSetupGpio();
+}
+sub wiringpi_version {
+    my $ver = wiringPiVersion();
+
+    if (wantarray) {
+        my ($major, $minor) = split /\./, $ver;
+        return ($major, $minor);
+    }
+
+    return $ver;
 }
 
 # pin functions
@@ -682,6 +692,19 @@ to the GPIO. It required exporting the pins manually before use. wiringPi now
 uses C</dev/gpiomem> by default, which does not require root level access.
 
 Sets the pin numbering scheme to C<GPIO>.
+
+=head2 wiringpi_version()
+
+Maps to C<void wiringPiVersion(int *major, int *minor)>.
+
+Returns the version of the installed B<wiringPi C library> (eg. C<3.18>). This
+is the underlying library version, B<not> the C<$VERSION> of this Perl
+distribution.
+
+In scalar context, returns the version as a string (eg. C<"3.18">). In list
+context, returns the C<($major, $minor)> integer pair (eg. C<(3, 18)>).
+
+The exported C-level C<wiringPiVersion()> always returns the version string.
 
 =head2 pin_mode($pin, $mode)
 

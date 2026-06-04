@@ -1,8 +1,8 @@
 # Plan: Upgrade WiringPi::API to wiringPi 3.18
 
-> **NEXT ACTION:** V3 — implement `wiringPiVersion` (exported but never defined in XS); Option A returns `"3.18"` string + add snake_case `wiringpi_version` wrapper
-> **LAST SESSION (2026-06-04):** Ran **V2 on `rpi1` — PASS**. Fixed the three broken camelCase C-exports (`wpiToGpio`→`wpiPinToGpio`, `lcdDefChar`→`lcdCharDef`, `lcdPutChar`→`lcdPutchar`) in `@wpi_c_functions` + a stray POD `lcdPutChar` ref; every C-export now resolves to a real XS sub, renamed names import while old names fail at `use`-time (documented impact), full `t/` suite green (47 tests). Prior: V1 PASS (baseline build clean; F9 gate cleared via `t/20-board_map_precheck.t`; F22 reproduced). Standing flags: V34 breaks RPi::WiringPi (downstream tracked under V33 + rpi-wiringpi's `refactor-setup-modes.md`); Phase 4 V26-V32 ⏸ HOLD.
-> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V2 archived)
+> **NEXT ACTION:** V4 — align XS prototypes with 3.18 headers (`lcdSendCommand` 2nd arg `char`→`unsigned char`; verify SPI/I2C/serial/lcd/softPwm/sr595 signatures match `~/repos/wiringPi/**/*.h`)
+> **LAST SESSION (2026-06-04):** Ran **V3 on `rpi1` — PASS**. Implemented `wiringPiVersion` XS (Option A string, CODE block) + snake_case `wiringpi_version` wrapper (scalar=string, list=`(major,minor)`) + POD; builds clean, returns `"3.18"`/`(3,18)`. New test `t/25-wiringpi_version.t` (7 assertions). Filed **B8** for pre-existing POD errors (2 unresolved internal links + whitespace warnings — not introduced by V3, candidate for V6's POD sweep). Prior: V1-V2 PASS. Full `t/` suite green (54 tests). Standing flags: V34 breaks RPi::WiringPi (downstream tracked under V33 + rpi-wiringpi's `refactor-setup-modes.md`); Phase 4 V26-V32 ⏸ HOLD.
+> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V3 archived)
 
 ## Goal
 
@@ -76,7 +76,6 @@ caveat assumed a different dev box and no longer applies.) Note: this is a
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V3 | Implement `wiringPiVersion` (exported at API.pm:28 but **never defined** in XS). 3.18 signature is `void wiringPiVersion(int *major, int *minor)`. **Decided: Option A (string)** — the XS wrapper returns `"3.18"` as a `char *` (`T_PV` copies the buffer, so a stack buf is safe): a CODE block declares local `int major, minor`, calls `wiringPiVersion(&major, &minor)`, `snprintf`s `"%d.%d"` into the buf, sets `RETVAL`. Keeps the exported camelCase `wiringPiVersion()` sane in scalar context. Add a snake_case `wiringpi_version` wrapper to `@wpi_perl_functions` returning the string in scalar context and the `(major, minor)` pair in list context (`wantarray`); `wiringPiVersion` is already in `@wpi_c_functions`. POD documents the return shape and notes it reports the **wiringPi library** version, not the Perl dist `$VERSION` (V6). | `perl -MExtUtils::ParseXS=process_file -e 'process_file(filename=>"API.xs",output=>"/tmp/API_check.c")'` && `perl -c -Ilib lib/WiringPi/API.pm` | XS parses; symbol present; syntax OK | ⏳ |
 | V4 | Align XS prototypes with 3.18 headers: `lcdSendCommand` 2nd arg `char`→`unsigned char` (API.xs:408-410 vs devLib/lcd.h:38); verify SPI / I2C / serial / lcd / softPwm / sr595 signatures in API.xs still match `~/repos/wiringPi/**/*.h` exactly | review each XS prototype against its header + `process_file` XS parse | every wrapped signature matches its 3.18 header; XS parses | ⏳ |
 | V5 | Makefile.PL: fix stale fallback message "Ensure version 2.36+" (Makefile.PL:31); confirm `LIBS => -lwiringPi -lwiringPiDev -lrt` and `INC` are still correct for 3.18 | `perl -c Makefile.PL` | syntax OK; message references 3.18 | ⏳ |
 | V6 | Version/metadata refresh: bump `$VERSION` 2.3617→3.1801 (API.pm:6, consumed by Makefile.PL `VERSION_FROM`); update POD DESCRIPTION "version 2.36+" → 3.18 (API.pm:550-552); refresh copyright year; sweep README for version refs. ⚠ consumer-facing (see Public API impact). **➡ NEXT IS V34, NOT V7** — V34 sits between V6 and V7 (out of numeric sequence) and must run before the V7 gate; on completing V6, set NEXT ACTION to V34. | `perl -c -Ilib lib/WiringPi/API.pm && podchecker lib/WiringPi/API.pm` | OK; no 2.36 references remain | ⏳ |
@@ -361,6 +360,8 @@ B5: Replace the hardcoded `phys_wpi_map` with a programmatic mapping (or wrap an
 B6: Decision for V2 — optionally keep `wpiToGpio` / `lcdDefChar` / `lcdPutChar` as working aliases to the correct subs, so existing `:all` / `:wiringPi` imports never break at `use` time and the old names start working instead of dying.
 
 B7: Deprecate the redundant XS `bmp180Pressure`/`bmp180Temp` aliases (F11) — they just call `analogRead`. Point the POD/Perl wrappers at `analog_read` and mark the C aliases deprecated; remove only after a release cycle to avoid breaking consumers that call them for raw values.
+
+B8: Fix pre-existing POD errors in `lib/WiringPi/API.pm` (found during V3, not introduced by it): two unresolved internal links — `L<ADC FUNCTIONS>` (the head1 is ` ADC FUNCTIONS` with a leading space, API.pm:~1197) and `L<digitalReadByte>` (no matching `=head2`/`=item` target) — plus three "line containing nothing but whitespace" warnings. `podchecker` reports 2 errors. Could be folded into V6's POD sweep.
 
 ## Explicitly NOT doing
 

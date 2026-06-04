@@ -335,6 +335,18 @@ analogWrite(pin, value)
     int pin
     int value
 
+char *
+wiringPiVersion()
+    CODE:
+        int major;
+        int minor;
+        char ver[16];
+        wiringPiVersion(&major, &minor);
+        snprintf(ver, sizeof(ver), "%d.%d", major, minor);
+        RETVAL = ver;
+    OUTPUT:
+        RETVAL
+
 #
 # board
 #

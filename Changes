@@ -5,6 +5,14 @@ Revision history for Perl extension WiringPi::API.
         - Completely rewrote the C pin interrupt routine to fix a bug where
           multiple interrupts did not work correctly
         - Update required version of wiringPi to 3.18
+        - fixed broken camelCase exports that resolved to no XS sub:
+          wpiToGpio -> wpiPinToGpio, lcdDefChar -> lcdCharDef,
+          lcdPutChar -> lcdPutchar
+        - implemented wiringPiVersion(), which was exported but never defined;
+          added wiringpi_version() returning the wiringPi library version (the
+          string in scalar context, a (major, minor) pair in list context)
+        - added t/20-board_map_precheck.t validating the phys/wpi/gpio pin maps
+          against the installed wiringPi, and t/25-wiringpi_version.t
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks
