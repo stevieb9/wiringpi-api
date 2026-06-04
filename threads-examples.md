@@ -49,6 +49,16 @@ process before spawning**; afterwards spawned contexts may freely
 
 ### 1. Dedicated interrupt thread
 
+**Why/when:** The ithread version of fork-based background interrupts — use it when
+you want shared-memory ergonomics (`:shared`) instead of IPC and have a threaded Perl.
+
+**Real-world:** A motion controller where a limit-switch ithread sets a `:shared`
+endstop-hit flag that the main motion loop checks each step — shared memory, no IPC.
+
+**Main & background:** The callback runs in the ithread's **own interpreter**,
+concurrently with main (fires while main is busy); it can't see main's lexicals —
+share only via `:shared` variables guarded by `lock`/`pi_lock`.
+
 The ithread alternative to `isr-examples.md` scenario 7 (fork). A dedicated
 ithread services the interrupt fd in its **own** interpreter while main is free to
 block/compute. Arm **and** dispatch inside the spawned thread.
@@ -87,6 +97,16 @@ sub heavy_work {
 
 ### 2. A worker on its own pins
 
+**Why/when:** Run a self-contained background task (its own GPIO) while main does
+its own work; simplest when the worker needs nothing from main.
+
+**Real-world:** A status heartbeat LED blinking on its own cadence while the main
+program does its real work.
+
+**Main & background:** The worker runs in its own interpreter, concurrently with
+main; it shares nothing with main unless declared `:shared`. Each should drive
+distinct pins.
+
 ```perl
 use strict;
 use warnings;
@@ -112,6 +132,16 @@ while (1) {
 ```
 
 ### 3. Sharing state safely between threads
+
+**Why/when:** When a worker produces values main consumes (or vice-versa) and you
+need them to cross the thread boundary safely.
+
+**Real-world:** A background thread sampling a temperature sensor into a `:shared`
+reading the main app (a web handler or display loop) reads on demand.
+
+**Main & background:** Both run concurrently in separate interpreters; only
+`:shared` variables are visible to both, and every read/modify must hold a
+`lock`/`pi_lock` or it races.
 
 Shared data must be `:shared`; serialize access with `pi_lock`/`pi_unlock` (keys
 0-3) or `threads::shared`'s `lock`.
@@ -149,6 +179,16 @@ while (1) {
 
 ### 4. The setup-once-in-main contract
 
+**Why/when:** The rule that keeps concurrent GPIO safe — configure once before
+spawning, then only steady-state I/O per thread.
+
+**Real-world:** A multi-channel relay board — main sets every pin mode up front,
+then one thread per relay toggles its own channel.
+
+**Main & background:** Config (`setup`/`pin_mode`) must happen in main before any
+thread exists; afterwards threads may `digital_read`/`digital_write` distinct pins
+concurrently, but must not reconfigure pins.
+
 Do all configuration up front, single-threaded; then let threads do steady-state
 I/O on distinct pins. **Never** call `setup()`/`pin_mode`/device `*Setup`
 concurrently (read-modify-write on shared registers).
@@ -172,6 +212,16 @@ while (1) {
 ```
 
 ### 5. Busy main, interrupt thread, and worker
+
+**Why/when:** The full picture — main computes, one thread handles an input,
+another drives an output, coordinating via `:shared`.
+
+**Real-world:** A thermostat — main runs the control algorithm, an ithread counts a
+flow-meter input, and another drives the heater relay, all sharing state.
+
+**Main & background:** Three interpreters running at once; the interrupt thread and
+worker touch main's state only through `:shared` + `pi_lock`, never its lexicals
+directly.
 
 Everything together: main computes, one ithread handles interrupts, another drives
 an output — coordinating through `:shared` state under `pi_lock`.
@@ -222,6 +272,16 @@ see `isr-examples.md` scenario 7.)
 
 ### 6. A worker via fork
 
+**Why/when:** Same as scenario 2 but as a separate process — no threaded Perl, full
+crash isolation; sharing needs IPC.
+
+**Real-world:** A camera-shutter subprocess that pulses a trigger GPIO on a
+schedule while the main program handles uploads — crash-isolated from main.
+
+**Main & background:** The worker is a separate process, truly concurrent and
+crash-isolated, but **cannot** touch main's variables (separate memory) — pass data
+via a pipe/shared memory; you reap it yourself.
+
 ```perl
 use strict;
 use warnings;
@@ -254,6 +314,16 @@ You reap the child yourself (`waitpid` or a `$SIG{CHLD}` handler), and passing
 data back to the parent needs IPC — there are no shared variables across a fork.
 
 ### 7. Periodic background tasks
+
+**Why/when:** Timer-driven, latest-value background work with crash-restart built
+in — ideal for periodic sampling.
+
+**Real-world:** Polling a BMP180 barometer every few seconds into a shared scalar
+the main app displays, with auto-restart if a read hiccups.
+
+**Main & background:** The callback runs in a forked child every interval; main
+reads the latest value via the module's `shared_scalar` (lossy — only the most
+recent value, not every sample). No direct variable sharing.
 
 For *periodic* work (poll a sensor, blink, telemetry) the fork + IPC + lifecycle
 plumbing is what `Async::Event::Interval` (a fork-based CPAN module) packages up —
@@ -294,6 +364,15 @@ at load time, so it does not compose with a hand-rolled `fork`/`waitpid`.
 ## Proposed convenience helpers
 
 ### 8. spawn_interrupt_handler and spawn_worker
+
+**Why/when:** Convenience wrappers that hide the `threads->create` + arm + loop
+boilerplate (you still write `use threads`).
+
+**Real-world:** The heartbeat LED (worker) and a button handler (interrupt), each
+set up in a single call instead of hand-rolling the thread.
+
+**Main & background:** Same as scenarios 1/2 under the hood — the handler/worker
+runs in its own ithread interpreter; share via `:shared`, not main's lexicals.
 
 > **Proposed (Backlog in `threads-patch.md`)** — not specced/built. Would hide the
 > `threads->create` + arm + loop boilerplate. You still write `use threads;` (it

@@ -1,7 +1,7 @@
 # Plan: Migrate interrupts to `wiringPiISR2` via a self-pipe
 
 > **NEXT ACTION:** V1 — on the Pi, confirm the installed `<wiringPi.h>` declares `wiringPiISR2` / `wiringPiISRStop` / `struct WPIWfiStatus` (≥ 3.16).
-> **LAST SESSION:** **Rewritten 2026-06-03.** Replaced the earlier dispatcher-thread draft with a **self-pipe** design after a thread-safety audit (embedded below). The foreign (wiringPi) ISR thread now only `write()`s an event to a pipe; all Perl dispatch happens in the consuming interpreter's own thread. This dissolves F17/F18/F19 and makes the module work on **both threaded and non-threaded Perl**. Background handling is shown with `fork` (no threaded Perl); ithread-based concurrency is parked (see `threads-patch.md` / `threads-examples.md`).
+> **LAST SESSION:** **2026-06-04.** Finalized the user-facing examples as `isr-examples-final.md` (11 fixes + changelog appendix) and ran a cross-model red-team with DS (Claude/DeepSeek): graded **A-**, converged. One real bug found & fixed in scenario 9's results-pipe drain — a non-`EINTR` `sysread` error (or EOF) busy-spins unless the fd is removed from the `IO::Select` set; corrected contract is **EINTR→retry, other-errno→`remove`+stop, EOF→`remove`+stop** (also took an idempotent `END` reaper, `$pid=undef` after `waitpid`). **V5 (`dispatch_interrupts`/`wait_interrupts`) and the V8 exercisers must mirror this drain contract.** Brought this plan's embedded fork example in line. `isr-examples-final.md` is finalized, awaiting your commit. (Design context — the 2026-06-03 self-pipe rewrite that dissolves F17/F18/F19 and works on threaded + non-threaded Perl — is in ## Why self-pipe + ## Thread-safety audit below.)
 > **ARCHIVE:** See isr-migration-archive.md for completed V tasks
 
 ## Goal
@@ -113,11 +113,13 @@ on the Mac). Off-Pi: parse/syntax only.
 | V2 | **Edge validation + constants (F23).** Validate `$edge` ∈ {`INT_EDGE_FALLING`=1, `RISING`=2, `BOTH`=3} (reject `SETUP`=0/junk); expose the four `INT_EDGE_*` constants to Perl. Order: `$pin`, then `$edge`, then `$callback`. | `perl -c -Ilib lib/WiringPi/API.pm` + XS parse | syntax/XS OK; bad edge croaks; constants importable | ⏳ |
 | V3 | **Wrap `wiringPiISRStop(int pin)`.** Thin XS wrap + `@wpi_c_functions` export. Needed for re-arm + teardown. (`waitForInterruptClose` is a legacy alias — wrap only `wiringPiISRStop`.) | XS parse + `perl -c` | XS parses; symbol present | ⏳ |
 | V4 | **Self-pipe core (F12 / F10 / F22).** Create a `pipe2()` (or `pipe`+`O_NONBLOCK`) at first arm; write end non-blocking. Add one generic `isr2_writer(struct WPIWfiStatus, void *userdata)` that builds a fixed record `{int pin; int edge; long long ts_us;}` (pin from `userdata`, **not** `wfiStatus.pinBCM`) and `write()`s it (count drops on `EAGAIN`). `_arm_interrupt(pin, edge, debounce)` calls `wiringPiISRStop(pin)` if re-arming, then `wiringPiISR2(pin, edge, isr2_writer, debounce, (void*)(intptr_t)pin)`. Expose `interrupt_fd()` (read end). **Delete** the 40 trampolines + `interrupt_handlers[]` + `MAKE_HANDLER`/`APPLY_TO_PINS`, the dead `interruptHandler()` (+ API.h decl + export), and `mine`/`perl_callbacks[]`/`event_queue`/mutex/cond/dispatcher. | XS parse + `perl -c` + grep that `interruptHandler_`/`mine`/`perl_callbacks`/`event_queue` are gone | XS parses; only `wiringPiISR2` + pipe remain; no dispatcher/trampoline residue | ⏳ |
-| V5 | **Perl-side dispatch.** Keep the callback registry in Perl: `set_interrupt($pin,$edge,$cb)` stores `$cb` in a lexical `%_interrupt_cb` (per-interpreter) then calls `_arm_interrupt`. Add `dispatch_interrupts()` (non-blocking: `sysread` all available 16-byte records from `interrupt_fd`, `unpack "i i q"`, call `$_interrupt_cb{$pin}->($edge, $ts_us)`) and `wait_interrupts($timeout_ms)` (`select` on the fd, then dispatch). Expose `interrupt_dropped()` (F24 overflow count). | `perl -c -Ilib lib/WiringPi/API.pm` | OK; dispatch reads records and fans out to callbacks | ⏳ |
+| V5 | **Perl-side dispatch.** Keep the callback registry in Perl: `set_interrupt($pin,$edge,$cb)` stores `$cb` in a lexical `%_interrupt_cb` (per-interpreter) then calls `_arm_interrupt`. Add `dispatch_interrupts()` (non-blocking: `sysread` all available 16-byte records from `interrupt_fd`, `unpack "i i q"`, call `$_interrupt_cb{$pin}->($edge, $ts_us)`; on a `sysread` `undef` retry only on `EINTR`, else stop, and treat `0`/EOF as terminal — never busy-spin, per the 2026-06-04 examples review) and `wait_interrupts($timeout_ms)` (`select` on the fd, then dispatch). Expose `interrupt_dropped()` (F24 overflow count). | `perl -c -Ilib lib/WiringPi/API.pm` | OK; dispatch reads records and fans out to callbacks | ⏳ |
 | V6 | **Teardown.** `stop_interrupt($pin)` = `wiringPiISRStop(pin)` + `delete $_interrupt_cb{$pin}`. `stop_interrupts()` = stop all armed pins, drain + close the pipe, reset state. No thread to join (the win of this design). Exports. | XS parse + `perl -c` | parses; teardown subs present | ⏳ |
 | V7 | **POD + concurrency contract.** Document `set_interrupt` (unchanged signature), `interrupt_fd`/`wait_interrupts`/`dispatch_interrupts`/`stop_interrupt(s)`, and the optional 4th `$debounce_us`. State plainly: single-threaded event-loop usage works on any Perl; for background handling, `fork` a child that arms + dispatches (no threaded Perl; see `isr-examples.md`). | `podchecker lib/WiringPi/API.pm` + `perl -c` | POD clean; both usage modes documented | ⏳ |
 | V8 | **Full gate (Pi).** `perl Makefile.PL && make && make test`. Exercisers: (a) **single-threaded** — arm, drive edges, `wait_interrupts` loop dispatches correct callbacks under **both** `setup()` (wpi 0 = BCM 17) and `setup_gpio()`; (b) **fork** — a child arms + loops `wait_interrupts` while main does other work (proves true background handling); re-arm twice (no stacked listener); `stop_interrupt(s)` clean. `valgrind --leak-check=full`: no leaks, no leaked fds. Update Changes (`3.1801 UNREL`). | `perl Makefile.PL && make && make test` + exercisers (Pi) | green; correct dispatch in both modes + background via fork; no leaks; Changes updated | ⏳ |
 | V9 | **Downstream gate (RPi::WiringPi).** Install converted module; run `t/200-interrupt_rising_and_pud.t`, `t/201-…falling…`, `t/202-…both…`, `build_testing/build/defacto_interrupt.pl`. Externally-observable behavior unchanged (rising/falling/both fire). Note new dispatch model if a consumer must call `wait_interrupts`. | `cd ~/repos/rpi-wiringpi && prove -Ilib t/200-interrupt_rising_and_pud.t t/201*.t t/202*.t` (Pi) | interrupt suite green on wired hardware | ⏳ |
+| V10 | **`background_interrupt` (hidden fork — additive convenience).** Wrap fork+arm+loop+reap so the user gets background handling in one call: `my $h = background_interrupt($pin, $edge, $cb [, $debounce_us])` forks; the **child** arms the interrupt and runs `$cb` on each edge; returns a handle with `$h->stop` (+ `pid`/`running`). Reap children explicitly by PID via an `END` block — **never** a global `$SIG{CHLD}`. Depends on V4-V6; build/verify with the V8 gate. Full spec in the design section below. | `perl -c` + Pi fork exerciser (handler fires; `stop` reaps; no zombie) | one-call background handler works; child reaped cleanly | ⏳ |
+| V11 | **Async auto-dispatch via `SIGIO` (optional).** `auto_dispatch(1)` puts the interrupt fd in async mode (`F_SETOWN`+`O_ASYNC`/`F_SETSIG`) and installs a `$SIG{IO}` handler that drains + dispatches, so `set_interrupt` callbacks fire **automatically in the main interpreter** with no `dispatch_interrupts`/loop. Runs at Perl op boundaries → lock-free shared state; document the long-non-yielding-C deferral and that it claims a process signal (save/restore the prior handler; offer an RT signal via `F_SETSIG`). Depends on V4-V5. | `perl -c` + Pi test (callback fires while main runs a Perl loop and during `sleep`; clean enable/disable) | callbacks fire with no loop; no signal leak | ⏳ |
 
 ## Example + code flow — Perl → `API.pm` → `API.xs` → wiringPi `wiringPi.c`
 
@@ -158,13 +160,19 @@ my $sel = IO::Select->new($rx);
 while (1) {
     # ... main's own work ...
     while ($sel->can_read(0)) {
-        last if ! sysread($rx, my $rec, 64);
+        my $n = sysread($rx, my $rec, 64);
+        if (!defined $n) {
+            last if $!{EINTR};         # signal: retry next pass
+            $sel->remove($rx); last;   # other error: stop watching, don't spin
+        }
+        if ($n == 0) { $sel->remove($rx); last }   # EOF: child gone — stop watching
         print "edge reported\n";
     }
 }
 ```
-(An ithread-based equivalent — shared vars instead of a pipe — is in
-`threads-examples.md`, parked.)
+(Canonical, reviewed version of this drain — with text line-framing — is
+`isr-examples-final.md`, scenario 9. An ithread-based equivalent — shared vars
+instead of a pipe — is in `threads-examples.md`, parked.)
 
 ### Arming — `set_interrupt(0, 2, \&cb)`
 
@@ -201,6 +209,152 @@ while (1) {
 Keying on `userdata` (0) — not `pinBCM` (17) — is what makes `$_interrupt_cb{0}`
 match under `setup()`; under `setup_gpio()` they'd coincide.
 
+## Design — `background_interrupt` (hidden fork, optional convenience)
+
+Goal: independent background interrupt handling with **one call and a callback** —
+the library owns the fork, the wait loop, and the cleanup. Convenience layer over
+`isr-examples.md` scenario 8 (manual fork), which stays as the under-the-hood
+reference. Pure ISR + `fork`; no threads.
+
+### Public API (provisional names)
+
+    my $h = background_interrupt($pin, $edge, $callback [, $debounce_us]);
+
+    $h->stop;        # stop: signal child, run its ISR teardown, reap it
+    $h->pid;         # child PID (diagnostic)
+    $h->running;     # true while the child is alive
+
+`$callback` receives `($edge, $timestamp_us)`. `background_interrupt` croaks on a
+bad pin/edge/coderef **before** forking.
+
+### The one semantic the user must know
+
+**The callback runs in the forked child, not in main.** It sees a copy-on-write
+snapshot of memory as of the call and cannot mutate main's variables — exactly
+right for *independent* handlers (drive a pin, log, send a message). Feeding a
+value back to main needs an explicit channel (see "Getting data back"); that is
+not part of the core call.
+
+### What it does internally
+
+1. Validate args; croak on error (failures surface in the parent, pre-fork).
+2. `fork()` (croak on failure).
+3. **Child:** install a `SIGTERM` handler that runs `stop_interrupt($pin)` then
+   `exit 0`; `set_interrupt($pin, $edge, $callback, $debounce_us)` — arming
+   **after** the fork is mandatory (wiringPi ISR pthreads don't survive `fork`);
+   then `wait_interrupts($timeout)` forever, running `$callback` directly on each
+   edge. No parent-child pipe is needed for fire-and-forget handlers — the only
+   pipe is the internal self-pipe inside the child.
+4. **Parent:** record the child PID in a small handle object and in a
+   module-private list; return the handle.
+
+### Lifecycle & safety
+
+- **`stop`:** `kill 'TERM'` -> poll briefly -> escalate to `kill 'KILL'` ->
+  `waitpid`. The child's TERM handler runs `wiringPiISRStop`, releasing the kernel
+  ISR and fds.
+- **No global signal hijack.** Reap **only our own** children, by PID
+  (`waitpid $pid, WNOHANG`). Do **not** set `$SIG{CHLD}='IGNORE'` — that breaks the
+  user's own `waitpid`/`system`.
+- **`END` block** reaps any still-running background children at exit, so a
+  forgotten `stop` can't leak a zombie or orphan a handler.
+- **`DESTROY`** stops the child when an owning handle goes out of scope.
+- **Croak before fork** on bad input — never fork into a guaranteed failure.
+
+### Caveats to document
+
+- **`fork` inherits open fds** (i2c/spi/serial handles, sockets). Recommend
+  calling `background_interrupt` **before** opening other long-lived resources, or
+  accept the duplication; the child needs only the inherited GPIO mmap + its own
+  self-pipe.
+- **Don't use in a program that has spawned ithreads** — `fork` + threads is
+  unsafe (not a concern on the ISR track).
+- **`setup()` + `pin_mode` run in the parent first** (audit contract); the child
+  inherits the configured state.
+
+### Getting data back (optional, not core)
+
+For independent handlers, nothing is needed. If a handler must report to main, add
+(opt-in, later): a shared-memory scalar the handle exposes (`$h->shared`), or a
+results pipe the parent drains (the scenario 8 pattern). Keep this out of the
+default call so the common case stays a one-liner. (Backlog B5.)
+
+### Multiplicity
+
+v1: one child per `background_interrupt` call (simple, isolated). A single shared
+child handling many pins is more efficient but needs a control channel to arm pins
+post-fork — defer unless wanted (Backlog B4).
+
+## Design — async auto-dispatch (`SIGIO`, optional)
+
+Goal: the closest safe analog to C's "fires on its own while busy," but with the
+callback running in **your own interpreter** touching your own variables — and
+**no dispatch loop** to write. Enable once; `set_interrupt` callbacks then fire
+automatically.
+
+### Public API (provisional)
+
+    auto_dispatch(1);     # enable: wire the interrupt fd to a signal + install handler
+    auto_dispatch(0);     # disable: restore fd flags + the prior signal handler
+
+    set_interrupt($pin, $edge, $cb);   # callbacks now fire on their own
+
+One global switch — nothing per-callback changes. (Could fold into a
+`set_interrupt` option later — Backlog B6.)
+
+### How it works
+
+1. Ensure the interrupt self-pipe exists; take its read fd.
+2. `fcntl` the read fd: `F_SETOWN => $$` (deliver the signal here) and `O_ASYNC`
+   (raise `SIGIO` when readable). Optionally `F_SETSIG` to deliver a dedicated
+   real-time signal instead, to avoid clashing with other `SIGIO` users.
+3. Install `$SIG{IO}` (or the chosen RT signal) = the same drain+dispatch logic as
+   `dispatch_interrupts()`.
+4. On an edge: wiringPi's C thread writes the record → the kernel signals this
+   process → Perl's **safe-signal** machinery runs the handler at the next opcode
+   boundary → your callback runs in the main interpreter.
+
+### Why it's safe without locks
+
+Perl safe signals run the handler **between** main's opcodes — never truly in
+parallel. The callback has exclusive use of the interpreter while it runs, so it
+can read/modify your program's variables with **no mutex and no data race**. That
+is the crucial difference from a C thread (genuinely parallel, needs locking).
+
+### When it fires (and when it doesn't)
+
+- **Fires:** during ordinary Perl execution (op boundaries — sub-ms latency), and
+  when main is blocked in a signal-interruptible syscall (`sleep`, `select`,
+  blocking `read` → `EINTR`).
+- **Deferred:** during a long, non-yielding **XS/C** call that never returns to the
+  run loop — the callback waits until it returns. (A real thread has no such gap;
+  this is the one thing auto-dispatch can't match — use `background_interrupt`
+  then.)
+
+### Caveats to document
+
+- **Claims a process signal.** `SIGIO` is process-global; `auto_dispatch` saves and
+  restores the prior `$SIG{IO}` on enable/disable, and an RT signal (`F_SETSIG`)
+  reduces collisions. Don't enable it if your program already drives
+  `SIGIO`/`O_ASYNC`.
+- **Keep callbacks short** — they run at an op boundary in the signal handler; a
+  slow callback stalls main. Bursts may coalesce into one signal, so the handler
+  drains **all** pending records.
+- **`O_ASYNC` on a pipe** works on Linux but verify on the Pi; a `socketpair` is a
+  reliable fallback for the self-pipe.
+- **Process ownership.** Enable in the process that should receive callbacks; if
+  you `fork` afterwards, fd-owner/signal settings are inherited — prefer
+  `background_interrupt` for the fork model rather than mixing the two.
+- **Not true preemption** — see "Deferred," above.
+
+### Relationship to the other modes
+
+Same self-pipe core (V4); auto-dispatch only changes *who pulls the trigger*: the
+kernel (a signal) here, your loop in cooperative mode, a forked child in
+`background_interrupt`. So: `auto_dispatch` = in-process + shared state + no loop;
+`background_interrupt` = separate process, fires even during long C; cooperative
+`dispatch_interrupts` = explicit control.
+
 ## Discovery Tracking
 
 _None yet._
@@ -212,6 +366,12 @@ B1: Pass the full `wfiStatus` to callbacks optionally — the record already car
 B2: Coalescing policy — document/expose whether bursts beyond the pipe buffer coalesce; `interrupt_dropped()` already surfaces the count (F24).
 
 B3: Provide a tiny built-in dispatch loop helper (e.g., `run_interrupt_loop()`) for users who don't want to write the `wait_interrupts while 1` themselves.
+
+B4: `background_interrupt` — a single shared background child handling many pins (with a control channel to arm pins post-fork), instead of one child per call.
+
+B5: `background_interrupt` — optional data-back channel (`$h->shared` shared-memory scalar, or a results pipe the parent drains) so a background handler can report a value to the parent.
+
+B6: `auto_dispatch` refinements — per-`set_interrupt` opt-in (vs the global switch), and a configurable delivery signal (default `SIGIO`, or a dedicated RT signal via `F_SETSIG`).
 
 ## Explicitly NOT doing
 
