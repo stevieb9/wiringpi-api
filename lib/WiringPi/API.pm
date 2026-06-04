@@ -18,11 +18,11 @@ my @wpi_c_functions = qw(
     wiringPiSetupPhys   pinMode             pullUpDnControl
     digitalRead         digitalWrite        digitalWriteByte
     pwmWrite            getAlt              piGpioLayout
-    wpiToGpio           physPinToGpio       pwmSetRange
+    wpiPinToGpio        physPinToGpio       pwmSetRange
     lcdInit             lcdHome             lcdClear
     lcdDisplay          lcdCursor           lcdCursorBlink
-    lcdSendCommand      lcdPosition         lcdDefChar
-    lcdPutChar          lcdPuts             setInterrupt
+    lcdSendCommand      lcdPosition         lcdCharDef
+    lcdPutchar          lcdPuts             setInterrupt
     sr595Setup          bmp180Setup         bmp180Pressure
     bmp180Temp          analogRead          analogWrite
     physPinToWpi        wiringPiVersion     ads1115Setup
@@ -1121,7 +1121,7 @@ call using the same index sent in to this function.
 
 =head2 lcd_put_char($fd, $char)
 
-Maps to C<void lcdPutChar(int fd, unsigned char data)>
+Maps to C<void lcdPutchar(int fd, unsigned char data)>
 
 Writes a single ASCII character to the LCD display, at the current cursor
 position.
