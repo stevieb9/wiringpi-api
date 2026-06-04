@@ -1,8 +1,8 @@
 # Plan: Upgrade WiringPi::API to wiringPi 3.18
 
-> **NEXT ACTION:** V7 — Phase 1 **full gate**: `perl Makefile.PL && make && make test` on the Pi. Precondition (setup_sys/setup_phys absent) is already satisfied by V34; `make test` already passes 54 tests as of the V34 work.
-> **LAST SESSION (2026-06-04):** Ran **V34 on `rpi1` — PASS** (BREAKING). Removed setup_sys/setup_phys + their XS wraps/exports/POD/README + `test/setup_phys.pl` via the `clean-setup-calls.md` breakdown (its V1-V10); only setup()/setup_gpio() remain. Downstream: created rpi-wiringpi branch `3.18` and dropped the `/^p/` phys dispatch branch (refactor-setup-modes.md V1). **Pulled V23's `interruptHandler` removal forward** (F10/F22) because the dangling symbol broke `make test` under bind-now — `make test` now passes 54 tests. Prior: V1-V6 PASS. Standing flags: Phase 4 V26-V32 ⏸ HOLD; B8 POD errors; V33 is the downstream full gate (needs upgraded module installed; note the *installed* WiringPi::API currently fails to load with an unrelated "executable stack" error — investigate at V33).
-> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V6, V34 archived)
+> **NEXT ACTION:** V9 — wrap timing/scheduling core (`delay`, `delayMicroseconds`, `millis`, `micros`, `piMicros64`, `piHiPri`) — XS + Perl + POD.
+> **LAST SESSION (2026-06-04):** Ran **V8 on `rpi1` — PASS**. Added Perl wrappers + exports + POD for soft_pwm_create/write/stop, pi_lock/pi_unlock, digital_read_byte/byte2, digital_write_byte/byte2; XS-sub audit clean (only `initThread` intentionally unexposed). New test `t/30-v8_wrappers.t` (64 total). **Discovery:** byte-bank ops abort the process on Pi5 (wiringPi `exit(1)`) → POD caveat + B9; test `can()`-checks them only. Dead export `testChar` found → raised **V35**. Prior: V1-V7 + V34 PASS. Standing flags: Phase 4 V26-V32 ⏸ HOLD; B8/B9; V35 (testChar); V33 downstream gate (installed WiringPi::API has an unrelated "executable stack" load error to investigate at V33); rpi-wiringpi cleanup continues under `refactor-setup-modes.md` V2-V9.
+> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V8, V34 archived)
 
 ## Goal
 
@@ -77,13 +77,11 @@ caveat assumed a different dev box and no longer applies.) Note: this is a
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V7 | **Full gate** — Phase 1 exit: build, link and run the suite on a Pi with wiringPi 3.18; every previously-wrapped call still works. **Precondition — V34 must already be done:** grep that `setup_sys`/`setup_phys`/`wiringPiSetupSys`/`wiringPiSetupPhys` are absent from API.pm/API.xs/README/POD/exports; if any remain, V34 was skipped — complete V34 (and its downstream RPi::WiringPi edit) before this gate. | `perl Makefile.PL && make && make test` (on Pi) | compiles, links clean, tests pass; no `setup_sys`/`setup_phys` symbols remain (V34 confirmed) | ⏳ |
 
 ### Phase 2 — Coverage (wrap 3.18 calls we don't expose yet)
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V8 | Surface XS subs that have no Perl layer: `softPwmCreate/Write/Stop` (API.xs:436-448), `piLock/piUnlock` (API.xs:460-465), `digitalReadByte(/2)`, `digitalWriteByte(/2)` (API.xs:514-526). Add snake_case wrappers + exports + POD. Audit every XS sub against `@wpi_perl_functions` so none is silently unreachable | `perl -c -Ilib lib/WiringPi/API.pm` + grep audit (each XS sub is exported or intentionally internal) | OK; audit shows no orphaned XS subs | ⏳ |
 | V9 | Wrap timing/scheduling core (wiringPi.h:320-329): `delay`, `delayMicroseconds`, `millis`, `micros`, `piMicros64`, `piHiPri` — XS + Perl + POD | XS `process_file` parse + `perl -c` | parses; syntax OK | ⏳ |
 | V10 | Wrap the four functions flagged "not yet implemented" in API.xs:273-280: `setPadDrive`, `setPadDrivePin`, `pwmToneWrite`, `gpioClockSet`; delete that stale comment block | XS parse + `perl -c` | parses | ⏳ |
 | V11 | Wrap board/identity helpers: `piBoardId`, `piBoard40Pin` (V3.7), `piRP1Model` (V3.14), `getPinModeAlt` (V3.5), `wiringPiGlobalMemoryAccess` (V3.3), `wiringPiUserLevelAccess` (wiringPi.h:228-289) | XS parse + `perl -c` | parses | ⏳ |
@@ -104,6 +102,7 @@ caveat assumed a different dev box and no longer applies.) Note: this is a
 | V21 | Fix **F4/F5**: replace `exit()` calls in XS `serialGets` (API.xs:40) and `spiDataRW` (API.xs:85-86) with `croak` — they currently kill the interpreter; drop the VLA `unsigned char buf[num_bytes]` (API.xs:75) | XS `process_file` parse | parses; no `exit(` in those fns | ⏳ |
 | V22 | Fix **F6**: `#define PERL_NO_GET_CONTEXT` sits *after* the perl.h include (API.xs:30) so it has no effect; move it above the perl headers | XS `process_file` parse | parses; macro precedes perl.h | ⏳ |
 | V23 | Fix **F7/F8** (~~F10~~ done): remove duplicate `pwm_set_range` in `@wpi_perl_functions` (API.pm:42 & 52); review/justify or drop the stray `lcdPuts($fd,"\n")` in `lcd_char_def` (API.pm:301). **F10/F22 already done** — the dead `interruptHandler()` XS export + `API.h` decl were removed during V34 (pulled forward because the dangling symbol broke `make test` under bind-now; see clean-setup-calls.md Fix 1). ⚠ consumer-facing (see Public API impact) | `perl -c` + XS parse | OK | ⏳ |
+| V35 | **Remove dead `testChar` export** (found during V8 audit): `testChar` is in `@wpi_perl_functions` (API.pm:49 → `:all`/`:perl`/`@EXPORT_OK`) but has **no XS sub and no Perl sub** — importing it succeeds, calling it dies (same class as the V2 camelCase orphans). Remove the token; no real target exists. ⚠ consumer-facing: an `:all`/explicit import of `testChar` will fail at `use` time instead of dying on call (document under Public API impact alongside V2). | `perl -c -Ilib lib/WiringPi/API.pm` + grep `testChar` absent from exports | OK; `testChar` gone; no dangling export | ⏳ |
 | V24 | Formal review pass: interrupt subsystem (dispatcher thread lifecycle, per-pin callback refcounting at API.xs:204-229, shutdown path; **F12** — evaluate replacing the 40 trampolines + global callback array with one generic `wiringPiISR2` handler once V13 lands; carry the user-scheme pin via `userdata`, **not** `wfiStatus.pinBCM`, and keep the single dispatcher — see F12) and **F9** — audit the hardcoded `phys_wpi_map` (API.h:64-99) for Pi5/RP1 correctness (wiringPi warns against wpi/phys mapping outside 0-63 on RP1). Log any new findings as F22+ | review (record findings in `## Review Findings`) | findings logged; fixes scheduled as new V#/B# | ⏳ |
 | V25 | **Full gate** — Phase 3 exit: final `perl Makefile.PL && make && make test` on a Pi plus targeted hardware sanity; update Changes (bottom of the `3.1801 UNREL` section) | `perl Makefile.PL && make && make test` (on Pi) | all green; Changes updated | ⏳ |
 
@@ -302,7 +301,7 @@ the calls wrapped in Phase 2 make them redundant.
 
 ## Discovery Tracking
 
-_None yet._
+- Found during **V8** (audit), non-blocking → raised as **V35**: `testChar` is exported via `@wpi_perl_functions` but has no XS or Perl implementation (dead export, dies on call). Not fixed during V8 (consumer-facing export removal warrants its own task + Public API note).
 
 ## Review Findings
 
@@ -359,6 +358,8 @@ B6: Decision for V2 — optionally keep `wpiToGpio` / `lcdDefChar` / `lcdPutChar
 B7: Deprecate the redundant XS `bmp180Pressure`/`bmp180Temp` aliases (F11) — they just call `analogRead`. Point the POD/Perl wrappers at `analog_read` and mark the C aliases deprecated; remove only after a release cycle to avoid breaking consumers that call them for raw values.
 
 B8: Fix pre-existing POD errors in `lib/WiringPi/API.pm` (found during V3, not introduced by it): two unresolved internal links — `L<ADC FUNCTIONS>` (the head1 is ` ADC FUNCTIONS` with a leading space, API.pm:~1197) and `L<digitalReadByte>` (no matching `=head2`/`=item` target) — plus three "line containing nothing but whitespace" warnings. `podchecker` reports 2 errors. Could be folded into V6's POD sweep.
+
+B9: Pi5 hard-abort on byte-bank ops (found during V8). On a Raspberry Pi 5, wiringPi's `digitalReadByte`/`digitalReadByte2`/`digitalWriteByte`/`digitalWriteByte2` are unsupported and the C library calls `exit(1)` — so calling any of the new `digital_*_byte` wrappers there kills the consumer's process (can't even be `eval`'d around). Documented as a POD caveat in V8. Consider a defensive guard (e.g. detect Pi5 via `piBoardId`/`piRP1Model` once V11 lands and `croak` instead of letting wiringPi abort). Their runtime test (`t/30-v8_wrappers.t`) is `can()`-only for this reason.
 
 ## Explicitly NOT doing
 

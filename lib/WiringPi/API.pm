@@ -51,6 +51,9 @@ my @wpi_perl_functions = qw(
     serial_put_char serial_puts     serial_data_avail   serial_get_char 
     serial_close    serial_gets     pwm_set_range       pwm_set_clock
     pwm_set_mode    wiringpi_version
+    soft_pwm_create soft_pwm_write   soft_pwm_stop       pi_lock
+    pi_unlock       digital_read_byte                    digital_read_byte2
+    digital_write_byte                  digital_write_byte2
 );
 
 our @EXPORT_OK;
@@ -207,6 +210,22 @@ sub analog_write {
     my ($pin, $value) = @_;
     return analogWrite($pin, $value);
 }
+sub digital_read_byte {
+    return digitalReadByte();
+}
+sub digital_read_byte2 {
+    return digitalReadByte2();
+}
+sub digital_write_byte {
+    shift if @_ == 2;
+    my ($value) = @_;
+    digitalWriteByte($value);
+}
+sub digital_write_byte2 {
+    shift if @_ == 2;
+    my ($value) = @_;
+    digitalWriteByte2($value);
+}
 
 # board functions
 
@@ -242,6 +261,37 @@ sub pwm_set_mode {
     shift if @_ > 1;
     my $mode = shift;
     pwmSetMode($mode);
+}
+
+# soft pwm functions
+
+sub soft_pwm_create {
+    shift if @_ == 4;
+    my ($pin, $value, $range) = @_;
+    return softPwmCreate($pin, $value, $range);
+}
+sub soft_pwm_write {
+    shift if @_ == 3;
+    my ($pin, $value) = @_;
+    softPwmWrite($pin, $value);
+}
+sub soft_pwm_stop {
+    shift if @_ == 2;
+    my ($pin) = @_;
+    softPwmStop($pin);
+}
+
+# thread/lock functions
+
+sub pi_lock {
+    shift if @_ == 2;
+    my ($key) = @_;
+    piLock($key);
+}
+sub pi_unlock {
+    shift if @_ == 2;
+    my ($key) = @_;
+    piUnlock($key);
 }
 
 # lcd functions
@@ -838,6 +888,44 @@ Parameters:
 Mandatory: The pin number, in the pin numbering scheme dictated by whichever
 C<setup*()> routine you used.
 
+=head2 digital_read_byte()
+
+Maps to C<unsigned int digitalReadByte()>
+
+Reads all eight bits of the first 8-bit GPIO bank at once and returns the value
+as a single integer (C<0>-C<255>).
+
+B<Note:> the byte-bank operations (C<digital_read_byte()>,
+C<digital_read_byte2()>, C<digital_write_byte()>, C<digital_write_byte2()>) are
+B<not supported on the Raspberry Pi 5>. On a Pi 5, the underlying wiringPi call
+prints a diagnostic and terminates the process.
+
+=head2 digital_read_byte2()
+
+Maps to C<unsigned int digitalReadByte2()>
+
+As C<digital_read_byte()>, but reads the second 8-bit GPIO bank.
+
+=head2 digital_write_byte($value)
+
+Maps to C<void digitalWriteByte(int value)>
+
+Writes the 8-bit C<$value> (C<0>-C<255>) to the first 8-bit GPIO bank in a
+single operation.
+
+Parameters:
+
+    $value
+
+Mandatory: An integer C<0>-C<255>; each bit is written to the corresponding pin
+of the bank.
+
+=head2 digital_write_byte2($value)
+
+Maps to C<void digitalWriteByte2(int value)>
+
+As C<digital_write_byte()>, but writes to the second 8-bit GPIO bank.
+
 =head1 BOARD FUNCTIONS
 
 =head2 gpio_layout()
@@ -934,6 +1022,90 @@ Mandatory, Integer: C<0> for Mark-Space mode, or C<1> for Balanced mode.
 
 Note: If using L<RPi::WiringPi::Constant>, you can use C<PWM_MODE_MS> or
 C<PWM_MODE_BAL>.
+
+=head1 SOFT PWM FUNCTIONS
+
+Software-driven PWM on any GPIO pin. See
+L<wiringPi softPwm page|http://wiringpi.com/reference/software-pwm-library/>.
+
+=head2 soft_pwm_create($pin, $value, $range)
+
+Maps to C<int softPwmCreate(int pin, int value, int range)>
+
+Creates a software-controlled PWM pin. Returns C<0> on success.
+
+Parameters:
+
+    $pin
+
+Mandatory: The pin number, in the pin numbering scheme dictated by whichever
+C<setup*()> routine you used.
+
+    $value
+
+Mandatory: The initial duty-cycle value, between C<0> and C<$range>.
+
+    $range
+
+Mandatory: The PWM range (a typical value is C<100>).
+
+=head2 soft_pwm_write($pin, $value)
+
+Maps to C<void softPwmWrite(int pin, int value)>
+
+Updates the PWM duty-cycle value on a pin previously set up with
+C<soft_pwm_create()>.
+
+Parameters:
+
+    $pin
+
+Mandatory: The pin number.
+
+    $value
+
+Mandatory: The new duty-cycle value, between C<0> and the range the pin was
+created with.
+
+=head2 soft_pwm_stop($pin)
+
+Maps to C<void softPwmStop(int pin)>
+
+Stops software PWM on the given pin.
+
+Parameters:
+
+    $pin
+
+Mandatory: The pin number.
+
+=head1 THREAD/LOCK FUNCTIONS
+
+Mutex locks provided by wiringPi for synchronising access between threads.
+
+=head2 pi_lock($key)
+
+Maps to C<void piLock(int key)>
+
+Acquires the lock identified by C<$key>, waiting until it is available.
+
+Parameters:
+
+    $key
+
+Mandatory: The lock number, C<0> to C<3>.
+
+=head2 pi_unlock($key)
+
+Maps to C<void piUnlock(int key)>
+
+Releases the lock identified by C<$key>.
+
+Parameters:
+
+    $key
+
+Mandatory: The lock number, C<0> to C<3>.
 
 =head1 LCD FUNCTIONS
 

@@ -24,6 +24,11 @@ Revision history for Perl extension WiringPi::API.
         - BREAKING: removed setup_sys()/setup_phys() and the backing
           wiringPiSetupSys()/wiringPiSetupPhys() XS wraps; only setup() and
           setup_gpio() remain supported
+        - added Perl wrappers + exports + POD for XS subs that previously had no
+          Perl layer: soft_pwm_create/soft_pwm_write/soft_pwm_stop,
+          pi_lock/pi_unlock, and digital_read_byte/digital_read_byte2/
+          digital_write_byte/digital_write_byte2 (the byte-bank ops are
+          unsupported on the Raspberry Pi 5 - see POD)
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks
