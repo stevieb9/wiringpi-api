@@ -32,6 +32,9 @@ Revision history for Perl extension WiringPi::API.
         - wrapped the timing/scheduling core: delay, delayMicroseconds
           (delay_microseconds), millis, micros, piMicros64 (pi_micros64) and
           piHiPri (pi_hi_pri) - XS + Perl + POD
+        - implemented the previously-unimplemented setPadDrive (set_pad_drive),
+          setPadDrivePin (set_pad_drive_pin), pwmToneWrite (pwm_tone_write) and
+          gpioClockSet (gpio_clock_set) - XS + Perl + POD
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

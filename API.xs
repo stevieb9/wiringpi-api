@@ -270,15 +270,6 @@ int bmp180Temp(int pin){
     return analogRead(pin);
 }
 
-/*
-    not yet implemented
-
-    extern          void setPadDrive         (int group, int value) ;
-    extern          void pwmToneWrite        (int pin, int freq) ;
-    extern          void gpioClockSet        (int pin, int freq) ;
-
-*/
-
 MODULE = WiringPi::API  PACKAGE = WiringPi::API PREFIX = XS_
 
 PROTOTYPES: DISABLE
@@ -493,6 +484,28 @@ piMicros64()
 int
 piHiPri(pri)
     int pri
+
+# pad drive / pwm tone / gpio clock
+
+void
+setPadDrive(group, value)
+    int group
+    int value
+
+void
+setPadDrivePin(pin, value)
+    int pin
+    int value
+
+void
+pwmToneWrite(pin, freq)
+    int pin
+    int freq
+
+void
+gpioClockSet(pin, freq)
+    int pin
+    int freq
 
 # bmp180 pressure sensor
 

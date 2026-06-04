@@ -1,8 +1,8 @@
 # Plan: Upgrade WiringPi::API to wiringPi 3.18
 
-> **NEXT ACTION:** V10 — wrap the four "not yet implemented" functions (API.xs comment block): `setPadDrive`, `setPadDrivePin`, `pwmToneWrite`, `gpioClockSet`; delete the stale comment block.
-> **LAST SESSION (2026-06-04):** Ran **V9 on `rpi1` — PASS**. Wrapped timing core: delay/delayMicroseconds/millis/micros/piMicros64/piHiPri (XS+Perl+POD); delay/millis/micros under :wiringPi (avoid same-name shadow), snake wrappers delay_microseconds/pi_micros64/pi_hi_pri under :perl; piMicros64 as uint64_t (T_UV). New test `t/35-timing.t`; `make test` 78 tests pass (bind-now). Prior: V1-V8 + V34 PASS. Standing flags: Phase 4 V26-V32 ⏸ HOLD; B8/B9; V35 (testChar); V33 downstream gate (installed WiringPi::API has an unrelated "executable stack" load error to investigate at V33); rpi-wiringpi cleanup continues under `refactor-setup-modes.md` V2-V9.
-> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V9, V34 archived)
+> **NEXT ACTION:** V11 — wrap board/identity helpers: `piBoardId`, `piBoard40Pin`, `piRP1Model`, `getPinModeAlt`, `wiringPiGlobalMemoryAccess`, `wiringPiUserLevelAccess`.
+> **LAST SESSION (2026-06-04):** Ran **V10 on `rpi1` — PASS**. Wrapped setPadDrive/setPadDrivePin/pwmToneWrite/gpioClockSet (XS+Perl+POD), deleted the stale "not yet implemented" comment. New test `t/40-pad_tone_clock.t` (can()-only — hardware-driving/possibly Pi5-unsupported); `make test` 86 tests pass. Prior: V1-V9 + V34 PASS. Standing flags: Phase 4 V26-V32 ⏸ HOLD; B8/B9; V35 (testChar); V33 downstream gate (installed WiringPi::API has an unrelated "executable stack" load error to investigate at V33); rpi-wiringpi cleanup continues under `refactor-setup-modes.md` V2-V9.
+> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V10, V34 archived)
 
 ## Goal
 
@@ -82,7 +82,6 @@ caveat assumed a different dev box and no longer applies.) Note: this is a
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V10 | Wrap the four functions flagged "not yet implemented" in API.xs:273-280: `setPadDrive`, `setPadDrivePin`, `pwmToneWrite`, `gpioClockSet`; delete that stale comment block | XS parse + `perl -c` | parses | ⏳ |
 | V11 | Wrap board/identity helpers: `piBoardId`, `piBoard40Pin` (V3.7), `piRP1Model` (V3.14), `getPinModeAlt` (V3.5), `wiringPiGlobalMemoryAccess` (V3.3), `wiringPiUserLevelAccess` (wiringPi.h:228-289) | XS parse + `perl -c` | parses | ⏳ |
 | V12 | Wrap the new 3.3 setup variants: `wiringPiSetupPinType`, `wiringPiSetupGpioDevice`, `wiringPiGpioDeviceGetFd` (wiringPi.h:235-257); expose `enum WPIPinType` constants | XS parse + `perl -c` | parses | ⏳ |
 | V13 | Wrap interrupt additions: `wiringPiISRStop` (V3.2 — needed for clean teardown of our dispatcher), `wiringPiISR2` + `waitForInterrupt2` (V3.16, `struct WPIWfiStatus`) (wiringPi.h:306-310) | XS parse + `perl -c` | parses | ⏳ |

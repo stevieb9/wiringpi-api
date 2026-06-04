@@ -35,6 +35,8 @@ my @wpi_c_functions = qw(
     serialGetchar       pwmSetClock         pwmSetMode
     delay               delayMicroseconds   millis
     micros              piMicros64          piHiPri
+    setPadDrive         setPadDrivePin      pwmToneWrite
+    gpioClockSet
 );
 
 my @wpi_perl_functions = qw(
@@ -57,6 +59,7 @@ my @wpi_perl_functions = qw(
     pi_unlock       digital_read_byte                    digital_read_byte2
     digital_write_byte                  digital_write_byte2
     delay_microseconds                  pi_micros64         pi_hi_pri
+    set_pad_drive   set_pad_drive_pin   pwm_tone_write      gpio_clock_set
 );
 
 our @EXPORT_OK;
@@ -314,6 +317,29 @@ sub pi_hi_pri {
     shift if @_ == 2;
     my ($pri) = @_;
     return piHiPri($pri);
+}
+
+# pad drive / pwm tone / gpio clock functions
+
+sub set_pad_drive {
+    shift if @_ == 3;
+    my ($group, $value) = @_;
+    setPadDrive($group, $value);
+}
+sub set_pad_drive_pin {
+    shift if @_ == 3;
+    my ($pin, $value) = @_;
+    setPadDrivePin($pin, $value);
+}
+sub pwm_tone_write {
+    shift if @_ == 3;
+    my ($pin, $freq) = @_;
+    pwmToneWrite($pin, $freq);
+}
+sub gpio_clock_set {
+    shift if @_ == 3;
+    my ($pin, $freq) = @_;
+    gpioClockSet($pin, $freq);
 }
 
 # lcd functions
@@ -1182,6 +1208,73 @@ Parameters:
     $priority
 
 Mandatory: The priority, C<0> (lowest) to C<99> (highest).
+
+=head1 PAD DRIVE / TONE / CLOCK FUNCTIONS
+
+=head2 set_pad_drive($group, $value)
+
+Maps to C<void setPadDrive(int group, int value)>
+
+Sets the drive strength for a group of GPIO pins.
+
+Parameters:
+
+    $group
+
+Mandatory: The pad group (C<0>, C<1> or C<2>).
+
+    $value
+
+Mandatory: The drive strength, C<0> to C<7>.
+
+=head2 set_pad_drive_pin($pin, $value)
+
+Maps to C<void setPadDrivePin(int pin, int value)>
+
+Sets the drive strength for a single GPIO pin.
+
+Parameters:
+
+    $pin
+
+Mandatory: The pin number, in the pin numbering scheme dictated by whichever
+C<setup*()> routine you used.
+
+    $value
+
+Mandatory: The drive strength, C<0> to C<7>.
+
+=head2 pwm_tone_write($pin, $freq)
+
+Maps to C<void pwmToneWrite(int pin, int freq)>
+
+Writes a tone of the given frequency (in Hz) to a PWM-capable pin.
+
+Parameters:
+
+    $pin
+
+Mandatory: The pin number.
+
+    $freq
+
+Mandatory: The frequency in Hz. A frequency of C<0> stops the tone.
+
+=head2 gpio_clock_set($pin, $freq)
+
+Maps to C<void gpioClockSet(int pin, int freq)>
+
+Sets the output frequency (in Hz) on a GPIO clock pin.
+
+Parameters:
+
+    $pin
+
+Mandatory: The pin number.
+
+    $freq
+
+Mandatory: The clock frequency in Hz.
 
 =head1 LCD FUNCTIONS
 
