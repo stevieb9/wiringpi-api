@@ -192,10 +192,18 @@ sub serial_get_char {
 sub serial_gets {
     shift if @_ > 2;
     my ($fd, $nbytes) = @_;
-    my $buf = "";
-    my $char_ptr = serialGets($fd, $buf, $nbytes);
-    my $unpacked = unpack "A*", $char_ptr;
-    return $unpacked;
+
+    if (! defined $fd) {
+        croak "serial_gets() requires the \$fd param";
+    }
+    if (! defined $nbytes || $nbytes !~ /^\d+$/) {
+        croak "serial_gets() requires \$nbytes, and it must be a " .
+              "non-negative integer";
+    }
+
+    # Returns the exact bytes read (binary-safe); may be shorter than
+    # $nbytes if the port's read timeout elapsed first.
+    return serialGets($fd, $nbytes);
 }
 
 # interrupt functions
@@ -3157,6 +3165,31 @@ Mandatory, Integer: The file descriptor returned by your call to C<serial_open()
     $string
 
 Mandatory, String: The content to write to the device.
+
+=head2 serial_gets($fd, $nbytes)
+
+Reads up to C<$nbytes> bytes from the serial interface and returns them as a
+single string.
+
+The read blocks only until the port's configured read timeout (the C<VTIME>
+value set by C<serial_open()>) elapses, so the returned string may be B<shorter>
+than C<$nbytes> if fewer bytes arrived in time (or the device closed). The
+result is binary-safe: embedded C<NUL> bytes and trailing whitespace are
+preserved exactly as received.
+
+Parameters:
+
+    $fd
+
+Mandatory, Integer: The file descriptor returned by your call to C<serial_open()>.
+
+    $nbytes
+
+Mandatory, Integer: The maximum number of bytes to read. Must be a non-negative
+integer.
+
+Returns: A string of the bytes actually read (length C<0> to C<$nbytes>). Croaks
+on a read error.
 
 =head1 I2C FUNCTIONS
 

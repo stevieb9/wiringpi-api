@@ -32,24 +32,6 @@
 #include <softTone.h>
 #include <sr595.h>
 
-char* serialGets(int fd, char* buf, int nbytes){
-    int bytes_read = 0;
-
-    while (bytes_read < nbytes){
-        int result = read(fd, buf + bytes_read, nbytes - bytes_read);
-        
-        if (0 >= result){
-            if (0 > result){
-                croak("serialGets: read error: %s\n", strerror(errno));
-            }
-            break;
-        }
-        bytes_read += result;
-    }
-
-    return buf;
-}
-
 void spiDataRW(int channel, SV* byte_ref, int len){
 
      /*
@@ -773,7 +755,38 @@ int serialDataAvail (fd)
 int serialGetchar (fd)
     int fd
 
-char* serialGets(fd, buf, nbytes)
+void
+serialGets(fd, nbytes)
     int fd
-    char* buf
     int nbytes
+    PREINIT:
+        char *buf;
+        int got = 0;
+        int flags;
+        int result;
+    PPCODE:
+        if (nbytes < 0)
+            croak("serialGets: nbytes must be a non-negative integer");
+        /* wiringPi's serialOpen() sets O_NONBLOCK, which defeats the port's
+           VMIN/VTIME read timeout. Clear it so a read blocks up to that
+           timeout instead of returning EAGAIN immediately. */
+        flags = fcntl(fd, F_GETFL, 0);
+        if (flags != -1 && (flags & O_NONBLOCK))
+            fcntl(fd, F_SETFL, flags & ~O_NONBLOCK);
+        Newx(buf, nbytes > 0 ? nbytes : 1, char);
+        while (got < nbytes) {
+            result = read(fd, buf + got, nbytes - got);
+            if (result > 0) {
+                got += result;
+                continue;
+            }
+            if (result == 0)
+                break;                  /* VTIME timeout or EOF */
+            if (errno == EINTR)
+                continue;               /* interrupted by a signal; retry */
+            Safefree(buf);
+            croak("serialGets: read error: %s", strerror(errno));
+        }
+        ST(0) = sv_2mortal(newSVpvn(buf, got));
+        Safefree(buf);
+        XSRETURN(1);
