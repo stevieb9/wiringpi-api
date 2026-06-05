@@ -1,13 +1,11 @@
 # WiringPi::API — interrupt (ISR) usage examples
 
-> **Status — design-stable, implementation-provisional.** The example *patterns*
-> below are settled and consistent with the spec (`isr-migration.md`); the **API
-> they call is not implemented yet** (validation tasks V1–V11 pending) and
-> names/signatures are subject to verification. As of this writing `API.xs` still
-> ships the older dispatcher-thread design these examples replace, so the snippets
-> here **will not run until the self-pipe rewrite lands**. This doc is **ISR-only
-> and uses no `use threads`** — general concurrency/worker examples live in
-> `threads-examples.md` (currently parked).
+> **Status — implemented and shipping.** The self-pipe interrupt API described
+> here is implemented in `WiringPi::API` 3.18 and verified on Pi 5 hardware; the
+> snippets run as written. This doc is **ISR-only and uses no `use threads`** —
+> general concurrency/worker examples live in `threads-examples.md` (parked).
+> Callbacks fire in your own interpreter when you service dispatch, so they work
+> on **any** Perl, threaded or not.
 
 ## Table of contents
 
@@ -24,9 +22,11 @@
   - [7. Fire with no loop (auto_dispatch_interrupts)](#7-fire-with-no-loop-auto_dispatch_interrupts)
   - [8. A background process (background_interrupt)](#8-a-background-process-background_interrupt)
   - [9. Under the hood: manual fork](#9-under-the-hood-manual-fork)
+  - [10. Many pins in one background child (background_interrupts)](#10-many-pins-in-one-background-child-background_interrupts)
 - [Non-threaded Perl](#non-threaded-perl)
 - [Anti-patterns to avoid](#anti-patterns-to-avoid)
 - [API reference for these examples](#api-reference-for-these-examples)
+- [Code flow — Perl → API.pm → API.xs → wiringPi](#code-flow--perl--apipm--apixs--wiringpi)
 - [What changed vs `isr-examples.md`](#what-changed-vs-isr-examplesmd)
 
 ## About these examples
@@ -65,6 +65,7 @@ None of these need `use threads`. To hide the most plumbing, prefer the first tw
 |---|---|
 | Attach a handler and forget it; it updates my program's state | [7](#7-fire-with-no-loop-auto_dispatch_interrupts) (`auto_dispatch_interrupts`) |
 | Independent handler that fires even during long/blocking work | [8](#8-a-background-process-background_interrupt) (`background_interrupt`) |
+| The same, but several pins in one background process | [10](#10-many-pins-in-one-background-child-background_interrupts) (`background_interrupts`) |
 | React to a pin while running my own loop, on my terms | [1](#1-cooperative-dispatch-in-your-main-loop), [3](#3-event-loop-integration-with-the-interrupt-fd) |
 | A program whose only job is reacting to pins | [2](#2-blocking-wait-loop) |
 | Several pins, each with its own handler | [4](#4-multiple-pins-and-callbacks) |
@@ -157,6 +158,19 @@ sub on_change {
 }
 ```
 
+**Shortcut.** If the loop is literally just `wait_interrupts while 1`, call the
+built-in helper instead of writing it yourself:
+
+```perl
+run_interrupt_loop(1000);             # blocks, dispatching, forever
+run_interrupt_loop(1000, 50);         # ... or until 50 events have fired
+```
+
+It returns the number of events dispatched and stops when `stop_interrupt_loop()`
+is called (from inside a callback, or a signal handler) or after the optional
+event cap. When nothing is armed it sleeps the poll interval instead of
+busy-spinning.
+
 ### 3. Event-loop integration with the interrupt fd
 
 **Why/when:** You already run an event loop (AnyEvent/IO::Async) or juggle
@@ -236,6 +250,23 @@ sub sensor {
 }
 ```
 
+**One shared handler for several pins.** The callback only receives
+`($edge, $ts_us)`, not the pin. If you arm the *same* coderef on multiple pins,
+call `last_interrupt()` inside it to recover which pin (and the BCM number)
+fired:
+
+```perl
+my $cb = sub {
+    my $i = last_interrupt();   # { pin, pin_bcm, edge, status, ts_us }
+    printf "pin %d (BCM %d) edge %d\n", $i->{pin}, $i->{pin_bcm}, $i->{edge};
+};
+set_interrupt($_, INT_EDGE_BOTH, $cb) for (0, 2, 3);
+```
+
+`last_interrupt()` returns a hash reference describing the most recently
+dispatched event (or `undef` if none yet); it is published *before* the callback
+runs, so the callback can read it.
+
 ### 5. Edge types and debounce
 
 **Why/when:** You care about a specific edge, or the input is electrically noisy
@@ -297,8 +328,26 @@ stop_interrupt(0);    # stop one pin, forget its callback
 stop_interrupts();    # stop every pin, drain + close the pipe
 ```
 
-Optional: `interrupt_dropped()` returns a count of events dropped because the
-pipe was full (bursts faster than you dispatch).
+**Bursts and dropped edges.** Edges are FIFO-queued in a kernel pipe until you
+dispatch them. If a fast source outruns your dispatching the queue fills, and the
+overflowing edges are **dropped — never merged, never blocked** — and counted, so
+loss is never silent:
+
+```perl
+my $lost = interrupt_dropped();       # 0 unless the pipe overflowed
+```
+
+If you expect bursts, enlarge the queue with `interrupt_buffer($bytes)` (it may
+be set before arming and persists across teardown):
+
+```perl
+interrupt_buffer(1 << 20);            # ~1 MiB of queue; returns the granted size
+my $size = interrupt_buffer;          # read the current capacity
+```
+
+The kernel rounds up to a page and caps at `/proc/sys/fs/pipe-max-size`. Other
+mitigations: dispatch faster, use `background_interrupt` (a dedicated process
+keeps the pipe drained), or debounce (scenario 5) to cut the edge rate.
 
 ---
 
@@ -355,6 +404,22 @@ state directly. The one caveat: a long, non-yielding C/XS call delays the callba
 until it returns (it fires at Perl's safe points). To fire even during such work,
 use scenario 8.
 
+**Choosing the signal.** By default the fd is wired to `SIGIO`. If your program
+already uses `SIGIO`/`O_ASYNC`, pass a different signal so they don't clash:
+
+```perl
+auto_dispatch_interrupts(1, 'USR1');  # deliver via SIGUSR1 instead (F_SETSIG)
+```
+
+**Opt in while arming.** Instead of a separate `auto_dispatch_interrupts(1)`
+call, you can turn it on as part of `set_interrupt` — this enables the same
+process-wide switch:
+
+```perl
+set_interrupt(0, INT_EDGE_RISING, sub { $count++ }, { auto_dispatch => 1 });
+# or pick the signal:  { auto_dispatch => 'USR1' }
+```
+
 ### 8. A background process (background_interrupt)
 
 **Why/when:** True fire-while-busy with zero servicing, even during long blocking
@@ -405,7 +470,26 @@ No `pipe`, no `fork`, no `select`, no `waitpid` — the library owns all of it (
 an `END` hook reaps the child even if you forget `stop`). `$h->stop` is
 **idempotent**: safe to call more than once, and safe after the child has already
 exited (it won't croak on an already-reaped handler). Needs no threaded Perl.
-If a handler must report a value back to main, use scenario 9.
+
+**Reporting values back (the `results` channel).** For a handler that just needs
+to report a value to the parent, you don't need the manual fork of scenario 9 —
+pass `{ results => 1 }` and **return** a value from the handler; the parent drains
+it:
+
+```perl
+my $h = background_interrupt(0, INT_EDGE_RISING, sub {
+    my ($edge, $ts_us) = @_;
+    return "$edge\@$ts_us";            # shipped back to the parent
+}, { results => 1 });
+
+while (defined(my $msg = $h->read)) {  # non-blocking drain
+    print "handler reported: $msg\n";
+}
+# $h->fh is the read filehandle, for select / IO::Select
+```
+
+For anything more elaborate than reporting the handler's return value, scenario 9
+shows the manual fork with your own results channel.
 
 ### 9. Under the hood: manual fork
 
@@ -513,6 +597,47 @@ parent sleeps when idle instead of spinning on `can_read(0)`.
 > An `ithread`-based equivalent (shared variables instead of a results pipe) is in
 > `threads-examples.md`, which is parked until the ISR work lands.
 
+### 10. Many pins in one background child (background_interrupts)
+
+**Why/when:** You want background handling (scenario 8) for *several* pins, but a
+separate child per pin is wasteful. `background_interrupts` forks **one** child
+that services them all, and lets you arm/disarm individual pins at runtime.
+
+**Real-world:** A control box with several buttons and sensors, all handled off
+the main program in a single helper process.
+
+**Main & interrupt:** Each callback runs in the one shared child (separate memory
+from main, as in scenario 8). The callbacks are fixed when the child forks —
+`fork` can't carry new code — so `arm`/`disarm` only toggle pins registered in the
+initial call.
+
+```perl
+use strict;
+use warnings;
+use WiringPi::API qw(setup pin_mode background_interrupts
+                     INT_EDGE_RISING INT_EDGE_BOTH);
+
+setup();
+pin_mode($_, 0) for (0, 2);
+
+my $h = background_interrupts(
+    [0, INT_EDGE_RISING, \&on_button],
+    [2, INT_EDGE_BOTH,   \&on_sensor, 5000],   # optional debounce
+);
+
+# ... main does its own thing; both pins are handled in the one child ...
+
+$h->disarm(2);    # stop servicing pin 2 (the child keeps running for pin 0)
+$h->arm(2);       # resume it
+$h->stop;         # tear down and reap the single child
+
+sub on_button { ... }
+sub on_sensor { ... }
+```
+
+The handle has the same `stop`/`pid`/`running` as scenario 8, plus
+`arm($pin)`/`disarm($pin)`. Arming a pin that wasn't in the initial list croaks.
+
 ---
 
 ## Non-threaded Perl
@@ -540,7 +665,8 @@ ithreads. "Background" does not imply `use threads`; only the ithread variants i
   C call that never yields delays them. Use `background_interrupt` (separate
   process) if a handler must fire during such work.
 - **Enabling `auto_dispatch_interrupts` when your program already uses `SIGIO`/`O_ASYNC`.**
-  It claims that signal; pick one owner (or use the real-time-signal option).
+  It claims that signal; pick one owner, or choose a different delivery signal
+  (eg `auto_dispatch_interrupts(1, 'USR1')`).
 - **Busy-spinning a `do_work + poll` loop.** A `while (1) { do_other_work();
   dispatch_interrupts() }` (scenario 1) or `can_read(0)` drain (scenario 9) burns
   100% CPU if the work returns instantly. Pace it, sleep, or select with a timeout.
@@ -552,26 +678,70 @@ ithreads. "Background" does not imply `use threads`; only the ithread variants i
 | `setup()` / `setup_gpio()` | init (wiringPi / BCM numbering); once, in main | int status (`0` = ok) |
 | `pin_mode($pin, $mode)` | `0`=INPUT, `1`=OUTPUT | — |
 | `digital_write($pin, $val)` / `digital_read($pin)` | pin I/O | — / pin level (`0`/`1`) |
-| `set_interrupt($pin, $edge, $cb [, $debounce_us])` | arm; `$cb->($edge, $ts_us)` | true on success |
-| `background_interrupt($pin, $edge, $cb [, $debounce_us])` | run the handler in a forked child | handle `$h` (`$h->stop` / `$h->pid` / `$h->running`) |
-| `auto_dispatch_interrupts($bool)` | fire `set_interrupt` callbacks automatically in-process (via `SIGIO`); no loop | — |
+| `set_interrupt($pin, $edge, $cb [, $debounce_us] [, \%opts])` | arm; `$cb->($edge, $ts_us)`. `\%opts`: `{auto_dispatch=>1\|$sig}` | true on success |
+| `background_interrupt($pin, $edge, $cb [, $debounce_us] [, \%opts])` | run the handler in a forked child. `\%opts`: `{results=>1}` | handle `$h` (`stop` / `pid` / `running` / `read` / `fh`) |
+| `background_interrupts([$pin,$edge,$cb[,$deb]], ...)` | one shared child for many pins | handle `$h` (+ `arm($pin)` / `disarm($pin)`) |
+| `auto_dispatch_interrupts($bool [, $signal])` | fire callbacks automatically in-process (default `SIGIO`; named signal via `F_SETSIG`); no loop | true |
 | `wait_interrupts($timeout_ms)` | block until event/timeout, then dispatch | count dispatched (`0` on timeout) |
+| `run_interrupt_loop($timeout_ms [, $max])` / `stop_interrupt_loop()` | built-in blocking dispatch loop; stop via the flag or `$max` | count dispatched |
 | `dispatch_interrupts()` | non-blocking: dispatch pending events | count dispatched |
 | `interrupt_fd()` | read fd for `select`/event loops | int fd |
 | `interrupt_dropped()` | count of events dropped on a full pipe | int count |
+| `interrupt_buffer([$bytes])` | get/set the event-queue (pipe) capacity | int size (bytes) |
 | `last_interrupt()` | full status of the most recent dispatched event | hashref `{pin, pin_bcm, edge, status, ts_us}` or `undef` |
 | `stop_interrupt($pin)` / `stop_interrupts()` | teardown | — |
 | `INT_EDGE_FALLING` (1) / `INT_EDGE_RISING` (2) / `INT_EDGE_BOTH` (3) | edge constants | int |
 
-> † **Return values are provisional.** `isr-migration.md` does not yet pin down the
-> return contract for `wait_interrupts` / `dispatch_interrupts`; the counts above
-> are the *intended* behavior, to be confirmed when V5/V7 implement and document
-> them. Keep this table, the spec, and the eventual XS/PM in sync — a doc that
-> promises a return the code doesn't make is worse than one that stays silent.
+> See L<WiringPi::API> POD for the authoritative per-function documentation. For
+> worker threads, shared state, and periodic events, see `threads-examples.md`
+> (parked).
 
-> Names/signatures are provisional — see `isr-migration.md` for the authoritative,
-> evolving definitions. For worker threads, shared state, and periodic events, see
-> `threads-examples.md` (parked).
+## Code flow — Perl → API.pm → API.xs → wiringPi
+
+Worked numbers use `setup()` (wiringPi numbering) where **wpi pin 0 = BCM 17**,
+showing why `userdata` (the caller's pin) is the dispatch key, not
+`wfiStatus.pinBCM`.
+
+### Arming — `set_interrupt(0, 2, \&cb)`
+
+```text
+1 Perl (user)     set_interrupt(0, 2, \&cb);
+2 Perl (API.pm)   $_interrupt_cb{0} = \&cb;  _arm_interrupt(0, 2, 0);     # callback stays in Perl
+3 API.xs          _arm_interrupt(pin=0,edge=2,deb=0):
+                    (lazily create the pipe, both ends O_NONBLOCK)
+                    wiringPiISR2(0, 2, isr2_writer, 0, (void*)0);          # userdata = caller pin 0
+4 wiringPi.c      wiringPiISR2 -> wiringPiISRInternal: ToBCMPin 0->17;
+                    isrFunctionsV2[17]=isr2_writer; isrUserdata[17]=(void*)0;
+                    pthread_create(&isrThreads[17], …, interruptHandlerV2);
+```
+
+### Firing — a rising edge on GPIO 17  (NO Perl on this path)
+
+```text
+4 wiringPi.c      interruptHandlerV2 (BCM-17 thread): wfiStatus={pinBCM=17,edge=2,ts};
+                    isrFunctionsV2[17](wfiStatus, isrUserdata[17]);        # -> isr2_writer(.., (void*)0)
+3 API.xs          isr2_writer(wfiStatus, ud):
+                    rec = { .pin=(int)(intptr_t)ud /*=0, the caller pin*/, .pin_bcm=17, .edge=2,
+                            .status=wfiStatus.statusOK, .ts_us=wfiStatus.timeStamp_us };
+                    if (write(pipe_wr, &rec, sizeof rec) != sizeof rec) dropped++;   # 24-byte record
+                    # returns immediately; interpreter never touched
+```
+
+### Dispatch — when Perl services the fd (main thread, or a fork child)
+
+```text
+2 Perl (API.pm)   wait_interrupts($ms): select(interrupt_fd) -> dispatch_interrupts():
+                    while (sysread interrupt_fd, $buf, 24) {
+                        ($pin,$pin_bcm,$edge,$status,$ts) = unpack "i I i i q", $buf;
+                        $_last_interrupt = {...}; $_interrupt_cb{$pin}->($edge,$ts);   # $pin==0 -> matches
+                    }
+1 Perl (user)     &cb runs in the consuming interpreter, in normal context (G_EVAL-able).
+```
+
+Keying on `userdata` (0) — not `pinBCM` (17) — is what makes `$_interrupt_cb{0}`
+match under `setup()`; under `setup_gpio()` they'd coincide. The wiringPi ISR
+thread only ever does a `write()` of the fixed 24-byte record; it never enters
+the Perl interpreter, which is why this works on any Perl without locking.
 
 ## What changed vs `isr-examples.md`
 

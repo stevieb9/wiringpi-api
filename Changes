@@ -164,6 +164,9 @@ Revision history for Perl extension WiringPi::API.
         - set_interrupt() now accepts an optional trailing options hashref; the
           {auto_dispatch => 1} (or {auto_dispatch => 'USR1'}) option turns on
           auto-dispatch as part of arming (the process-wide switch)
+        - Added lib/INTERRUPTS.pod: a complete, runnable guide to the interrupt
+          API (cooperative dispatch, hands-off auto_dispatch/background, the
+          shared-child and results channels, queue sizing, and the code flow)
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks
