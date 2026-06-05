@@ -1,6 +1,6 @@
 # WiringPi::API — threads & concurrency usage examples
 
-> **⛔ PARKED — back burner.** ISR work comes first; see `isr-examples.md` and
+> **⛔ PARKED — back burner.** ISR work comes first; see `interrupt-examples.md` and
 > `isr-migration.md`. This doc collects general background-concurrency examples
 > (Perl ithreads, fork workers, periodic events). It depends on the ithread-safety
 > work in `threads-patch.md`, which is **on hold** until the interrupt migration
@@ -30,7 +30,7 @@
 ## About these examples
 
 This doc covers running work **concurrently** with the main program — distinct
-from reacting to interrupts (that's `isr-examples.md`). Two mechanisms appear:
+from reacting to interrupts (that's `interrupt-examples.md`). Two mechanisms appear:
 
 - **Perl ithreads** (`use threads`): shared-interpreter-free concurrency with one
   interpreter per thread. Requires a threaded Perl build (Raspberry Pi OS ships
@@ -59,7 +59,7 @@ endstop-hit flag that the main motion loop checks each step — shared memory, n
 concurrently with main (fires while main is busy); it can't see main's lexicals —
 share only via `:shared` variables guarded by `lock`/`pi_lock`.
 
-The ithread alternative to `isr-examples.md` scenario 7 (fork). A dedicated
+The ithread alternative to `interrupt-examples.md` scenario 7 (fork). A dedicated
 ithread services the interrupt fd in its **own** interpreter while main is free to
 block/compute. Arm **and** dispatch inside the spawned thread.
 
@@ -268,7 +268,7 @@ while (1) {
 ## Fork-based background work
 
 (`fork` needs no threaded Perl. For fork-based *interrupt* handling specifically,
-see `isr-examples.md` scenario 7.)
+see `interrupt-examples.md` scenario 7.)
 
 ### 6. A worker via fork
 
@@ -355,7 +355,7 @@ sub sample {
 
 **Good fit / bad fit — honestly:** this is a *timer* with **latest-value (lossy)**
 shared state. Ideal for periodic sampling, wrong for **edge interrupts** (you must
-not drop edges — keep those on the self-pipe, `isr-examples.md`). Note
+not drop edges — keep those on the self-pipe, `interrupt-examples.md`). Note
 `Async::Event::Interval` sets `$SIG{CHLD} = 'IGNORE'` and uses SysV shared memory
 at load time, so it does not compose with a hand-rolled `fork`/`waitpid`.
 
@@ -423,5 +423,5 @@ sub on_edge {
 | `Async::Event::Interval` | fork-based **periodic** tasks; not edge interrupts | no |
 
 > The interrupt calls (`set_interrupt`, `wait_interrupts`, `interrupt_fd`, …) are
-> documented in `isr-examples.md`. Names/signatures provisional — see
+> documented in `interrupt-examples.md`. Names/signatures provisional — see
 > `threads-patch.md` (parked) and `isr-migration.md`.

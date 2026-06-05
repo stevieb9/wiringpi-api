@@ -3,7 +3,10 @@ API.xs
 Changes
 docs/breadboard/test_physical_setup_bb.jpg
 docs/fritzing/test_physical_setup.fzz
+docs/interrupt-examples.md
+docs/missing-functions.md
 docs/schematics/test_physical_setup_schem.jpg
+docs/threads-examples.md
 INLINE.h
 lib/INTERRUPTS.pod
 lib/WiringPi/API.pm
