@@ -1,8 +1,8 @@
 # Plan: Upgrade WiringPi::API to wiringPi 3.18
 
-> **NEXT ACTION:** V16 — wrap softTone (`softToneCreate/Stop/Write`, softTone.h) and softServo; add `#include`s, exports, POD.
-> **LAST SESSION (2026-06-04):** Ran **V15 on `rpi1` — PASS**. Wrapped SPI additions spi_get_fd/spi_setup_mode/spi_close (plain int wraps; channel 0/1 validation; wiringPiSPI.h already included). New test `t/60-spi_additions.t`; `make test` 170 tests pass. Prior: V1-V12, V14 + V34 PASS; V13 deferred→isr-migration.md. Standing flags: V13 deferred; Phase 4 V26-V32 ⏸ HOLD; B8/B9; V35 (testChar); V33 downstream gate (installed WiringPi::API "executable stack" load error to investigate at V33); rpi-wiringpi cleanup under `refactor-setup-modes.md` V2-V9.
-> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V12, V14-V15, V34 archived)
+> **NEXT ACTION:** V17 — **Phase 2 full gate**: `perl Makefile.PL && make && make test` on the Pi; smoke-test every newly wrapped call. (Already green at 178 tests as of V16; V17 is the formal exit.)
+> **LAST SESSION (2026-06-04):** Ran **V16 on `rpi1` — PASS**. Wrapped softTone (soft_tone_create/stop/write) + `#include <softTone.h>`; **softServo decided out** (absent from libwiringPi — would create undefined symbols; logged in "Explicitly NOT doing"). New test `t/65-soft_tone.t`; `make test` 178 tests pass. Prior: V1-V12, V14-V15 + V34 PASS; V13 deferred→isr-migration.md. Standing flags: V13 deferred; Phase 4 V26-V32 ⏸ HOLD; B8/B9; V35 (testChar); V33 downstream gate (installed WiringPi::API "executable stack" load error to investigate at V33); rpi-wiringpi cleanup under `refactor-setup-modes.md` V2-V9.
+> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V12, V14-V16, V34 archived)
 
 ## Goal
 
@@ -83,7 +83,6 @@ caveat assumed a different dev box and no longer applies.) Note: this is a
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
 | V13 | Wrap interrupt additions: `wiringPiISRStop` (V3.2), `wiringPiISR2` + `waitForInterrupt2` (V3.16, `struct WPIWfiStatus`) (wiringPi.h:306-310). **GOVERNED BY `isr-migration.md`** — `wiringPiISR2` must NOT be thin-wrapped with a Perl callback (calling Perl from wiringPi's foreign ISR thread is the F17/F18 segfault hazard the self-pipe redesign removes); `waitForInterrupt2` is unused by that design. Maps: `wiringPiISRStop`→isr-migration V3, `wiringPiISR2` self-pipe core→isr-migration V4. | per isr-migration.md | parses | ⏭ DEFERRED 2026-06-04 (user): skip for now, do as a dedicated isr-migration.md run. Its V1 prereq already confirmed (header has wiringPiISR2/wiringPiISRStop/WPIWfiStatus ≥3.16). |
-| V16 | Wrap softTone (`softToneCreate/Stop/Write`, softTone.h) and softServo; add `#include`s, exports, POD | XS parse + `perl -c` | parses | ⏳ |
 | V17 | **Full gate** — Phase 2 exit: rebuild and smoke-test every newly wrapped call on a Pi | `perl Makefile.PL && make && make test` (on Pi) | compiles; new calls invocable | ⏳ |
 
 ### Phase 3 — Quality (bugs & efficiency in Perl + XS)
@@ -358,6 +357,7 @@ B9: Pi5 hard-abort on byte-bank ops (found during V8). On a Raspberry Pi 5, wiri
 ## Explicitly NOT doing
 
 - PiFace support (`wiringPiSetupPiFace*`, wiringPi.h:271-272) — deprecated upstream.
+- **softServo** (`softServoWrite`/`softServoSetup`, softServo.h) — declared in the header but **not compiled into `libwiringPi.so.3.18`** (confirmed via `nm` on both libs; dropped upstream as unreliable). Wrapping it would create undefined symbols that fail to load under `PERL_DL_NONLAZY` bind-now (the F22 failure mode). Decided during V16; only softTone is wrapped.
 - ~~Removing `setup_sys`/`wiringPiSetupSys` — kept for legacy callers~~ — **reversed 2026-06-02:** only `setup()`/`setup_gpio()` will be supported; `setup_sys`/`wiringPiSetupSys` **and** `setup_phys`/`wiringPiSetupPhys` are now being removed. Tracked as **V34**.
 - Wrapping the `gpio` CLI or the `wiringPiD` daemon — out of scope for this binding library.
 - ~~Replacing the existing `wiringPiISR` interrupt model with `wiringPiISR2` — ISR2 is added *alongside* (V13), not as a replacement~~ — **refined 2026-06-03:** the *internal* mechanism **does** convert to `wiringPiISR2` (the 40 trampolines collapse to one generic handler, per **F12**) — implementation planned in `isr-migration.md` (its V4). What stays NOT done: removing the *public* `set_interrupt`/`wiringPiISR` surface — the `set_interrupt` signature and behavior remain backward-compatible.

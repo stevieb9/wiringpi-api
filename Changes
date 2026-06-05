@@ -57,6 +57,10 @@ Revision history for Perl extension WiringPi::API.
         - wrapped the SPI additions: spi_get_fd (wiringPiSPIGetFd),
           spi_setup_mode (wiringPiSPISetupMode) and spi_close (wiringPiSPIClose)
           - XS + Perl + POD
+        - wrapped softTone: soft_tone_create (softToneCreate), soft_tone_write
+          (softToneWrite) and soft_tone_stop (softToneStop) - XS + Perl + POD.
+          softServo is not built into the wiringPi 3.18 library, so it is not
+          wrapped
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

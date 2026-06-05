@@ -37,6 +37,7 @@ my @wpi_c_functions = qw(
     physPinToWpi        wiringPiVersion     ads1115Setup
     pseudoPinsSetup     wiringPiSPISetup    spiDataRW
     wiringPiSPIGetFd    wiringPiSPISetupMode wiringPiSPIClose
+    softToneCreate      softToneStop        softToneWrite
     wiringPiI2CSetup    wiringPiI2CSetupInterface
     wiringPiI2CRead     wiringPiI2CReadReg8 wiringPiI2CReadReg16
     wiringPiI2CWrite    wiringPiI2CWriteReg8 wiringPiI2CWriteReg16
@@ -68,6 +69,7 @@ my @wpi_perl_functions = qw(
     i2c_write       i2c_write_byte  i2c_write_word      testChar
     i2c_read_block  i2c_raw_read    i2c_write_block     i2c_raw_write
     spi_get_fd      spi_setup_mode  spi_close
+    soft_tone_create                soft_tone_stop      soft_tone_write
     phys_to_wpi     pin_mode_alt    serial_open         serial_flush
     serial_put_char serial_puts     serial_data_avail   serial_get_char 
     serial_close    serial_gets     pwm_set_range       pwm_set_clock
@@ -340,6 +342,24 @@ sub soft_pwm_stop {
     shift if @_ == 2;
     my ($pin) = @_;
     softPwmStop($pin);
+}
+
+# soft tone functions
+
+sub soft_tone_create {
+    shift if @_ == 2;
+    my ($pin) = @_;
+    return softToneCreate($pin);
+}
+sub soft_tone_stop {
+    shift if @_ == 2;
+    my ($pin) = @_;
+    softToneStop($pin);
+}
+sub soft_tone_write {
+    shift if @_ == 3;
+    my ($pin, $freq) = @_;
+    softToneWrite($pin, $freq);
 }
 
 # thread/lock functions
@@ -1348,6 +1368,56 @@ created with.
 Maps to C<void softPwmStop(int pin)>
 
 Stops software PWM on the given pin.
+
+Parameters:
+
+    $pin
+
+Mandatory: The pin number.
+
+=head1 SOFT TONE FUNCTIONS
+
+Software-generated tone (square-wave frequency) output on any GPIO pin. See
+L<wiringPi softTone page|http://wiringpi.com/reference/software-tone-library/>.
+
+(Note: wiringPi's C<softServo> library is not built into the wiringPi 3.18
+shared library and is therefore not wrapped.)
+
+=head2 soft_tone_create($pin)
+
+Maps to C<int softToneCreate(int pin)>
+
+Sets up a pin for software tone output. Returns C<0> on success.
+
+Parameters:
+
+    $pin
+
+Mandatory: The pin number, in the pin numbering scheme dictated by whichever
+C<setup*()> routine you used.
+
+=head2 soft_tone_write($pin, $freq)
+
+Maps to C<void softToneWrite(int pin, int freq)>
+
+Sets the frequency (in Hz) of the tone on a pin previously set up with
+C<soft_tone_create()>. A frequency of C<0> stops the tone.
+
+Parameters:
+
+    $pin
+
+Mandatory: The pin number.
+
+    $freq
+
+Mandatory: The frequency in Hz.
+
+=head2 soft_tone_stop($pin)
+
+Maps to C<void softToneStop(int pin)>
+
+Stops the software tone on the given pin.
 
 Parameters:
 

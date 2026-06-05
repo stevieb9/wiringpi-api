@@ -25,6 +25,7 @@ t/45-board_id.t
 t/50-setup_variants.t
 t/55-i2c_block.t
 t/60-spi_additions.t
+t/65-soft_tone.t
 t/manifest.t
 t/pod-coverage.t
 t/pod.t

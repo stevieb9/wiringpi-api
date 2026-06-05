@@ -25,6 +25,7 @@
 #include <lcd.h>
 #include <sys/mman.h>
 #include <softPwm.h>
+#include <softTone.h>
 #include <sr595.h>
 
 #define PERL_NO_GET_CONTEXT
@@ -455,6 +456,21 @@ softPwmWrite(pin, value)
 
 void softPwmStop(pin)
     int pin
+
+# soft tone
+
+int
+softToneCreate(pin)
+    int pin
+
+void
+softToneStop(pin)
+    int pin
+
+void
+softToneWrite(pin, freq)
+    int pin
+    int freq
 
 # SR74HC595 shift register
 
