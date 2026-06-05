@@ -48,6 +48,7 @@ testing/pthread_callback.pl
 testing/pwm.pl
 testing/sr.pl
 testing/thread.pl
+testing/valgrind_xs.pl
 testing/ver
 testing/ver.pl
 testing/wpwm.pl
