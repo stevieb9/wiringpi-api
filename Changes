@@ -184,6 +184,12 @@ Revision history for Perl extension WiringPi::API.
           XSUB (dropping the plagued dXSARGS-in-plain-C + PL_markstack_ptr
           juggling). Behaviour for valid input is unchanged - it still returns
           a list of the bytes read
+        - Fixed an out-of-bounds read in physPinToWpi() (and the phys_to_wpi()
+          wrapper): it indexed the 64-entry phys_wpi_map with no bounds check,
+          so a physical pin number below 0 or above 63 read past the array.
+          Out-of-range input now returns the -1 "no such pin" sentinel; the
+          Perl wrapper mirrors the guard (and treats undef/non-integer as -1).
+          Added t/80-phys_to_wpi_bounds.t
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

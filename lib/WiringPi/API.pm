@@ -949,6 +949,12 @@ sub phys_to_gpio {
 sub phys_to_wpi {
     shift if @_ == 2;
     my $pin = shift;
+
+    # Mirror the C bounds guard: phys_wpi_map has 64 entries (0-63), so any
+    # index outside that (or a non-integer) has no wiringPi pin - return the
+    # -1 "no such pin" sentinel rather than reading out of bounds.
+    return -1 if ! defined $pin || $pin !~ /^-?\d+$/ || $pin < 0 || $pin >= 64;
+
     return physPinToWpi($pin);
 }
 sub pwm_set_range {
@@ -2064,6 +2070,10 @@ Parameters:
     $pin_num
 
 Mandatory: The pin number on the physical Raspberry Pi board.
+
+Returns: The C<wiringPi> pin number, or C<-1> if the physical pin has no
+C<wiringPi> equivalent or C<$pin_num> is out of range (less than C<0> or
+greater than C<63>).
 
 =head2 pwm_set_range($range)
 
