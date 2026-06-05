@@ -13,6 +13,8 @@
 #include <stdint.h>
 #include <pthread.h>
 
+#define PERL_NO_GET_CONTEXT
+
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
@@ -27,8 +29,6 @@
 #include <softPwm.h>
 #include <softTone.h>
 #include <sr595.h>
-
-#define PERL_NO_GET_CONTEXT
 
 char* serialGets(int fd, char* buf, int nbytes){
     int bytes_read = 0;

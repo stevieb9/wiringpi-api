@@ -74,6 +74,9 @@ Revision history for Perl extension WiringPi::API.
           calling exit(), which killed the whole interpreter; the errors are
           now catchable. Replaced the spiDataRW() variable-length stack array
           with a heap buffer (Newx/Safefree)
+        - moved #define PERL_NO_GET_CONTEXT above the perl headers so the
+          context optimisation actually applies (it was a no-op after the
+          include) - internal build change, no consumer-visible effect
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks
