@@ -1,8 +1,8 @@
 # Plan: Upgrade WiringPi::API to wiringPi 3.18
 
-> **NEXT ACTION:** V17 — **Phase 2 full gate**: `perl Makefile.PL && make && make test` on the Pi; smoke-test every newly wrapped call. (Already green at 178 tests as of V16; V17 is the formal exit.)
-> **LAST SESSION (2026-06-04):** Ran **V16 on `rpi1` — PASS**. Wrapped softTone (soft_tone_create/stop/write) + `#include <softTone.h>`; **softServo decided out** (absent from libwiringPi — would create undefined symbols; logged in "Explicitly NOT doing"). New test `t/65-soft_tone.t`; `make test` 178 tests pass. Prior: V1-V12, V14-V15 + V34 PASS; V13 deferred→isr-migration.md. Standing flags: V13 deferred; Phase 4 V26-V32 ⏸ HOLD; B8/B9; V35 (testChar); V33 downstream gate (installed WiringPi::API "executable stack" load error to investigate at V33); rpi-wiringpi cleanup under `refactor-setup-modes.md` V2-V9.
-> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V12, V14-V16, V34 archived)
+> **NEXT ACTION:** V20 — Fix **F3**: `shift_reg_setup` range guards use `&&` (never true) instead of `||` (API.pm). ⚠ consumer-facing: now croaks on bad input.
+> **LAST SESSION (2026-06-04):** Ran **V18 + V19 on `rpi1` — PASS** (batch, user-authorized). V18: i2c_read_word now ReadReg16 (full 16-bit word; consumer-facing). V19: i2c_setup accepts decimal/0x-hex addresses, croaks on junk (was single-digit only). New test `t/70-i2c_fixes.t` (185 total); I2C runtime paths gated/deferred — this Pi lacks /dev/i2c-1, and wiringPiI2CSetup aborts on bus-open failure. Filed **B10**: revisit i2c tests (t/70 acceptance + t/55 block round-trips) once the user enables I2C. Prior: V1-V12, V14-V17 + V34 PASS; V13 deferred. Standing flags: V13 deferred; Phase 4 V26-V32 ⏸ HOLD; B8/B9/B10; V35 (testChar); V33 downstream gate (installed WiringPi::API "executable stack" load error); rpi-wiringpi cleanup under `refactor-setup-modes.md` V2-V9.
+> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V12, V14-V19, V34 archived)
 
 ## Goal
 
@@ -83,14 +83,11 @@ caveat assumed a different dev box and no longer applies.) Note: this is a
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
 | V13 | Wrap interrupt additions: `wiringPiISRStop` (V3.2), `wiringPiISR2` + `waitForInterrupt2` (V3.16, `struct WPIWfiStatus`) (wiringPi.h:306-310). **GOVERNED BY `isr-migration.md`** — `wiringPiISR2` must NOT be thin-wrapped with a Perl callback (calling Perl from wiringPi's foreign ISR thread is the F17/F18 segfault hazard the self-pipe redesign removes); `waitForInterrupt2` is unused by that design. Maps: `wiringPiISRStop`→isr-migration V3, `wiringPiISR2` self-pipe core→isr-migration V4. | per isr-migration.md | parses | ⏭ DEFERRED 2026-06-04 (user): skip for now, do as a dedicated isr-migration.md run. Its V1 prereq already confirmed (header has wiringPiISR2/wiringPiISRStop/WPIWfiStatus ≥3.16). |
-| V17 | **Full gate** — Phase 2 exit: rebuild and smoke-test every newly wrapped call on a Pi | `perl Makefile.PL && make && make test` (on Pi) | compiles; new calls invocable | ⏳ |
 
 ### Phase 3 — Quality (bugs & efficiency in Perl + XS)
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V18 | Fix **F1**: `i2c_read_word` calls `wiringPiI2CReadReg8` — must be `wiringPiI2CReadReg16` (API.pm:398). ⚠ consumer-facing: return value changes | `perl -c -Ilib lib/WiringPi/API.pm` | OK; now calls ReadReg16 | ⏳ |
-| V19 | Fix **F2**: `i2c_setup` validates `$addr =~ /^\d$/` — accepts only a single digit, so real addresses like 72 (0x48) are rejected (API.pm:353). Accept full integer/hex addresses | `perl -c -Ilib lib/WiringPi/API.pm` | OK; 0x48/72 accepted, junk croaks | ⏳ |
 | V20 | Fix **F3**: `shift_reg_setup` range guards use `&&` (never true) instead of `||` (API.pm:333 and 337-338). ⚠ consumer-facing: now croaks on bad input | `perl -c -Ilib lib/WiringPi/API.pm` | OK; out-of-range input now croaks | ⏳ |
 | V21 | Fix **F4/F5**: replace `exit()` calls in XS `serialGets` (API.xs:40) and `spiDataRW` (API.xs:85-86) with `croak` — they currently kill the interpreter; drop the VLA `unsigned char buf[num_bytes]` (API.xs:75) | XS `process_file` parse | parses; no `exit(` in those fns | ⏳ |
 | V22 | Fix **F6**: `#define PERL_NO_GET_CONTEXT` sits *after* the perl.h include (API.xs:30) so it has no effect; move it above the perl headers | XS `process_file` parse | parses; macro precedes perl.h | ⏳ |
@@ -351,6 +348,8 @@ B6: Decision for V2 — optionally keep `wpiToGpio` / `lcdDefChar` / `lcdPutChar
 B7: Deprecate the redundant XS `bmp180Pressure`/`bmp180Temp` aliases (F11) — they just call `analogRead`. Point the POD/Perl wrappers at `analog_read` and mark the C aliases deprecated; remove only after a release cycle to avoid breaking consumers that call them for raw values.
 
 B8: Fix pre-existing POD errors in `lib/WiringPi/API.pm` (found during V3, not introduced by it): two unresolved internal links — `L<ADC FUNCTIONS>` (the head1 is ` ADC FUNCTIONS` with a leading space, API.pm:~1197) and `L<digitalReadByte>` (no matching `=head2`/`=item` target) — plus three "line containing nothing but whitespace" warnings. `podchecker` reports 2 errors. Could be folded into V6's POD sweep.
+
+B10: Revisit the I2C tests once the standard `/dev/i2c-1` bus is enabled on `rpi1` (currently only `/dev/i2c-13`/`-14` exist, so `wiringPiI2CSetup` aborts on a valid address and the V18/V19 runtime paths can't run here). When enabled: un-skip the acceptance block in `t/70-i2c_fixes.t` (i2c_setup 72/0x48 return an fd) and add a real round-trip for `i2c_read_word` (16-bit) — ideally against a known device, or at least confirm setup succeeds. Also revisit `t/55-i2c_block.t` (currently guards-only) to exercise actual block/raw read/write on a wired device.
 
 B9: Pi5 hard-abort on byte-bank ops (found during V8). On a Raspberry Pi 5, wiringPi's `digitalReadByte`/`digitalReadByte2`/`digitalWriteByte`/`digitalWriteByte2` are unsupported and the C library calls `exit(1)` — so calling any of the new `digital_*_byte` wrappers there kills the consumer's process (can't even be `eval`'d around). Documented as a POD caveat in V8. Consider a defensive guard (e.g. detect Pi5 via `piBoardId`/`piRP1Model` once V11 lands and `croak` instead of letting wiringPi abort). Their runtime test (`t/30-v8_wrappers.t`) is `can()`-only for this reason.
 

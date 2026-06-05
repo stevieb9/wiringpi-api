@@ -61,6 +61,12 @@ Revision history for Perl extension WiringPi::API.
           (softToneWrite) and soft_tone_stop (softToneStop) - XS + Perl + POD.
           softServo is not built into the wiringPi 3.18 library, so it is not
           wrapped
+        - fixed i2c_read_word() to read a 16-bit register (wiringPiI2CReadReg16)
+          instead of an 8-bit one; it now returns the full word (return value
+          changes for callers that relied on the truncated value)
+        - fixed i2c_setup() address validation: it rejected any multi-digit
+          address (e.g. 72 / 0x48); it now accepts full decimal and 0x-hex
+          addresses and croaks on non-numeric input
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

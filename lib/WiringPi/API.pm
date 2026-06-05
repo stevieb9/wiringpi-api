@@ -562,8 +562,15 @@ sub i2c_setup {
     shift if @_ == 2;
     my ($addr) = @_;
 
-    if ($addr !~ /^\d$/){
-        croak "address param must be an integer\n";
+    if (! defined $addr){
+        croak "i2c_setup() requires an \$addr param\n";
+    }
+
+    if ($addr =~ /^0x[0-9a-fA-F]+$/){
+        $addr = hex($addr);
+    }
+    elsif ($addr !~ /^\d+$/){
+        croak "i2c_setup() address param must be an integer or hex value\n";
     }
 
     # file descriptor
@@ -617,7 +624,7 @@ sub i2c_read_word {
         croak "i2c_read_word() requires a \$register param\n";
     }
 
-    return wiringPiI2CReadReg8($fd, $reg);
+    return wiringPiI2CReadReg16($fd, $reg);
 }
 sub i2c_write {
     shift if @_ > 2;
