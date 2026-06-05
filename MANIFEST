@@ -27,6 +27,7 @@ t/55-i2c_block.t
 t/60-spi_additions.t
 t/65-soft_tone.t
 t/70-i2c_fixes.t
+t/75-interrupts.t
 t/manifest.t
 t/pod-coverage.t
 t/pod.t
