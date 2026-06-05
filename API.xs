@@ -591,6 +591,10 @@ setInterrupt(pin, edge, callback)
     SV * callback
 
 int
+wiringPiISRStop(pin)
+    int pin
+
+int
 initThread(callback)
     SV * callback
 

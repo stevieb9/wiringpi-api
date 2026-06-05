@@ -42,6 +42,7 @@ my @wpi_c_functions = qw(
     lcdDisplay          lcdCursor           lcdCursorBlink
     lcdSendCommand      lcdPosition         lcdCharDef
     lcdPutchar          lcdPuts             setInterrupt
+    wiringPiISRStop
     sr595Setup          bmp180Setup         bmp180Pressure
     bmp180Temp          analogRead          analogWrite
     physPinToWpi        wiringPiVersion     ads1115Setup
