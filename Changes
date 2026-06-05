@@ -123,6 +123,16 @@ Revision history for Perl extension WiringPi::API.
           real-GPIO exercisers (both numbering schemes, re-arm, fork background,
           teardown) gated behind PI_BOARD. Verified the full interrupt chain on
           Pi 5 hardware with no leaks or fd leaks attributable to the module
+        - Added background_interrupt($pin, $edge, $callback, $debounce_us): forks
+          a child that arms the interrupt and runs $callback on each edge, for
+          fire-while-busy handling with one call. Returns a handle with stop/pid/
+          running; stop() is idempotent, a DESTROY + END block reap the child so
+          a forgotten stop() can't leak a zombie. Args validated before forking
+        - Added auto_dispatch_interrupts($bool): puts the interrupt fd into async
+          (SIGIO) mode and installs a $SIG{IO} handler so set_interrupt()
+          callbacks fire automatically in-process with no dispatch loop; runs at
+          Perl safe points (lock-free shared state); disable restores the prior
+          handler. Both verified on Pi 5 hardware
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

@@ -6,6 +6,8 @@ use warnings;
 our $VERSION = '3.1801';
 
 use Carp qw(croak);
+use Fcntl qw(F_GETFL F_SETFL F_SETOWN O_ASYNC);
+use POSIX qw(WNOHANG);
 
 # WPIPinType pin-numbering constants for the wiringpi_setup_pin_type() /
 # wiringpi_setup_gpio_device() variants. WPI_PIN_PHYS (3) is intentionally NOT
@@ -74,7 +76,7 @@ my @wpi_perl_functions = qw(
     lcd_position    lcd_char_def    lcd_put_char        lcd_puts
     set_interrupt   interrupt_fd        dispatch_interrupts
     wait_interrupts interrupt_dropped   stop_interrupt
-    stop_interrupts
+    stop_interrupts background_interrupt auto_dispatch_interrupts
     bmp180_setup    bmp180_pressure     bmp180_temp
     shift_reg_setup analog_read     analog_write        pin_mode
     ads1115_setup   spi_setup       spi_data            i2c_setup
@@ -119,6 +121,15 @@ $EXPORT_TAGS{all} = [@wpi_c_functions, @wpi_perl_functions, @wpi_constants];
 my %_interrupt_cb;                  # pin => CODE ref
 my $_interrupt_fh;                  # cached read handle (dup of interrupt_fd())
 my $_interrupt_fh_fd;               # the fd $_interrupt_fh was opened on
+
+# background_interrupt() state - handles of forked children, reaped at exit.
+my @_bg_children;
+
+# auto_dispatch_interrupts() state. When enabled, the interrupt read fd is put
+# into async (SIGIO) mode and $SIG{IO} drains+dispatches at Perl safe points.
+my $_auto_dispatch      = 0;        # is auto-dispatch currently enabled?
+my $_auto_dispatch_prev;            # prior $SIG{IO}, restored on disable
+my $_auto_dispatch_fd;              # the fd we wired O_ASYNC/F_SETOWN onto
 
 sub new {
     return bless {}, shift;
@@ -202,7 +213,13 @@ sub set_interrupt {
     # fans them back out to these callbacks in the consuming interpreter.
     $_interrupt_cb{$pin} = $callback;
 
-    return _arm_interrupt($pin, $edge, $debounce_us);
+    my $rv = _arm_interrupt($pin, $edge, $debounce_us);
+
+    # Arming lazily creates the self-pipe; if auto-dispatch is on, wire the
+    # (possibly new) read fd for SIGIO now that it exists.
+    _auto_dispatch_apply() if $_auto_dispatch;
+
+    return $rv;
 }
 sub dispatch_interrupts {
     shift if @_ == 1;
@@ -280,9 +297,149 @@ sub stop_interrupts {
 
     _close_interrupt_pipe();
 
+    # The fd we wired for SIGIO is gone; a later set_interrupt() re-creates the
+    # pipe and (if auto-dispatch is still on) re-wires the new fd.
+    $_auto_dispatch_fd = undef;
+
     return 1;
 }
 
+sub auto_dispatch_interrupts {
+    shift if @_ && ref $_[0];   # drop $self on method calls
+    my ($enable) = @_;
+
+    if (! defined $enable || $enable !~ /^[01]$/) {
+        croak "auto_dispatch_interrupts() requires a boolean argument (0 or 1)";
+    }
+
+    if ($enable) {
+        return 1 if $_auto_dispatch;            # idempotent
+
+        # Safe-signal handler: Perl runs it between ops, so the dispatched
+        # callbacks touch your variables with no locking. Save the prior
+        # handler so disable can restore it.
+        $_auto_dispatch_prev = $SIG{IO};
+        $SIG{IO} = \&dispatch_interrupts;
+        $_auto_dispatch = 1;
+
+        # Wire the read fd now if the pipe already exists; otherwise the next
+        # set_interrupt() (which creates it) will wire it.
+        _auto_dispatch_apply();
+        return 1;
+    }
+
+    return 1 if ! $_auto_dispatch;              # idempotent
+
+    _auto_dispatch_clear();
+
+    if (defined $_auto_dispatch_prev) {
+        $SIG{IO} = $_auto_dispatch_prev;
+    }
+    else {
+        delete $SIG{IO};
+    }
+
+    $_auto_dispatch_prev = undef;
+    $_auto_dispatch      = 0;
+
+    return 1;
+}
+sub background_interrupt {
+    shift if @_ && ref $_[0];   # drop $self on method calls ($pin is never a ref)
+    my ($pin, $edge, $callback, $debounce_us) = @_;
+
+    # Validate everything BEFORE forking - never fork into a guaranteed failure.
+    if (! defined $pin || $pin !~ /^\d+$/) {
+        croak "background_interrupt() requires \$pin to be a positive integer";
+    }
+
+    if (! defined $edge || $edge !~ /^[123]$/) {
+        croak "background_interrupt() \$edge must be INT_EDGE_FALLING (1), " .
+            "INT_EDGE_RISING (2) or INT_EDGE_BOTH (3)";
+    }
+
+    if (! defined $callback || ref $callback ne 'CODE') {
+        croak "background_interrupt() requires \$callback to be a CODE reference";
+    }
+
+    if (defined $debounce_us && $debounce_us !~ /^\d+$/) {
+        croak "background_interrupt() \$debounce_us must be a non-negative integer";
+    }
+
+    my $pid = fork;
+    croak "background_interrupt() fork failed: $!" if ! defined $pid;
+
+    if ($pid == 0) {
+        # CHILD: own the interrupt. wiringPi ISR pthreads don't survive fork, so
+        # arming MUST happen here, post-fork. TERM runs the ISR teardown + exits.
+        $SIG{TERM} = sub {
+            stop_interrupt($pin);
+            exit 0;
+        };
+
+        set_interrupt($pin, $edge, $callback, $debounce_us);
+        wait_interrupts(1000) while 1;
+        exit 0;                                 # not reached
+    }
+
+    # PARENT: record the child so $h->stop / the END reaper can clean it up.
+    my $handle = WiringPi::API::BackgroundInterrupt->_new($pid);
+    push @_bg_children, $handle;
+
+    return $handle;
+}
+
+# Reap any still-running background children at process exit, so a forgotten
+# stop() can't leak a zombie or orphan a handler.
+END {
+    for my $handle (@_bg_children) {
+        $handle->stop if $handle && $handle->running;
+    }
+}
+
+sub _auto_dispatch_apply {
+    # Put the interrupt read fd into async (SIGIO) mode. No-op until the pipe
+    # exists, or if we've already wired this exact fd.
+    my $fh = _interrupt_fh();
+    return 0 if ! defined $fh;
+
+    my $fd = fileno($fh);
+    return 1 if defined $_auto_dispatch_fd && $_auto_dispatch_fd == $fd;
+
+    # Force a purely-numeric owner pid: if $$ has ever been stringified, Perl's
+    # fcntl would pass it as a pointer and the kernel reads garbage (ESRCH).
+    my $owner = 0 + $$;
+
+    defined fcntl($fh, F_SETOWN, $owner)
+        or croak "auto_dispatch_interrupts() F_SETOWN failed: $!";
+
+    my $flags = fcntl($fh, F_GETFL, 0);
+    defined $flags
+        or croak "auto_dispatch_interrupts() F_GETFL failed: $!";
+
+    defined fcntl($fh, F_SETFL, $flags | O_ASYNC)
+        or croak "auto_dispatch_interrupts() F_SETFL O_ASYNC failed: $!";
+
+    $_auto_dispatch_fd = $fd;
+
+    # Drain anything that arrived before async delivery was armed.
+    dispatch_interrupts();
+
+    return 1;
+}
+sub _auto_dispatch_clear {
+    # Remove async mode from the interrupt read fd, if we wired it.
+    return 0 if ! defined $_interrupt_fh;
+
+    my $flags = fcntl($_interrupt_fh, F_GETFL, 0);
+    if (defined $flags) {
+        fcntl($_interrupt_fh, F_SETFL, $flags & ~O_ASYNC);
+    }
+
+    $_auto_dispatch_fd = undef;
+
+    return 1;
+}
 sub _interrupt_fh {
     my $fd = interrupt_fd();
     return undef if $fd < 0;
@@ -983,6 +1140,63 @@ sub bmp180_pressure {
     return bmp180Pressure($pin) / 100;
 }
 sub _vim{1;};
+
+# Handle returned by background_interrupt(). Owns one forked child that arms the
+# interrupt and runs the callback on each edge; stop() reaps it.
+
+package WiringPi::API::BackgroundInterrupt;
+
+use POSIX qw(WNOHANG);
+
+sub _new {
+    my ($class, $pid) = @_;
+    return bless { pid => $pid, running => 1 }, $class;
+}
+sub pid {
+    return $_[0]->{pid};
+}
+sub running {
+    my ($self) = @_;
+
+    return 0 if ! $self->{running};
+
+    # reap-if-exited so running() reflects reality without blocking
+    my $reaped = waitpid($self->{pid}, WNOHANG);
+    if ($reaped == $self->{pid} || $reaped == -1) {
+        $self->{running} = 0;
+        return 0;
+    }
+
+    return 1;
+}
+sub stop {
+    my ($self) = @_;
+
+    return 1 if ! $self->{running};         # idempotent
+
+    my $pid = $self->{pid};
+    kill 'TERM', $pid;
+
+    # poll briefly for a clean exit, then escalate
+    for (1 .. 50) {
+        my $reaped = waitpid($pid, WNOHANG);
+        if ($reaped == $pid || $reaped == -1) {
+            $self->{running} = 0;
+            return 1;
+        }
+        select(undef, undef, undef, 0.01);  # 10ms
+    }
+
+    kill 'KILL', $pid;
+    waitpid($pid, 0);
+    $self->{running} = 0;
+
+    return 1;
+}
+sub DESTROY {
+    my ($self) = @_;
+    $self->stop if $self->{running};
+}
 
 1;
 __END__
@@ -2077,6 +2291,46 @@ Stops every armed interrupt, closes the self-pipe and resets interrupt state.
 There is no dispatcher thread to join. A later C<set_interrupt()> re-creates the
 pipe automatically.
 
+=head2 auto_dispatch_interrupts($bool)
+
+Enables (C<1>) or disables (C<0>) async auto-dispatch. When enabled, the
+interrupt read fd is put into async (C<SIGIO>) mode and a C<$SIG{IO}> handler
+drains and dispatches pending events, so C<set_interrupt()> callbacks fire
+B<automatically in this process> with no C<wait_interrupts()>/
+C<dispatch_interrupts()> loop to write. Callbacks run at Perl safe points
+(between ops, and on interrupted C<sleep>/C<select>), so they may read and
+modify your program's variables with no locking.
+
+You can call it before or after C<set_interrupt()>; arming creates the pipe and
+wires it for you. Disabling restores the previous C<$SIG{IO}> handler.
+
+Caveats: a long, non-yielding C/XS call defers the callback until it returns
+(use C<background_interrupt()> if you need it to fire even then); and it claims
+the process-global C<SIGIO> - don't enable it if your program already drives
+C<SIGIO>/C<O_ASYNC>. See the example below.
+
+=head2 background_interrupt($pin, $edge, $callback, $debounce_us)
+
+Handles an interrupt in a B<background process> with one call: it forks, arms
+the interrupt in the child, and runs C<$callback> there on each edge while your
+main program does whatever it likes - true fire-while-busy, even during long
+blocking work. C<$callback> receives C<($edge, $timestamp_us)>. Arguments are
+validated (and croak) B<before> forking; C<$debounce_us> is optional.
+
+Because the callback runs in a separate process it B<cannot> see or change your
+main program's variables (use it for independent handlers - drive a pin, log,
+notify). Returns a handle:
+
+    my $h = background_interrupt(0, INT_EDGE_RISING, sub { ... });
+    $h->stop;        # signal the child, run its ISR teardown, reap it
+    $h->pid;         # the child PID
+    $h->running;     # true while the child is alive
+
+C<stop> is idempotent (safe to call repeatedly, and after the child has already
+exited). A handle going out of scope stops its child, and an C<END> block reaps
+any still-running background children at exit, so a forgotten C<stop> can't leak
+a zombie. Needs no threaded Perl. See the example below.
+
 =head3 Example - single-threaded event loop (any Perl)
 
     use WiringPi::API qw(setup pin_mode set_interrupt wait_interrupts
@@ -2110,6 +2364,49 @@ pipe automatically.
     }
 
     # parent is free to do other work; reap $pid at exit
+
+=head3 Example - hands-off in-process handling (auto_dispatch_interrupts)
+
+Fire callbacks automatically in your own process, with no dispatch loop. The
+callback updates your program's own state (no locking needed):
+
+    use WiringPi::API qw(setup pin_mode set_interrupt auto_dispatch_interrupts
+                         INT_EDGE_RISING);
+
+    setup();
+    pin_mode(0, 0);
+    auto_dispatch_interrupts(1);      # callbacks now fire on their own
+
+    my $count = 0;
+    set_interrupt(0, INT_EDGE_RISING, sub { $count++ });
+
+    while (1) {
+        do_main_work();               # the callback fires between ops & in sleep
+        print "edges so far: $count\n";
+        sleep 1;
+    }
+
+=head3 Example - background process (background_interrupt)
+
+Run an independent handler in its own process - it fires even while main is
+blocked in long work. The library owns the fork, the loop and the cleanup:
+
+    use WiringPi::API qw(setup pin_mode background_interrupt INT_EDGE_RISING);
+
+    setup();
+    pin_mode(0, 0);
+
+    my $h = background_interrupt(0, INT_EDGE_RISING, sub {
+        my ($edge, $ts_us) = @_;
+        # runs in the background on each rising edge - independent work only
+    });
+
+    for (1 .. 10) {
+        do_other_work();              # the handler fires on its own meanwhile
+        sleep 1;
+    }
+
+    $h->stop;                         # stops + reaps the background handler
 
 =head1 ADC FUNCTIONS
 

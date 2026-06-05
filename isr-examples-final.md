@@ -21,7 +21,7 @@
   - [5. Edge types and debounce](#5-edge-types-and-debounce)
   - [6. Teardown and re-arming](#6-teardown-and-re-arming)
 - [Hands-off handling (no dispatch loop)](#hands-off-handling-no-dispatch-loop)
-  - [7. Fire with no loop (auto_dispatch)](#7-fire-with-no-loop-auto_dispatch)
+  - [7. Fire with no loop (auto_dispatch_interrupts)](#7-fire-with-no-loop-auto_dispatch_interrupts)
   - [8. A background process (background_interrupt)](#8-a-background-process-background_interrupt)
   - [9. Under the hood: manual fork](#9-under-the-hood-manual-fork)
 - [Non-threaded Perl](#non-threaded-perl)
@@ -40,7 +40,7 @@
 - **Pin numbering** follows whichever setup you call: `setup()` = wiringPi
   numbering, `setup_gpio()` = BCM. Examples use `setup()`.
 - **Mode constants** for `pin_mode`: `INPUT`=0, `OUTPUT`=1 (shown as integers).
-- **To hide the most work, prefer the hands-off options.** `auto_dispatch`
+- **To hide the most work, prefer the hands-off options.** `auto_dispatch_interrupts`
   (scenario 7) fires callbacks in your own process with no loop; `background_interrupt`
   (scenario 8) runs an independent handler in its own process. Scenario 9 is the
   manual version of 8. Sections 1–6 (cooperative) explain the explicit dispatch
@@ -56,14 +56,14 @@
 None of these need `use threads`. To hide the most plumbing, prefer the first two
 (hands-off) rows.
 
-> **7 vs 8 in one line:** `auto_dispatch` (7) gives you lock-free shared state but
+> **7 vs 8 in one line:** `auto_dispatch_interrupts` (7) gives you lock-free shared state but
 > *defers* during a long non-yielding C call; `background_interrupt` (8) fires
 > regardless of what main is doing but **can't touch main's variables**. No long C
 > calls? Pick 7. Long C calls? Pick 8.
 
 | What you want | Scenario |
 |---|---|
-| Attach a handler and forget it; it updates my program's state | [7](#7-fire-with-no-loop-auto_dispatch) (`auto_dispatch`) |
+| Attach a handler and forget it; it updates my program's state | [7](#7-fire-with-no-loop-auto_dispatch_interrupts) (`auto_dispatch_interrupts`) |
 | Independent handler that fires even during long/blocking work | [8](#8-a-background-process-background_interrupt) (`background_interrupt`) |
 | React to a pin while running my own loop, on my terms | [1](#1-cooperative-dispatch-in-your-main-loop), [3](#3-event-loop-integration-with-the-interrupt-fd) |
 | A program whose only job is reacting to pins | [2](#2-blocking-wait-loop) |
@@ -304,7 +304,7 @@ pipe was full (bursts faster than you dispatch).
 
 ## Hands-off handling (no dispatch loop)
 
-### 7. Fire with no loop (auto_dispatch)
+### 7. Fire with no loop (auto_dispatch_interrupts)
 
 **Why/when:** The most hands-off in-process option — "attach a handler and forget
 it," closest to Arduino's `attachInterrupt`. The callback runs in *your* program
@@ -320,7 +320,7 @@ your in-program state directly.
 (and on interrupted sleeps), so it can read/write main's variables with **no
 locking** — but a long non-yielding C call defers it until that call returns.
 
-`auto_dispatch(1)` wires the interrupt fd to a signal and installs the handler for
+`auto_dispatch_interrupts(1)` wires the interrupt fd to a signal and installs the handler for
 you, so `set_interrupt` callbacks fire **automatically, in your own process**, with
 no `dispatch_interrupts`/`wait_interrupts` loop. Perl runs them at safe points
 (between ops, and on interrupted sleeps), so the callback can touch your variables
@@ -329,12 +329,12 @@ with **no locking**.
 ```perl
 use strict;
 use warnings;
-use WiringPi::API qw(setup pin_mode set_interrupt auto_dispatch INT_EDGE_RISING);
+use WiringPi::API qw(setup pin_mode set_interrupt auto_dispatch_interrupts INT_EDGE_RISING);
 
 setup();
 pin_mode(0, 0);            # INPUT
 
-auto_dispatch(1);          # callbacks now fire on their own — no loop to write
+auto_dispatch_interrupts(1);          # callbacks now fire on their own — no loop to write
 
 my $count = 0;
 set_interrupt(0, INT_EDGE_RISING, sub { $count++ });   # updates your own variable
@@ -518,7 +518,7 @@ parent sleeps when idle instead of spinning on `can_read(0)`.
 ## Non-threaded Perl
 
 The interrupt API needs nothing special. Everything in this doc — including
-background handling via `auto_dispatch` (7) or `fork` (8) — works on a Perl built **without**
+background handling via `auto_dispatch_interrupts` (7) or `fork` (8) — works on a Perl built **without**
 ithreads. "Background" does not imply `use threads`; only the ithread variants in
 `threads-examples.md` do.
 
@@ -535,11 +535,11 @@ ithreads. "Background" does not imply `use threads`; only the ithread variants i
 - **Two processes reading the same interrupt fd.** After a `fork`, exactly one
   context should drain the library's interrupt fd (scenario 9: the child). A
   second reader steals records from the first.
-- **Relying on `auto_dispatch` during a long non-yielding C/XS call.** Its
+- **Relying on `auto_dispatch_interrupts` during a long non-yielding C/XS call.** Its
   callbacks fire at Perl's safe points (op boundaries, interrupted sleeps); a long
   C call that never yields delays them. Use `background_interrupt` (separate
   process) if a handler must fire during such work.
-- **Enabling `auto_dispatch` when your program already uses `SIGIO`/`O_ASYNC`.**
+- **Enabling `auto_dispatch_interrupts` when your program already uses `SIGIO`/`O_ASYNC`.**
   It claims that signal; pick one owner (or use the real-time-signal option).
 - **Busy-spinning a `do_work + poll` loop.** A `while (1) { do_other_work();
   dispatch_interrupts() }` (scenario 1) or `can_read(0)` drain (scenario 9) burns
@@ -554,7 +554,7 @@ ithreads. "Background" does not imply `use threads`; only the ithread variants i
 | `digital_write($pin, $val)` / `digital_read($pin)` | pin I/O | — / pin level (`0`/`1`) |
 | `set_interrupt($pin, $edge, $cb [, $debounce_us])` | arm; `$cb->($edge, $ts_us)` | true on success |
 | `background_interrupt($pin, $edge, $cb [, $debounce_us])` | run the handler in a forked child | handle `$h` (`$h->stop` / `$h->pid` / `$h->running`) |
-| `auto_dispatch($bool)` | fire `set_interrupt` callbacks automatically in-process (via `SIGIO`); no loop | — |
+| `auto_dispatch_interrupts($bool)` | fire `set_interrupt` callbacks automatically in-process (via `SIGIO`); no loop | — |
 | `wait_interrupts($timeout_ms)` | block until event/timeout, then dispatch | count dispatched (`0` on timeout) |
 | `dispatch_interrupts()` | non-blocking: dispatch pending events | count dispatched |
 | `interrupt_fd()` | read fd for `select`/event loops | int fd |
