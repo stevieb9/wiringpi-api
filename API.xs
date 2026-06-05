@@ -38,7 +38,7 @@ char* serialGets(int fd, char* buf, int nbytes){
         
         if (0 >= result){
             if (0 > result){
-                exit(-1);
+                croak("serialGets: read error: %s\n", strerror(errno));
             }
             break;
         }
@@ -73,7 +73,8 @@ void spiDataRW(int channel, SV* byte_ref, int len){
         croak("len param doesn't match element count in data\n");
     }
 
-    unsigned char buf[num_bytes];
+    unsigned char *buf;
+    Newx(buf, num_bytes, unsigned char);
 
     int i;
 
@@ -81,16 +82,17 @@ void spiDataRW(int channel, SV* byte_ref, int len){
         SV** elem = av_fetch(bytes, i, 0);
 
         int elem_int = (int)SvNV(*elem);
-        
+
         if (elem_int < 0 || elem_int > 255){
-            printf("byte %d in data param out of range: (%d)\n", i, elem_int);
-            exit(1);
+            Safefree(buf);
+            croak("byte %d in data param out of range: (%d)\n", i, elem_int);
         }
 
         buf[i] = (unsigned char)SvNV(*elem);
     }
-    
+
     if (wiringPiSPIDataRW(channel, buf, len) < 0){
+        Safefree(buf);
         croak("failed to write to the SPI bus\n");
     }
 
@@ -100,9 +102,11 @@ void spiDataRW(int channel, SV* byte_ref, int len){
     int x;
     for (x=0; x<len; x++){
         inline_stack_push(sv_2mortal(newSViv(buf[x])));
-    } 
+    }
 
     inline_stack_done;
+
+    Safefree(buf);
 }
 
 // Used for interrupts and threads

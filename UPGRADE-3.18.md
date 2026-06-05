@@ -1,8 +1,8 @@
 # Plan: Upgrade WiringPi::API to wiringPi 3.18
 
-> **NEXT ACTION:** V21 — Fix **F4/F5**: replace `exit()` in XS `serialGets` (API.xs) and `spiDataRW` with `croak`; drop the VLA `unsigned char buf[num_bytes]`. They currently kill the interpreter.
-> **LAST SESSION (2026-06-04):** Ran **V20 on `rpi1` — PASS**. Fixed F3: `shift_reg_setup` bounds guards used `&&` (never true) → `||` for both `$num_pins` (0-32, API.pm:545) and the data/clock/latch pin loop (0-40, API.pm:550); out-of-range input now croaks (⚠ consumer-facing). Hardware-free; `perl -c` OK; runtime exercise deferred to V33. Prior: V18 + V19 PASS (i2c_read_word 16-bit; i2c_setup decimal/0x-hex), test `t/70-i2c_fixes.t` (185 total); V1-V12, V14-V17 + V34 PASS; V13 deferred. Standing flags: V13 deferred; Phase 4 V26-V32 ⏸ HOLD; B8/B9/B10; V35 (testChar); V33 downstream gate (installed WiringPi::API "executable stack" load error); rpi-wiringpi cleanup under `refactor-setup-modes.md` V2-V9.
-> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V12, V14-V20, V34 archived)
+> **NEXT ACTION:** V22 — Fix **F6**: `#define PERL_NO_GET_CONTEXT` sits *after* the perl.h include (API.xs:31) so it has no effect; move it above the perl headers.
+> **LAST SESSION (2026-06-04):** Ran **V21 on `rpi1` — PASS**. Fixed F4/F5: XS `serialGets`/`spiDataRW` now `croak` (catchable) instead of `exit()` (killed the interpreter); replaced the `spiDataRW` VLA with `Newx`/`Safefree`, freeing before every croak. XS parses; no `exit(` left; built clean + `make test` PASS on `rpi1`. Left F14/F15 (av_fetch NULL-check, double SvNV) for V27 per scope. Prior: V20 PASS (shift_reg_setup `&&`→`||`); V18 + V19 PASS; V1-V12, V14-V17 + V34 PASS; V13 deferred. Standing flags: V13 deferred; Phase 4 V26-V32 ⏸ HOLD; B8/B9/B10; V35 (testChar); V33 downstream gate (installed WiringPi::API "executable stack" load error); rpi-wiringpi cleanup under `refactor-setup-modes.md` V2-V9.
+> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V12, V14-V21, V34 archived)
 
 ## Goal
 
@@ -88,7 +88,6 @@ caveat assumed a different dev box and no longer applies.) Note: this is a
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V21 | Fix **F4/F5**: replace `exit()` calls in XS `serialGets` (API.xs:40) and `spiDataRW` (API.xs:85-86) with `croak` — they currently kill the interpreter; drop the VLA `unsigned char buf[num_bytes]` (API.xs:75) | XS `process_file` parse | parses; no `exit(` in those fns | ⏳ |
 | V22 | Fix **F6**: `#define PERL_NO_GET_CONTEXT` sits *after* the perl.h include (API.xs:30) so it has no effect; move it above the perl headers | XS `process_file` parse | parses; macro precedes perl.h | ⏳ |
 | V23 | Fix **F7/F8** (~~F10~~ done): remove duplicate `pwm_set_range` in `@wpi_perl_functions` (API.pm:42 & 52); review/justify or drop the stray `lcdPuts($fd,"\n")` in `lcd_char_def` (API.pm:301). **F10/F22 already done** — the dead `interruptHandler()` XS export + `API.h` decl were removed during V34 (pulled forward because the dangling symbol broke `make test` under bind-now; see clean-setup-calls.md Fix 1). ⚠ consumer-facing (see Public API impact) | `perl -c` + XS parse | OK | ⏳ |
 | V35 | **Remove dead `testChar` export** (found during V8 audit): `testChar` is in `@wpi_perl_functions` (API.pm:49 → `:all`/`:perl`/`@EXPORT_OK`) but has **no XS sub and no Perl sub** — importing it succeeds, calling it dies (same class as the V2 camelCase orphans). Remove the token; no real target exists. ⚠ consumer-facing: an `:all`/explicit import of `testChar` will fail at `use` time instead of dying on call (document under Public API impact alongside V2). | `perl -c -Ilib lib/WiringPi/API.pm` + grep `testChar` absent from exports | OK; `testChar` gone; no dangling export | ⏳ |
