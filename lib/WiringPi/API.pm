@@ -7,6 +7,15 @@ our $VERSION = '3.1801';
 
 use Carp qw(croak);
 
+# WPIPinType pin-numbering constants for the wiringpi_setup_pin_type() /
+# wiringpi_setup_gpio_device() variants. WPI_PIN_PHYS (3) is intentionally NOT
+# exposed - physical-pin setup mode was removed (see Changes); the wrappers
+# croak if anything other than these two is passed.
+use constant {
+    WPI_PIN_BCM => 1,
+    WPI_PIN_WPI => 2,
+};
+
 require XSLoader;
 XSLoader::load('WiringPi::API', $VERSION);
 
@@ -38,7 +47,8 @@ my @wpi_c_functions = qw(
     setPadDrive         setPadDrivePin      pwmToneWrite
     gpioClockSet        piBoardId           piBoard40Pin
     piRP1Model          getPinModeAlt       wiringPiGlobalMemoryAccess
-    wiringPiUserLevelAccess
+    wiringPiUserLevelAccess                 wiringPiSetupPinType
+    wiringPiSetupGpioDevice                 wiringPiGpioDeviceGetFd
 );
 
 my @wpi_perl_functions = qw(
@@ -64,16 +74,23 @@ my @wpi_perl_functions = qw(
     set_pad_drive   set_pad_drive_pin   pwm_tone_write      gpio_clock_set
     pi_board_id     pi_board40_pin      pi_rp1_model        get_pin_mode_alt
     wiringpi_global_memory_access        wiringpi_user_level_access
+    wiringpi_setup_pin_type             wiringpi_setup_gpio_device
+    wiringpi_gpio_device_get_fd
+);
+
+my @wpi_constants = qw(
+    WPI_PIN_BCM     WPI_PIN_WPI
 );
 
 our @EXPORT_OK;
 
-@EXPORT_OK = (@wpi_c_functions, @wpi_perl_functions);
+@EXPORT_OK = (@wpi_c_functions, @wpi_perl_functions, @wpi_constants);
 our %EXPORT_TAGS;
 
 $EXPORT_TAGS{wiringPi} = [@wpi_c_functions];
 $EXPORT_TAGS{perl} = [@wpi_perl_functions];
-$EXPORT_TAGS{all} = [@wpi_c_functions, @wpi_perl_functions];
+$EXPORT_TAGS{constants} = [@wpi_constants];
+$EXPORT_TAGS{all} = [@wpi_c_functions, @wpi_perl_functions, @wpi_constants];
 
 sub new {
     return bless {}, shift;
@@ -142,6 +159,35 @@ sub setup {
 }
 sub setup_gpio {
     return wiringPiSetupGpio();
+}
+sub wiringpi_setup_pin_type {
+    shift if @_ == 2;
+    my ($pin_type) = @_;
+
+    if (! defined $pin_type
+        || $pin_type !~ /^\d+$/
+        || ($pin_type != WPI_PIN_BCM && $pin_type != WPI_PIN_WPI)) {
+        croak "wiringpi_setup_pin_type() requires WPI_PIN_BCM or WPI_PIN_WPI " .
+              "(physical-pin setup is not supported)";
+    }
+
+    return wiringPiSetupPinType($pin_type);
+}
+sub wiringpi_setup_gpio_device {
+    shift if @_ == 2;
+    my ($pin_type) = @_;
+
+    if (! defined $pin_type
+        || $pin_type !~ /^\d+$/
+        || ($pin_type != WPI_PIN_BCM && $pin_type != WPI_PIN_WPI)) {
+        croak "wiringpi_setup_gpio_device() requires WPI_PIN_BCM or " .
+              "WPI_PIN_WPI (physical-pin setup is not supported)";
+    }
+
+    return wiringPiSetupGpioDevice($pin_type);
+}
+sub wiringpi_gpio_device_get_fd {
+    return wiringPiGpioDeviceGetFd();
 }
 sub wiringpi_version {
     my $ver = wiringPiVersion();
@@ -805,6 +851,40 @@ Sets the pin numbering scheme to C<GPIO>.
 
 Personally, this is the setup routine that I always use, due to the GPIO numbers
 physically printed right on the Pi board.
+
+=head2 wiringpi_setup_pin_type($pin_type)
+
+Maps to C<int wiringPiSetupPinType(enum WPIPinType pinType)>
+
+A unified setup routine that takes the pin-numbering scheme as a parameter,
+rather than having a separate function per scheme. C<$pin_type> must be one of
+the exported constants C<WPI_PIN_BCM> (equivalent to C<setup_gpio()>) or
+C<WPI_PIN_WPI> (equivalent to C<setup()>).
+
+Physical-pin setup (C<WPI_PIN_PHYS>) is B<not supported> - that constant is not
+exported, and passing it (or any other value) causes a C<croak>.
+
+=head2 wiringpi_setup_gpio_device($pin_type)
+
+Maps to C<int wiringPiSetupGpioDevice(enum WPIPinType pinType)>
+
+As C<wiringpi_setup_pin_type()>, but initialises wiringPi over the GPIO
+character-device (libgpiod) interface instead of the legacy C</dev/gpiomem>
+memory-mapped path. C<$pin_type> takes the same C<WPI_PIN_BCM> / C<WPI_PIN_WPI>
+constants and is validated the same way.
+
+This is offered as an opt-in alternative; the default C<setup()> / C<setup_gpio()>
+routines are unchanged.
+
+=head2 wiringpi_gpio_device_get_fd()
+
+Maps to C<int wiringPiGpioDeviceGetFd()>
+
+Returns the open file descriptor of the GPIO character device, when wiringPi was
+initialised via C<wiringpi_setup_gpio_device()>.
+
+The pin-type constants C<WPI_PIN_BCM> and C<WPI_PIN_WPI> are available
+individually or via the C<:constants> / C<:all> export tags.
 
 =head2 wiringpi_version()
 

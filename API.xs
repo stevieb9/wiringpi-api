@@ -284,6 +284,17 @@ wiringPiSetup()
 int
 wiringPiSetupGpio()
 
+int
+wiringPiSetupPinType(pinType)
+    int pinType
+
+int
+wiringPiSetupGpioDevice(pinType)
+    int pinType
+
+int
+wiringPiGpioDeviceGetFd()
+
 void
 pinMode(pin, mode)
     int pin

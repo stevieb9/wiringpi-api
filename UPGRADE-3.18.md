@@ -82,7 +82,6 @@ caveat assumed a different dev box and no longer applies.) Note: this is a
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V12 | Wrap the new 3.3 setup variants: `wiringPiSetupPinType`, `wiringPiSetupGpioDevice`, `wiringPiGpioDeviceGetFd` (wiringPi.h:235-257); expose `enum WPIPinType` constants | XS parse + `perl -c` | parses | ⏳ |
 | V13 | Wrap interrupt additions: `wiringPiISRStop` (V3.2 — needed for clean teardown of our dispatcher), `wiringPiISR2` + `waitForInterrupt2` (V3.16, `struct WPIWfiStatus`) (wiringPi.h:306-310) | XS parse + `perl -c` | parses | ⏳ |
 | V14 | Wrap I2C additions (wiringPiI2C.h:34-43): `wiringPiI2CReadBlockData`, `wiringPiI2CRawRead`, `wiringPiI2CWriteBlockData`, `wiringPiI2CRawWrite`; implement `i2c_interface`/`wiringPiI2CSetupInterface` (XS sub exists; Perl wrapper currently just croaks "not available" at API.pm:361-363) | XS parse + `perl -c` | parses; `i2c_interface` no longer croaks | ⏳ |
 | V15 | Wrap SPI additions (wiringPiSPI.h:31-35): `wiringPiSPIGetFd`, `wiringPiSPISetupMode`, `wiringPiSPIClose` | XS parse + `perl -c` | parses | ⏳ |

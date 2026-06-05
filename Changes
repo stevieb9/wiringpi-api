@@ -40,6 +40,13 @@ Revision history for Perl extension WiringPi::API.
           getPinModeAlt (get_pin_mode_alt), wiringPiGlobalMemoryAccess
           (wiringpi_global_memory_access) and wiringPiUserLevelAccess
           (wiringpi_user_level_access) - XS + Perl + POD
+        - wrapped the 3.3 setup variants wiringPiSetupPinType
+          (wiringpi_setup_pin_type) and wiringPiSetupGpioDevice
+          (wiringpi_setup_gpio_device, libgpiod char-device backend) plus
+          wiringPiGpioDeviceGetFd (wiringpi_gpio_device_get_fd); added the
+          WPI_PIN_BCM / WPI_PIN_WPI constants (new :constants export tag). The
+          wrappers croak on anything but BCM/WPI - physical-pin setup stays
+          unsupported (WPI_PIN_PHYS is not exported)
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks
