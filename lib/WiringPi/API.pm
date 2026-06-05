@@ -8,6 +8,7 @@ our $VERSION = '3.1801';
 use Carp qw(croak);
 use Fcntl qw(F_GETFL F_SETFL F_SETOWN O_ASYNC F_GETPIPE_SZ F_SETPIPE_SZ);
 use POSIX qw(WNOHANG);
+use Scalar::Util qw(blessed);
 
 # WPIPinType pin-numbering constants for the wiringpi_setup_pin_type() /
 # wiringpi_setup_gpio_device() variants. WPI_PIN_PHYS (3) is intentionally NOT
@@ -77,7 +78,7 @@ my @wpi_perl_functions = qw(
     set_interrupt   interrupt_fd        dispatch_interrupts
     wait_interrupts interrupt_dropped   stop_interrupt
     stop_interrupts background_interrupt auto_dispatch_interrupts
-    last_interrupt  interrupt_buffer
+    last_interrupt  interrupt_buffer    background_interrupts
     run_interrupt_loop                  stop_interrupt_loop
     bmp180_setup    bmp180_pressure     bmp180_temp
     shift_reg_setup analog_read     analog_write        pin_mode
@@ -454,8 +455,12 @@ sub auto_dispatch_interrupts {
     return 1;
 }
 sub background_interrupt {
-    shift if @_ && ref $_[0];   # drop $self on method calls ($pin is never a ref)
-    my ($pin, $edge, $callback, $debounce_us) = @_;
+    shift if @_ && blessed($_[0]);   # drop $self on method calls
+    my ($pin, $edge, $callback, @rest) = @_;
+
+    # An optional trailing options hashref may follow the (optional) debounce.
+    my %opts = (@rest && ref $rest[-1] eq 'HASH') ? %{ pop @rest } : ();
+    my ($debounce_us) = @rest;
 
     # Validate everything BEFORE forking - never fork into a guaranteed failure.
     if (! defined $pin || $pin !~ /^\d+$/) {
@@ -475,27 +480,180 @@ sub background_interrupt {
         croak "background_interrupt() \$debounce_us must be a non-negative integer";
     }
 
+    # Opt-in results channel: ship the callback's defined return value back to
+    # the parent over a pipe (B5). Set up before forking so both ends inherit.
+    my ($res_r, $res_w);
+    if ($opts{results}) {
+        pipe($res_r, $res_w)
+            or croak "background_interrupt() results pipe failed: $!";
+    }
+
     my $pid = fork;
     croak "background_interrupt() fork failed: $!" if ! defined $pid;
 
     if ($pid == 0) {
         # CHILD: own the interrupt. wiringPi ISR pthreads don't survive fork, so
         # arming MUST happen here, post-fork. TERM runs the ISR teardown + exits.
+        close $res_r if $res_r;
+
         $SIG{TERM} = sub {
             stop_interrupt($pin);
             exit 0;
         };
 
-        set_interrupt($pin, $edge, $callback, $debounce_us);
+        my $cb = $callback;
+        if ($res_w) {
+            # Wrap so a defined return value is length-framed up to the parent.
+            $cb = sub {
+                my $ret = $callback->(@_);
+                if (defined $ret) {
+                    my $payload = "$ret";
+                    syswrite $res_w, pack("N", length $payload) . $payload;
+                }
+                return;
+            };
+        }
+
+        set_interrupt($pin, $edge, $cb, $debounce_us);
         wait_interrupts(1000) while 1;
         exit 0;                                 # not reached
     }
 
     # PARENT: record the child so $h->stop / the END reaper can clean it up.
-    my $handle = WiringPi::API::BackgroundInterrupt->_new($pid);
+    close $res_w if $res_w;
+
+    my $handle = WiringPi::API::BackgroundInterrupt->_new($pid, $res_r);
     push @_bg_children, $handle;
 
     return $handle;
+}
+sub background_interrupts {
+    shift if @_ && blessed($_[0]);   # drop $self; specs themselves are arrayrefs
+
+    my @specs = @_;
+
+    if (! @specs) {
+        croak "background_interrupts() requires at least one " .
+            "[\$pin, \$edge, \$callback, \$debounce_us] spec";
+    }
+
+    # Validate every spec BEFORE forking.
+    for my $spec (@specs) {
+        if (ref $spec ne 'ARRAY') {
+            croak "background_interrupts() each spec must be an array reference";
+        }
+
+        my ($pin, $edge, $cb, $deb) = @$spec;
+
+        if (! defined $pin || $pin !~ /^\d+$/) {
+            croak "background_interrupts() each \$pin must be a positive integer";
+        }
+        if (! defined $edge || $edge !~ /^[123]$/) {
+            croak "background_interrupts() each \$edge must be INT_EDGE_FALLING " .
+                "(1), INT_EDGE_RISING (2) or INT_EDGE_BOTH (3)";
+        }
+        if (! defined $cb || ref $cb ne 'CODE') {
+            croak "background_interrupts() each \$callback must be a CODE reference";
+        }
+        if (defined $deb && $deb !~ /^\d+$/) {
+            croak "background_interrupts() each \$debounce_us must be a " .
+                "non-negative integer";
+        }
+    }
+
+    # Control pipe: parent -> child arm/disarm commands (one text line each).
+    pipe(my $ctrl_r, my $ctrl_w)
+        or croak "background_interrupts() control pipe failed: $!";
+
+    my $pid = fork;
+    croak "background_interrupts() fork failed: $!" if ! defined $pid;
+
+    if ($pid == 0) {
+        # CHILD: arm every spec, then service edges + control commands in one
+        # select loop. The callback table is fixed here (fork can't carry new
+        # code); the control channel only toggles these known pins.
+        close $ctrl_w;
+
+        $SIG{TERM} = sub {
+            stop_interrupts();
+            exit 0;
+        };
+
+        my %table;   # pin => [edge, cb, deb]
+        for my $spec (@specs) {
+            my ($pin, $edge, $cb, $deb) = @$spec;
+            $table{$pin} = [$edge, $cb, $deb];
+            set_interrupt($pin, $edge, $cb, $deb);
+        }
+
+        _bg_shared_loop($ctrl_r, \%table);
+        exit 0;
+    }
+
+    # PARENT.
+    close $ctrl_r;
+
+    my @pins = map { $_->[0] } @specs;
+    my $handle =
+        WiringPi::API::BackgroundInterrupts->_new($pid, $ctrl_w, \@pins);
+    push @_bg_children, $handle;
+
+    return $handle;
+}
+
+# Child dispatch loop for background_interrupts(): select over the interrupt fd
+# and the control pipe; dispatch edges, and apply arm/disarm commands. Returns
+# (and the caller exits) when the parent closes the control pipe.
+sub _bg_shared_loop {
+    my ($ctrl, $table) = @_;
+
+    my $cmd_buf = "";
+
+    while (1) {
+        my $ifd = interrupt_fd();
+        my $cfd = fileno($ctrl);
+
+        my $rin = "";
+        vec($rin, $cfd, 1) = 1;
+        vec($rin, $ifd, 1) = 1 if $ifd >= 0;
+
+        my $nfound = select(my $rout = $rin, undef, undef, 1);
+        next if ! defined $nfound || $nfound <= 0;   # timeout / EINTR
+
+        if (vec($rout, $cfd, 1)) {
+            my $got = sysread($ctrl, my $chunk, 4096);
+            if (! defined $got) {
+                next if $!{EINTR};
+                last;                            # read error: shut down
+            }
+            last if $got == 0;                   # parent closed control: shut down
+
+            $cmd_buf .= $chunk;
+            while ($cmd_buf =~ s/^([^\n]*)\n//) {
+                _bg_shared_cmd($1, $table);
+            }
+        }
+
+        if ($ifd >= 0 && vec($rout, $ifd, 1)) {
+            dispatch_interrupts();
+        }
+    }
+
+    stop_interrupts();
+    return;
+}
+sub _bg_shared_cmd {
+    my ($line, $table) = @_;
+
+    if ($line =~ /^arm (\d+)$/) {
+        my $spec = $table->{$1} or return;
+        set_interrupt($1, @$spec);
+    }
+    elsif ($line =~ /^disarm (\d+)$/) {
+        stop_interrupt($1);
+    }
+
+    return;
 }
 
 # Reap any still-running background children at process exit, so a forgotten
@@ -1273,11 +1431,47 @@ package WiringPi::API::BackgroundInterrupt;
 use POSIX qw(WNOHANG);
 
 sub _new {
-    my ($class, $pid) = @_;
-    return bless { pid => $pid, running => 1 }, $class;
+    my ($class, $pid, $results_fh) = @_;
+    return bless { pid => $pid, running => 1, results_fh => $results_fh }, $class;
 }
 sub pid {
     return $_[0]->{pid};
+}
+sub fh {
+    # The results read handle (for select/IO::Select), or undef if not enabled.
+    return $_[0]->{results_fh};
+}
+sub read {
+    # Non-blocking drain of the results channel: returns the next value the
+    # handler reported, or undef if none is ready (or the channel is closed).
+    my ($self) = @_;
+
+    my $fh = $self->{results_fh};
+    return undef if ! defined $fh;
+
+    my $rin = "";
+    vec($rin, fileno($fh), 1) = 1;
+    my $nfound = select(my $rout = $rin, undef, undef, 0);
+    return undef if ! $nfound || $nfound < 0;
+
+    # One length-framed record is present and was written atomically by the
+    # single child, so reading it through won't block.
+    my $len_buf = _read_exact($fh, 4);
+    return undef if ! defined $len_buf;
+
+    return _read_exact($fh, unpack("N", $len_buf));
+}
+sub _read_exact {
+    my ($fh, $n) = @_;
+
+    my $buf = "";
+    while (length($buf) < $n) {
+        my $got = sysread($fh, my $chunk, $n - length($buf));
+        return undef if ! defined $got || $got == 0;
+        $buf .= $chunk;
+    }
+
+    return $buf;
 }
 sub running {
     my ($self) = @_;
@@ -1320,6 +1514,61 @@ sub stop {
 sub DESTROY {
     my ($self) = @_;
     $self->stop if $self->{running};
+}
+
+# Handle for background_interrupts() - one shared child servicing many pins.
+# Inherits pid/running/stop/DESTROY; adds arm/disarm over the control pipe.
+
+package WiringPi::API::BackgroundInterrupts;
+
+our @ISA = ('WiringPi::API::BackgroundInterrupt');
+
+use Carp qw(croak);
+
+sub _new {
+    my ($class, $pid, $control_fh, $pins) = @_;
+
+    my $self = $class->SUPER::_new($pid);
+    $self->{control_fh} = $control_fh;
+    $self->{pins}       = { map { $_ => 1 } @$pins };   # the registered set
+
+    return $self;
+}
+sub arm {
+    my ($self, $pin) = @_;
+
+    if (! defined $pin || ! $self->{pins}{$pin}) {
+        croak "arm(): pin must be one registered at background_interrupts() time";
+    }
+
+    return 0 if ! $self->{running};
+
+    syswrite $self->{control_fh}, "arm $pin\n";
+    return 1;
+}
+sub disarm {
+    my ($self, $pin) = @_;
+
+    if (! defined $pin || ! $self->{pins}{$pin}) {
+        croak "disarm(): pin must be one registered at background_interrupts() time";
+    }
+
+    return 0 if ! $self->{running};
+
+    syswrite $self->{control_fh}, "disarm $pin\n";
+    return 1;
+}
+sub stop {
+    my ($self) = @_;
+
+    # Closing the control pipe gives the child an EOF shutdown path; then the
+    # inherited stop() does the TERM/KILL + reap.
+    if ($self->{control_fh}) {
+        close $self->{control_fh};
+        $self->{control_fh} = undef;
+    }
+
+    return $self->SUPER::stop;
 }
 
 1;
@@ -2540,6 +2789,45 @@ C<stop> is idempotent (safe to call repeatedly, and after the child has already
 exited). A handle going out of scope stops its child, and an C<END> block reaps
 any still-running background children at exit, so a forgotten C<stop> can't leak
 a zombie. Needs no threaded Perl. See the example below.
+
+A trailing options hash reference may follow the arguments. The only option is
+C<results>: when true, a defined value B<returned> by C<$callback> is shipped
+back to the parent, which drains it from the handle:
+
+    my $h = background_interrupt(0, INT_EDGE_RISING, sub {
+        my ($edge, $ts_us) = @_;
+        return "$edge\@$ts_us";          # reported to the parent
+    }, { results => 1 });
+
+    while (defined(my $msg = $h->read)) {  # non-blocking drain
+        print "handler said: $msg\n";
+    }
+    # $h->fh gives the read filehandle, for select / IO::Select
+
+Without C<results> (the default) the handler is fire-and-forget and the common
+case stays a one-liner.
+
+=head2 background_interrupts([$pin, $edge, $callback, $debounce_us], ...)
+
+Like C<background_interrupt()>, but a B<single> background child services
+B<many> pins (instead of one child per pin). Pass one array-ref spec per pin;
+all are validated before forking, and the child arms them all and dispatches
+every edge from one loop. Returns a handle with the same C<stop>/C<pid>/
+C<running>, plus C<arm($pin)> and C<disarm($pin)>:
+
+    my $h = background_interrupts(
+        [17, INT_EDGE_RISING, \&on_button],
+        [27, INT_EDGE_BOTH,   \&on_sensor, 5000],   # with debounce
+    );
+
+    $h->disarm(27);   # stop servicing pin 27 (without killing the child)
+    $h->arm(27);      # resume it
+    $h->stop;         # tear down + reap the one child
+
+The callbacks are fixed when the child forks - C<fork> cannot carry new code
+across - so C<arm>/C<disarm> only toggle pins that were registered in the
+initial call (arming an unregistered pin croaks). Each callback runs in the
+child and cannot touch your main program's variables.
 
 =head3 Example - single-threaded event loop (any Perl)
 

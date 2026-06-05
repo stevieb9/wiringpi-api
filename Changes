@@ -150,6 +150,14 @@ Revision history for Perl extension WiringPi::API.
           yourself. Returns the total dispatched; stops on stop_interrupt_loop()
           (callback/signal-safe) or after $max events; sleeps rather than
           busy-spinning when nothing is armed
+        - background_interrupt() gained an optional trailing options hashref; the
+          {results => 1} option ships the callback's defined return value back to
+          the parent over a length-framed pipe, drained via the handle's read()
+          (non-blocking) / fh() (for select). Default behaviour is unchanged
+        - Added background_interrupts([$pin,$edge,$cb,$deb], ...): one shared
+          background child services many pins (instead of one child per pin). The
+          handle adds arm($pin)/disarm($pin) over a control pipe (callbacks are
+          fixed at fork time; the control channel toggles the registered set)
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

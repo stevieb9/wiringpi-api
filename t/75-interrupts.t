@@ -10,7 +10,7 @@ use WiringPi::API qw(
     setup           setup_gpio          pin_mode            pull_up_down
     set_interrupt   dispatch_interrupts wait_interrupts
     stop_interrupt  stop_interrupts     interrupt_fd        interrupt_dropped
-    last_interrupt  interrupt_buffer
+    last_interrupt  interrupt_buffer    background_interrupts
     run_interrupt_loop                  stop_interrupt_loop
     INT_EDGE_SETUP  INT_EDGE_FALLING    INT_EDGE_RISING     INT_EDGE_BOTH
 );
@@ -176,6 +176,19 @@ like($@, qr/positive integer/, 'run_interrupt_loop() rejects a zero timeout');
 
 eval { run_interrupt_loop(100, 0) };
 like($@, qr/positive integer/, 'run_interrupt_loop() rejects a zero $max');
+
+# background_interrupts() spec validation - all croak before forking, no GPIO
+eval { background_interrupts() };
+like($@, qr/at least one/, 'background_interrupts() with no specs is rejected');
+
+eval { background_interrupts("notaref") };
+like($@, qr/array reference/, 'background_interrupts() rejects a non-arrayref spec');
+
+eval { background_interrupts([5, INT_EDGE_RISING, "notcode"]) };
+like($@, qr/CODE reference/, 'background_interrupts() rejects a non-coderef in a spec');
+
+eval { background_interrupts([5, 9, sub {}]) };
+like($@, qr/\$edge/, 'background_interrupts() rejects a bad edge in a spec');
 
 # ---------------------------------------------------------------------------
 # Real hardware (opt-in via PI_BOARD). Uses BCM17 driven by toggling its
