@@ -1,8 +1,8 @@
 # Plan: Upgrade WiringPi::API to wiringPi 3.18
 
-> **NEXT ACTION:** V12 — wrap the new 3.3 setup variants: `wiringPiSetupPinType`, `wiringPiSetupGpioDevice`, `wiringPiGpioDeviceGetFd`; expose `enum WPIPinType` constants.
-> **LAST SESSION (2026-06-04):** Ran **V11 on `rpi1` — PASS**. Wrapped board/identity helpers piBoardId(pi_board_id, list/hashref)/piBoard40Pin/piRP1Model/getPinModeAlt/wiringPiGlobalMemoryAccess/wiringPiUserLevelAccess (XS+Perl+POD). Functional: pi_board_id=(23,1,5,0,0)=Pi5, pi_rp1_model=1. New test `t/45-board_id.t`; `make test` 115 tests pass. **B9 now actionable** (pi_rp1_model available for a Pi5 byte-op guard). Prior: V1-V10 + V34 PASS. Standing flags: Phase 4 V26-V32 ⏸ HOLD; B8/B9; V35 (testChar); V33 downstream gate (installed WiringPi::API "executable stack" load error to investigate at V33); rpi-wiringpi cleanup under `refactor-setup-modes.md` V2-V9.
-> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V11, V34 archived)
+> **NEXT ACTION:** V13 — wrap interrupt additions: `wiringPiISRStop` (V3.2), `wiringPiISR2` + `waitForInterrupt2` (V3.16, `struct WPIWfiStatus`). NOTE: ISR work is governed by the self-pipe redesign (`isr-migration.md`); review F12/F25 ties before/while wrapping.
+> **LAST SESSION (2026-06-04):** Ran **V12 on `rpi1` — PASS**. Wrapped wiringPiSetupPinType/wiringPiSetupGpioDevice/wiringPiGpioDeviceGetFd + WPI_PIN_BCM/WPI_PIN_WPI constants (:constants tag). Per user decision (Option 1): PHYS blocked — WPI_PIN_PHYS not exported, wrappers croak on non-BCM/WPI; setup()/setup_gpio() untouched (additive); gpio_device backend opt-in. New test `t/50-setup_variants.t`; `make test` 136 tests pass. Prior: V1-V11 + V34 PASS. Standing flags: Phase 4 V26-V32 ⏸ HOLD; B8/B9; V35 (testChar); V33 downstream gate (installed WiringPi::API "executable stack" load error to investigate at V33); rpi-wiringpi cleanup under `refactor-setup-modes.md` V2-V9.
+> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V12, V34 archived)
 
 ## Goal
 
