@@ -194,6 +194,12 @@ int interrupt_fd(void){
     return interrupt_pipe[0];
 }
 
+/* Count of interrupt events dropped because the pipe was full (F24). */
+
+unsigned long interrupt_dropped(void){
+    return interrupts_dropped;
+}
+
 int physPinToWpi(int wpi_pin){
     return phys_wpi_map[wpi_pin];
 }
@@ -527,6 +533,9 @@ _arm_interrupt(pin, edge, debounce)
 
 int
 interrupt_fd()
+
+unsigned long
+interrupt_dropped()
 
 int
 physPinToWpi(wpi_pin)

@@ -103,6 +103,12 @@ Revision history for Perl extension WiringPi::API.
           helpers (wait_interrupts/dispatch_interrupts) follow
         - removed the camelCase setInterrupt export (use set_interrupt()) and
           the dead, never-exposed initThread
+        - added the interrupt dispatch helpers: dispatch_interrupts() drains all
+          pending events from the self-pipe and runs each pin's callback with
+          ($edge, $timestamp_us); wait_interrupts($timeout_ms) selects on the
+          interrupt fd then dispatches. set_interrupt() callbacks fire again,
+          now in whichever interpreter services the fd. Added interrupt_dropped()
+          returning the count of events lost to a full pipe
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

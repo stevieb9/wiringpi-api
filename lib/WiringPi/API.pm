@@ -72,7 +72,8 @@ my @wpi_perl_functions = qw(
     lcd_init        lcd_home        lcd_clear
     lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
     lcd_position    lcd_char_def    lcd_put_char        lcd_puts
-    set_interrupt   interrupt_fd
+    set_interrupt   interrupt_fd        dispatch_interrupts
+    wait_interrupts interrupt_dropped
     bmp180_setup    bmp180_pressure     bmp180_temp
     shift_reg_setup analog_read     analog_write        pin_mode
     ads1115_setup   spi_setup       spi_data            i2c_setup
@@ -110,6 +111,13 @@ $EXPORT_TAGS{wiringPi} = [@wpi_c_functions];
 $EXPORT_TAGS{perl} = [@wpi_perl_functions];
 $EXPORT_TAGS{constants} = [@wpi_constants];
 $EXPORT_TAGS{all} = [@wpi_c_functions, @wpi_perl_functions, @wpi_constants];
+
+# Interrupt dispatch state (per-interpreter). The callback registry lives here
+# in Perl - the wiringPi ISR thread only writes event records to the self-pipe
+# (see API.xs); dispatch runs callbacks in whichever interpreter services the fd.
+my %_interrupt_cb;                  # pin => CODE ref
+my $_interrupt_fh;                  # cached read handle (dup of interrupt_fd())
+my $_interrupt_fh_fd;               # the fd $_interrupt_fh was opened on
 
 sub new {
     return bless {}, shift;
@@ -182,9 +190,77 @@ sub set_interrupt {
         croak "set_interrupt() requires \$callback to be a CODE reference";
     }
 
-    # V5 stores $callback in the per-interpreter registry and adds the
-    # dispatch/wait helpers; for now arm the pin (debounce 0) via the self-pipe.
-    _arm_interrupt($pin, $edge, 0);
+    # The callback stays in Perl, keyed by the user's pin; the ISR thread only
+    # writes {pin, edge, ts} records to the self-pipe. dispatch_interrupts()
+    # fans them back out to these callbacks in the consuming interpreter.
+    $_interrupt_cb{$pin} = $callback;
+
+    return _arm_interrupt($pin, $edge, 0);
+}
+sub dispatch_interrupts {
+    shift if @_ == 1;
+
+    my $fh = _interrupt_fh();
+    return 0 if ! defined $fh;
+
+    my $dispatched = 0;
+
+    while (1) {
+        my $buf = "";
+        my $n = sysread($fh, $buf, 16);
+
+        if (! defined $n) {
+            next if $!{EINTR};      # interrupted before any data - retry
+            last;                   # EAGAIN (drained) or a real error - stop
+        }
+
+        last if $n == 0;            # EOF: all write ends closed
+        last if $n != 16;           # short read (16-byte writes are atomic)
+
+        my ($pin, $edge, $ts_us) = unpack "i i q", $buf;
+
+        my $cb = $_interrupt_cb{$pin};
+        $cb->($edge, $ts_us) if $cb;
+
+        $dispatched++;
+    }
+
+    return $dispatched;
+}
+sub wait_interrupts {
+    shift if @_ == 2;
+    my ($timeout_ms) = @_;
+
+    my $fh = _interrupt_fh();
+    return 0 if ! defined $fh;
+
+    my $rin = "";
+    vec($rin, fileno($fh), 1) = 1;
+
+    my $timeout = defined $timeout_ms ? $timeout_ms / 1000 : undef;
+    my $nfound = select(my $rout = $rin, undef, undef, $timeout);
+
+    return 0 if ! $nfound || $nfound < 0;   # timeout or error
+
+    return dispatch_interrupts();
+}
+
+sub _interrupt_fh {
+    my $fd = interrupt_fd();
+    return undef if $fd < 0;
+
+    # Re-open if the pipe was torn down and re-armed onto a different fd. A dup
+    # ("<&") gives us our own fd sharing the pipe's non-blocking description, so
+    # closing this handle never closes the C-side interrupt_fd().
+    if (! defined $_interrupt_fh || ! defined $_interrupt_fh_fd
+        || $_interrupt_fh_fd != $fd) {
+        close $_interrupt_fh if defined $_interrupt_fh;
+        open($_interrupt_fh, "<&", $fd)
+            or croak "could not access the interrupt fd ($fd): $!";
+        $_interrupt_fh_fd = $fd;
+    }
+
+    return $_interrupt_fh;
 }
 
 # system functions
