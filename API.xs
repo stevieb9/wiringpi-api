@@ -663,6 +663,90 @@ int wiringPiI2CWriteReg16 (fd, reg, data)
     int reg
     int data
 
+void
+wiringPiI2CReadBlockData(fd, reg, size)
+    int fd
+    int reg
+    int size
+    PREINIT:
+        uint8_t buf[256];
+        int n, i;
+    PPCODE:
+        if (size < 0 || size > 255)
+            croak("wiringPiI2CReadBlockData: size must be 0-255");
+        n = wiringPiI2CReadBlockData(fd, reg, buf, (uint8_t)size);
+        if (n < 0)
+            croak("wiringPiI2CReadBlockData: read failed");
+        EXTEND(SP, n);
+        for (i = 0; i < n; i++)
+            mPUSHu(buf[i]);
+
+void
+wiringPiI2CRawRead(fd, size)
+    int fd
+    int size
+    PREINIT:
+        uint8_t buf[256];
+        int n, i;
+    PPCODE:
+        if (size < 0 || size > 255)
+            croak("wiringPiI2CRawRead: size must be 0-255");
+        n = wiringPiI2CRawRead(fd, buf, (uint8_t)size);
+        if (n < 0)
+            croak("wiringPiI2CRawRead: read failed");
+        EXTEND(SP, n);
+        for (i = 0; i < n; i++)
+            mPUSHu(buf[i]);
+
+int
+wiringPiI2CWriteBlockData(fd, reg, values)
+    int fd
+    int reg
+    SV * values
+    PREINIT:
+        uint8_t buf[256];
+        AV *av;
+        int len, i;
+        SV **elem;
+    CODE:
+        if (! SvROK(values) || SvTYPE(SvRV(values)) != SVt_PVAV)
+            croak("wiringPiI2CWriteBlockData: values must be an array reference");
+        av = (AV *)SvRV(values);
+        len = av_len(av) + 1;
+        if (len < 0 || len > 255)
+            croak("wiringPiI2CWriteBlockData: 0-255 values allowed");
+        for (i = 0; i < len; i++) {
+            elem = av_fetch(av, i, 0);
+            buf[i] = (uint8_t)(elem ? SvUV(*elem) : 0);
+        }
+        RETVAL = wiringPiI2CWriteBlockData(fd, reg, buf, (uint8_t)len);
+    OUTPUT:
+        RETVAL
+
+int
+wiringPiI2CRawWrite(fd, values)
+    int fd
+    SV * values
+    PREINIT:
+        uint8_t buf[256];
+        AV *av;
+        int len, i;
+        SV **elem;
+    CODE:
+        if (! SvROK(values) || SvTYPE(SvRV(values)) != SVt_PVAV)
+            croak("wiringPiI2CRawWrite: values must be an array reference");
+        av = (AV *)SvRV(values);
+        len = av_len(av) + 1;
+        if (len < 0 || len > 255)
+            croak("wiringPiI2CRawWrite: 0-255 values allowed");
+        for (i = 0; i < len; i++) {
+            elem = av_fetch(av, i, 0);
+            buf[i] = (uint8_t)(elem ? SvUV(*elem) : 0);
+        }
+        RETVAL = wiringPiI2CRawWrite(fd, buf, (uint8_t)len);
+    OUTPUT:
+        RETVAL
+
 # serial interface
 
 int serialOpen (device, baud)

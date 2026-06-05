@@ -47,6 +47,13 @@ Revision history for Perl extension WiringPi::API.
           WPI_PIN_BCM / WPI_PIN_WPI constants (new :constants export tag). The
           wrappers croak on anything but BCM/WPI - physical-pin setup stays
           unsupported (WPI_PIN_PHYS is not exported)
+        - wrapped the I2C block/raw additions: i2c_read_block
+          (wiringPiI2CReadBlockData), i2c_raw_read (wiringPiI2CRawRead),
+          i2c_write_block (wiringPiI2CWriteBlockData) and i2c_raw_write
+          (wiringPiI2CRawWrite) - reads return a list of bytes, writes take an
+          array reference; up to 255 bytes
+        - implemented i2c_interface() (maps to wiringPiI2CSetupInterface); it
+          previously croaked "not available"
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

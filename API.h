@@ -31,6 +31,10 @@ int wiringPiI2CReadReg16 (int fd, int reg);
 int wiringPiI2CWrite (int fd, int data);
 int wiringPiI2CWriteReg8 (int fd, int reg, int data);
 int wiringPiI2CWriteReg16 (int fd, int reg, int data);
+int wiringPiI2CReadBlockData (int fd, int reg, uint8_t *values, uint8_t size);
+int wiringPiI2CRawRead (int fd, uint8_t *values, uint8_t size);
+int wiringPiI2CWriteBlockData (int fd, int reg, const uint8_t *values, uint8_t size);
+int wiringPiI2CRawWrite (int fd, const uint8_t *values, uint8_t size);
 
 // GPIO pin specific
 int physPinToWpi(int wpi_pin);

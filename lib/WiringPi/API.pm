@@ -39,6 +39,8 @@ my @wpi_c_functions = qw(
     wiringPiI2CSetup    wiringPiI2CSetupInterface
     wiringPiI2CRead     wiringPiI2CReadReg8 wiringPiI2CReadReg16
     wiringPiI2CWrite    wiringPiI2CWriteReg8 wiringPiI2CWriteReg16
+    wiringPiI2CReadBlockData                 wiringPiI2CRawRead
+    wiringPiI2CWriteBlockData                wiringPiI2CRawWrite
     pinModeAlt          serialOpen          serialFlush
     serialPutchar       serialPuts          serialDataAvail
     serialGetchar       pwmSetClock         pwmSetMode
@@ -63,6 +65,7 @@ my @wpi_perl_functions = qw(
     ads1115_setup   spi_setup       spi_data            i2c_setup
     i2c_interface   i2c_read        i2c_read_byte       i2c_read_word
     i2c_write       i2c_write_byte  i2c_write_word      testChar
+    i2c_read_block  i2c_raw_read    i2c_write_block     i2c_raw_write
     phys_to_wpi     pin_mode_alt    serial_open         serial_flush
     serial_put_char serial_puts     serial_data_avail   serial_get_char 
     serial_close    serial_gets     pwm_set_range       pwm_set_clock
@@ -546,7 +549,17 @@ sub i2c_setup {
     return wiringPiI2CSetup($addr);
 }
 sub i2c_interface {
-    croak "i2c_interface() is not available at this time\n";
+    shift if @_ > 2;
+    my ($device, $dev_id) = @_;
+
+    if (! defined $device){
+        croak "i2c_interface() requires a \$device param\n";
+    }
+    if (! defined $dev_id){
+        croak "i2c_interface() requires a \$dev_id param\n";
+    }
+
+    return wiringPiI2CSetupInterface($device, $dev_id);
 }
 sub i2c_read {
     shift if @_ > 1;
@@ -628,6 +641,64 @@ sub i2c_write_word {
     }
 
     return wiringPiI2CWriteReg16($fd, $reg, $data);
+}
+sub i2c_read_block {
+    shift if @_ > 3;
+    my ($fd, $reg, $size) = @_;
+
+    if (! defined $fd){
+        croak "i2c_read_block() requires an \$fd param\n";
+    }
+    if (! defined $reg){
+        croak "i2c_read_block() requires a \$register param\n";
+    }
+    if (! defined $size){
+        croak "i2c_read_block() requires a \$size param\n";
+    }
+
+    return wiringPiI2CReadBlockData($fd, $reg, $size);
+}
+sub i2c_raw_read {
+    shift if @_ > 2;
+    my ($fd, $size) = @_;
+
+    if (! defined $fd){
+        croak "i2c_raw_read() requires an \$fd param\n";
+    }
+    if (! defined $size){
+        croak "i2c_raw_read() requires a \$size param\n";
+    }
+
+    return wiringPiI2CRawRead($fd, $size);
+}
+sub i2c_write_block {
+    shift if @_ > 3;
+    my ($fd, $reg, $values) = @_;
+
+    if (! defined $fd){
+        croak "i2c_write_block() requires an \$fd param\n";
+    }
+    if (! defined $reg){
+        croak "i2c_write_block() requires a \$register param\n";
+    }
+    if (ref $values ne 'ARRAY'){
+        croak "i2c_write_block() requires an array reference of bytes\n";
+    }
+
+    return wiringPiI2CWriteBlockData($fd, $reg, $values);
+}
+sub i2c_raw_write {
+    shift if @_ > 2;
+    my ($fd, $values) = @_;
+
+    if (! defined $fd){
+        croak "i2c_raw_write() requires an \$fd param\n";
+    }
+    if (ref $values ne 'ARRAY'){
+        croak "i2c_raw_write() requires an array reference of bytes\n";
+    }
+
+    return wiringPiI2CRawWrite($fd, $values);
 }
 
 # SPI functions
@@ -1901,10 +1972,22 @@ C<i2cdetect -y 1>.
 
 =head2 i2c_interface($device, $addr)
 
-Maps to iC<int wiringPiI2CSetupInterface(const char* device, int devId)>
+Maps to C<int wiringPiI2CSetupInterface(const char* device, int devId)>
 
-This feature is not implemented currently, and will be used to select different
-I2C interfaces if the RPi ever receives them.
+Like C<i2c_setup()>, but lets you name the I2C device file explicitly (e.g.
+C</dev/i2c-1>) instead of relying on the default.
+
+Parameters:
+
+    $device
+
+Mandatory: String, the path to the I2C device file (e.g. C</dev/i2c-1>).
+
+    $addr
+
+Mandatory: Integer, the I2C address of the device.
+
+Returns: Integer, the file descriptor for the device (as C<i2c_setup()>).
 
 =head2 i2c_read($fd)
 
@@ -2009,6 +2092,91 @@ Mandatory: Integer, the register to write the data to.
 Mandatory: Integer, the value to write to the device.
 
 Returns: The value of the C<ioctl()> call, C<0> on success.
+
+=head2 i2c_read_block($fd, $reg, $size)
+
+Maps to C<int wiringPiI2CReadBlockData(int fd, int reg, uint8_t *values, uint8_t size)>
+
+Reads up to C<$size> bytes (max 255) in a single block transaction starting at
+register C<$reg>.
+
+Parameters:
+
+    $fd
+
+Mandatory: Integer, the file descriptor returned from C<i2c_setup()>.
+
+    $reg
+
+Mandatory: Integer, the register to read from.
+
+    $size
+
+Mandatory: Integer C<0>-C<255>, the number of bytes to read.
+
+Returns: A list of the bytes read (its length is the actual count returned by
+the device). Croaks on a read error.
+
+=head2 i2c_raw_read($fd, $size)
+
+Maps to C<int wiringPiI2CRawRead(int fd, uint8_t *values, uint8_t size)>
+
+As C<i2c_read_block()>, but reads directly from the device without a register
+address.
+
+Parameters:
+
+    $fd
+
+Mandatory: Integer, the file descriptor returned from C<i2c_setup()>.
+
+    $size
+
+Mandatory: Integer C<0>-C<255>, the number of bytes to read.
+
+Returns: A list of the bytes read. Croaks on a read error.
+
+=head2 i2c_write_block($fd, $reg, \@bytes)
+
+Maps to C<int wiringPiI2CWriteBlockData(int fd, int reg, const uint8_t *values, uint8_t size)>
+
+Writes a block of up to 255 bytes in a single transaction starting at register
+C<$reg>.
+
+Parameters:
+
+    $fd
+
+Mandatory: Integer, the file descriptor returned from C<i2c_setup()>.
+
+    $reg
+
+Mandatory: Integer, the register to write to.
+
+    \@bytes
+
+Mandatory: An array reference of byte values (C<0>-C<255>), at most 255 elements.
+
+Returns: The value of the underlying call, C<0> on success.
+
+=head2 i2c_raw_write($fd, \@bytes)
+
+Maps to C<int wiringPiI2CRawWrite(int fd, const uint8_t *values, uint8_t size)>
+
+As C<i2c_write_block()>, but writes directly to the device without a register
+address.
+
+Parameters:
+
+    $fd
+
+Mandatory: Integer, the file descriptor returned from C<i2c_setup()>.
+
+    \@bytes
+
+Mandatory: An array reference of byte values (C<0>-C<255>), at most 255 elements.
+
+Returns: The value of the underlying call, C<0> on success.
 
 =head1 SPI FUNCTIONS
 
