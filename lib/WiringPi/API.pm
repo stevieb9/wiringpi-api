@@ -73,7 +73,8 @@ my @wpi_perl_functions = qw(
     lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
     lcd_position    lcd_char_def    lcd_put_char        lcd_puts
     set_interrupt   interrupt_fd        dispatch_interrupts
-    wait_interrupts interrupt_dropped
+    wait_interrupts interrupt_dropped   stop_interrupt
+    stop_interrupts
     bmp180_setup    bmp180_pressure     bmp180_temp
     shift_reg_setup analog_read     analog_write        pin_mode
     ads1115_setup   spi_setup       spi_data            i2c_setup
@@ -243,6 +244,37 @@ sub wait_interrupts {
     return 0 if ! $nfound || $nfound < 0;   # timeout or error
 
     return dispatch_interrupts();
+}
+sub stop_interrupt {
+    shift if @_ == 2;
+    my ($pin) = @_;
+
+    if (! defined $pin || $pin !~ /^\d+$/) {
+        croak "stop_interrupt() requires \$pin to be a positive integer";
+    }
+
+    wiringPiISRStop($pin);
+    delete $_interrupt_cb{$pin};
+
+    return 1;
+}
+sub stop_interrupts {
+    shift if @_ == 1;
+
+    stop_interrupt($_) for keys %_interrupt_cb;
+
+    # Drop our cached read dup, then close the C-side pipe (this discards any
+    # records still buffered) and reset the dropped counter. A later
+    # set_interrupt() lazily re-creates the pipe.
+    if (defined $_interrupt_fh) {
+        close $_interrupt_fh;
+        $_interrupt_fh    = undef;
+        $_interrupt_fh_fd = undef;
+    }
+
+    _close_interrupt_pipe();
+
+    return 1;
 }
 
 sub _interrupt_fh {

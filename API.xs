@@ -200,6 +200,22 @@ unsigned long interrupt_dropped(void){
     return interrupts_dropped;
 }
 
+/* Close both ends of the self-pipe and reset interrupt state. The Perl side
+ * stops the wiringPi ISR threads (wiringPiISRStop) and closes its own read dup
+ * before calling this, so no writer or reader is left referencing these fds. */
+
+void _close_interrupt_pipe(void){
+    if (interrupt_pipe[0] >= 0){
+        close(interrupt_pipe[0]);
+        interrupt_pipe[0] = -1;
+    }
+    if (interrupt_pipe[1] >= 0){
+        close(interrupt_pipe[1]);
+        interrupt_pipe[1] = -1;
+    }
+    interrupts_dropped = 0;
+}
+
 int physPinToWpi(int wpi_pin){
     return phys_wpi_map[wpi_pin];
 }
@@ -536,6 +552,9 @@ interrupt_fd()
 
 unsigned long
 interrupt_dropped()
+
+void
+_close_interrupt_pipe()
 
 int
 physPinToWpi(wpi_pin)
