@@ -1,8 +1,8 @@
 # Plan: Upgrade WiringPi::API to wiringPi 3.18
 
-> **NEXT ACTION:** V20 — Fix **F3**: `shift_reg_setup` range guards use `&&` (never true) instead of `||` (API.pm). ⚠ consumer-facing: now croaks on bad input.
-> **LAST SESSION (2026-06-04):** Ran **V18 + V19 on `rpi1` — PASS** (batch, user-authorized). V18: i2c_read_word now ReadReg16 (full 16-bit word; consumer-facing). V19: i2c_setup accepts decimal/0x-hex addresses, croaks on junk (was single-digit only). New test `t/70-i2c_fixes.t` (185 total); I2C runtime paths gated/deferred — this Pi lacks /dev/i2c-1, and wiringPiI2CSetup aborts on bus-open failure. Filed **B10**: revisit i2c tests (t/70 acceptance + t/55 block round-trips) once the user enables I2C. Prior: V1-V12, V14-V17 + V34 PASS; V13 deferred. Standing flags: V13 deferred; Phase 4 V26-V32 ⏸ HOLD; B8/B9/B10; V35 (testChar); V33 downstream gate (installed WiringPi::API "executable stack" load error); rpi-wiringpi cleanup under `refactor-setup-modes.md` V2-V9.
-> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V12, V14-V19, V34 archived)
+> **NEXT ACTION:** V21 — Fix **F4/F5**: replace `exit()` in XS `serialGets` (API.xs) and `spiDataRW` with `croak`; drop the VLA `unsigned char buf[num_bytes]`. They currently kill the interpreter.
+> **LAST SESSION (2026-06-04):** Ran **V20 on `rpi1` — PASS**. Fixed F3: `shift_reg_setup` bounds guards used `&&` (never true) → `||` for both `$num_pins` (0-32, API.pm:545) and the data/clock/latch pin loop (0-40, API.pm:550); out-of-range input now croaks (⚠ consumer-facing). Hardware-free; `perl -c` OK; runtime exercise deferred to V33. Prior: V18 + V19 PASS (i2c_read_word 16-bit; i2c_setup decimal/0x-hex), test `t/70-i2c_fixes.t` (185 total); V1-V12, V14-V17 + V34 PASS; V13 deferred. Standing flags: V13 deferred; Phase 4 V26-V32 ⏸ HOLD; B8/B9/B10; V35 (testChar); V33 downstream gate (installed WiringPi::API "executable stack" load error); rpi-wiringpi cleanup under `refactor-setup-modes.md` V2-V9.
+> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V12, V14-V20, V34 archived)
 
 ## Goal
 
@@ -88,7 +88,6 @@ caveat assumed a different dev box and no longer applies.) Note: this is a
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V20 | Fix **F3**: `shift_reg_setup` range guards use `&&` (never true) instead of `||` (API.pm:333 and 337-338). ⚠ consumer-facing: now croaks on bad input | `perl -c -Ilib lib/WiringPi/API.pm` | OK; out-of-range input now croaks | ⏳ |
 | V21 | Fix **F4/F5**: replace `exit()` calls in XS `serialGets` (API.xs:40) and `spiDataRW` (API.xs:85-86) with `croak` — they currently kill the interpreter; drop the VLA `unsigned char buf[num_bytes]` (API.xs:75) | XS `process_file` parse | parses; no `exit(` in those fns | ⏳ |
 | V22 | Fix **F6**: `#define PERL_NO_GET_CONTEXT` sits *after* the perl.h include (API.xs:30) so it has no effect; move it above the perl headers | XS `process_file` parse | parses; macro precedes perl.h | ⏳ |
 | V23 | Fix **F7/F8** (~~F10~~ done): remove duplicate `pwm_set_range` in `@wpi_perl_functions` (API.pm:42 & 52); review/justify or drop the stray `lcdPuts($fd,"\n")` in `lcd_char_def` (API.pm:301). **F10/F22 already done** — the dead `interruptHandler()` XS export + `API.h` decl were removed during V34 (pulled forward because the dangling symbol broke `make test` under bind-now; see clean-setup-calls.md Fix 1). ⚠ consumer-facing (see Public API impact) | `perl -c` + XS parse | OK | ⏳ |

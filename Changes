@@ -67,6 +67,9 @@ Revision history for Perl extension WiringPi::API.
         - fixed i2c_setup() address validation: it rejected any multi-digit
           address (e.g. 72 / 0x48); it now accepts full decimal and 0x-hex
           addresses and croaks on non-numeric input
+        - fixed shift_reg_setup() range guards: the && in the bounds checks
+          could never be true, so out-of-range $num_pins (0-32) and pin
+          numbers (0-40) were silently passed through; they now croak
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

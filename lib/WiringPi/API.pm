@@ -542,12 +542,12 @@ sub shift_reg_setup {
 
     croak "\$pin_base must be an integer\n" if $pin_base !~ /^\d+$/;
 
-    if ($num_pins < 0 && $num_pins > 32){
-        croak "\$num_pins must be between 0 and 32\n"     
+    if ($num_pins < 0 || $num_pins > 32){
+        croak "\$num_pins must be between 0 and 32\n";
     }
 
     for ($data_pin, $clock_pin, $latch_pin){
-        if ($_ < 0 && $_ > 40){
+        if ($_ < 0 || $_ > 40){
             croak "$data_pin, $clock_pin and $latch_pin must all be valid " .
                 "GPIO pin numbers\n";
         }
