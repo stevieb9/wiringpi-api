@@ -36,6 +36,7 @@ my @wpi_c_functions = qw(
     bmp180Temp          analogRead          analogWrite
     physPinToWpi        wiringPiVersion     ads1115Setup
     pseudoPinsSetup     wiringPiSPISetup    spiDataRW
+    wiringPiSPIGetFd    wiringPiSPISetupMode wiringPiSPIClose
     wiringPiI2CSetup    wiringPiI2CSetupInterface
     wiringPiI2CRead     wiringPiI2CReadReg8 wiringPiI2CReadReg16
     wiringPiI2CWrite    wiringPiI2CWriteReg8 wiringPiI2CWriteReg16
@@ -66,6 +67,7 @@ my @wpi_perl_functions = qw(
     i2c_interface   i2c_read        i2c_read_byte       i2c_read_word
     i2c_write       i2c_write_byte  i2c_write_word      testChar
     i2c_read_block  i2c_raw_read    i2c_write_block     i2c_raw_write
+    spi_get_fd      spi_setup_mode  spi_close
     phys_to_wpi     pin_mode_alt    serial_open         serial_flush
     serial_put_char serial_puts     serial_data_avail   serial_get_char 
     serial_close    serial_gets     pwm_set_range       pwm_set_clock
@@ -737,6 +739,42 @@ sub spi_data {
     }
 
     return spiDataRW($chan, $buf, $len);
+}
+sub spi_get_fd {
+    shift if @_ > 1;
+    my ($channel) = @_;
+
+    if (! defined $channel || ($channel != 0 && $channel != 1)){
+        croak "spi_get_fd() channel param must be 0 or 1\n";
+    }
+
+    return wiringPiSPIGetFd($channel);
+}
+sub spi_setup_mode {
+    shift if @_ > 3;
+    my ($channel, $speed, $mode) = @_;
+
+    if (! defined $channel || ($channel != 0 && $channel != 1)){
+        croak "spi_setup_mode() channel param must be 0 or 1\n";
+    }
+    if (! defined $speed){
+        croak "spi_setup_mode() requires a \$speed param\n";
+    }
+    if (! defined $mode){
+        croak "spi_setup_mode() requires a \$mode param\n";
+    }
+
+    return wiringPiSPISetupMode($channel, $speed, $mode);
+}
+sub spi_close {
+    shift if @_ > 1;
+    my ($channel) = @_;
+
+    if (! defined $channel || ($channel != 0 && $channel != 1)){
+        croak "spi_close() channel param must be 0 or 1\n";
+    }
+
+    return wiringPiSPIClose($channel);
 }
 
 # bmp180 pressure sensor functions
@@ -2244,6 +2282,52 @@ Returns a Perl array containing the same number of elements you sent in.
     my $buf = [0x00, 0x00, 0x00];
 
     my @ret = spiDataRW($chan, $buf, 3);
+
+=head2 spi_get_fd($channel)
+
+Maps to C<int wiringPiSPIGetFd(int channel)>
+
+Returns the open file descriptor for an SPI channel that was previously set up.
+
+Parameters:
+
+    $channel
+
+Mandatory: Integer, C<0> or C<1>.
+
+=head2 spi_setup_mode($channel, $speed, $mode)
+
+Maps to C<int wiringPiSPISetupMode(int channel, int speed, int mode)>
+
+As C<spi_setup()>, but also selects the SPI mode (clock polarity/phase).
+
+Parameters:
+
+    $channel
+
+Mandatory: Integer, C<0> or C<1>.
+
+    $speed
+
+Mandatory: Integer, the bus speed in Hz (e.g. C<1000000>).
+
+    $mode
+
+Mandatory: Integer C<0>-C<3>, the SPI mode.
+
+Returns: Integer, the file descriptor on success or C<-1> on error.
+
+=head2 spi_close($channel)
+
+Maps to C<int wiringPiSPIClose(const int channel)>
+
+Closes the given SPI channel, releasing its file descriptor.
+
+Parameters:
+
+    $channel
+
+Mandatory: Integer, C<0> or C<1>.
 
 =head1 BMP180 PRESSURE SENSOR FUNCTIONS
 

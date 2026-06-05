@@ -629,6 +629,20 @@ spiDataRW (channel, byte_ref, len)
         }
         return;
 
+int
+wiringPiSPIGetFd(channel)
+    int channel
+
+int
+wiringPiSPISetupMode(channel, speed, mode)
+    int channel
+    int speed
+    int mode
+
+int
+wiringPiSPIClose(channel)
+    int channel
+
 # I2C
 
 int wiringPiI2CSetup (devId)

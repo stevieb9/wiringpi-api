@@ -1,8 +1,8 @@
 # Plan: Upgrade WiringPi::API to wiringPi 3.18
 
-> **NEXT ACTION:** V15 — wrap SPI additions (wiringPiSPI.h:31-35): `wiringPiSPIGetFd`, `wiringPiSPISetupMode`, `wiringPiSPIClose`.
-> **LAST SESSION (2026-06-04):** Ran **V14 on `rpi1` — PASS**. Wrapped I2C block/raw additions (i2c_read_block/i2c_raw_read return byte lists; i2c_write_block/i2c_raw_write take arrayrefs; buffer XS with NULL-checked av_fetch + 256-byte stack buf + croak guards) and implemented i2c_interface (was a "not available" stub). Needed adding the 4 new decls to API.h (API.xs doesn't include wiringPiI2C.h). New test `t/55-i2c_block.t` (guards/exports — real xfers need wired device); `make test` 157 tests pass. Prior: V1-V12 + V34 PASS; V13 deferred→isr-migration.md. Standing flags: V13 deferred; Phase 4 V26-V32 ⏸ HOLD; B8/B9; V35 (testChar); V33 downstream gate (installed WiringPi::API "executable stack" load error to investigate at V33); rpi-wiringpi cleanup under `refactor-setup-modes.md` V2-V9.
-> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V12, V14, V34 archived)
+> **NEXT ACTION:** V16 — wrap softTone (`softToneCreate/Stop/Write`, softTone.h) and softServo; add `#include`s, exports, POD.
+> **LAST SESSION (2026-06-04):** Ran **V15 on `rpi1` — PASS**. Wrapped SPI additions spi_get_fd/spi_setup_mode/spi_close (plain int wraps; channel 0/1 validation; wiringPiSPI.h already included). New test `t/60-spi_additions.t`; `make test` 170 tests pass. Prior: V1-V12, V14 + V34 PASS; V13 deferred→isr-migration.md. Standing flags: V13 deferred; Phase 4 V26-V32 ⏸ HOLD; B8/B9; V35 (testChar); V33 downstream gate (installed WiringPi::API "executable stack" load error to investigate at V33); rpi-wiringpi cleanup under `refactor-setup-modes.md` V2-V9.
+> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V12, V14-V15, V34 archived)
 
 ## Goal
 
@@ -83,7 +83,6 @@ caveat assumed a different dev box and no longer applies.) Note: this is a
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
 | V13 | Wrap interrupt additions: `wiringPiISRStop` (V3.2), `wiringPiISR2` + `waitForInterrupt2` (V3.16, `struct WPIWfiStatus`) (wiringPi.h:306-310). **GOVERNED BY `isr-migration.md`** — `wiringPiISR2` must NOT be thin-wrapped with a Perl callback (calling Perl from wiringPi's foreign ISR thread is the F17/F18 segfault hazard the self-pipe redesign removes); `waitForInterrupt2` is unused by that design. Maps: `wiringPiISRStop`→isr-migration V3, `wiringPiISR2` self-pipe core→isr-migration V4. | per isr-migration.md | parses | ⏭ DEFERRED 2026-06-04 (user): skip for now, do as a dedicated isr-migration.md run. Its V1 prereq already confirmed (header has wiringPiISR2/wiringPiISRStop/WPIWfiStatus ≥3.16). |
-| V15 | Wrap SPI additions (wiringPiSPI.h:31-35): `wiringPiSPIGetFd`, `wiringPiSPISetupMode`, `wiringPiSPIClose` | XS parse + `perl -c` | parses | ⏳ |
 | V16 | Wrap softTone (`softToneCreate/Stop/Write`, softTone.h) and softServo; add `#include`s, exports, POD | XS parse + `perl -c` | parses | ⏳ |
 | V17 | **Full gate** — Phase 2 exit: rebuild and smoke-test every newly wrapped call on a Pi | `perl Makefile.PL && make && make test` (on Pi) | compiles; new calls invocable | ⏳ |
 

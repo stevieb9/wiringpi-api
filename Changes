@@ -54,6 +54,9 @@ Revision history for Perl extension WiringPi::API.
           array reference; up to 255 bytes
         - implemented i2c_interface() (maps to wiringPiI2CSetupInterface); it
           previously croaked "not available"
+        - wrapped the SPI additions: spi_get_fd (wiringPiSPIGetFd),
+          spi_setup_mode (wiringPiSPISetupMode) and spi_close (wiringPiSPIClose)
+          - XS + Perl + POD
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks
