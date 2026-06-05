@@ -118,6 +118,11 @@ Revision history for Perl extension WiringPi::API.
           for the self-pipe dispatch model (no threaded Perl required) and fixed
           pre-existing POD errors (the ADC FUNCTIONS / digitalReadByte internal
           links and stray whitespace) so podchecker is clean
+        - added t/75-interrupts.t: hardware-free coverage of the constants,
+          set_interrupt() validation and dispatch routing on every run, plus
+          real-GPIO exercisers (both numbering schemes, re-arm, fork background,
+          teardown) gated behind PI_BOARD. Verified the full interrupt chain on
+          Pi 5 hardware with no leaks or fd leaks attributable to the module
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks
