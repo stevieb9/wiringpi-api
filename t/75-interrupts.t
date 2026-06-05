@@ -11,6 +11,7 @@ use WiringPi::API qw(
     set_interrupt   dispatch_interrupts wait_interrupts
     stop_interrupt  stop_interrupts     interrupt_fd        interrupt_dropped
     last_interrupt  interrupt_buffer
+    run_interrupt_loop                  stop_interrupt_loop
     INT_EDGE_SETUP  INT_EDGE_FALLING    INT_EDGE_RISING     INT_EDGE_BOTH
 );
 
@@ -130,7 +131,51 @@ like(interrupt_dropped(), qr/^\d+$/, 'interrupt_dropped() returns a count');
 
     eval { interrupt_buffer("big") };
     like($@, qr/positive integer/, 'interrupt_buffer(non-integer) is rejected');
+
+    stop_interrupts();   # drop the cached read handle before the next fake pipe
 }
+
+# ---------------------------------------------------------------------------
+# Hardware-free: run_interrupt_loop()/stop_interrupt_loop(). Fake the pipe so
+# the loop dispatches injected records, no GPIO.
+# ---------------------------------------------------------------------------
+
+{
+    pipe(my $rx, my $tx) or die "pipe: $!";
+    my $flags = fcntl($rx, F_GETFL, 0);
+    fcntl($rx, F_SETFL, $flags | O_NONBLOCK);
+
+    no warnings 'redefine';
+    local *WiringPi::API::interrupt_fd    = sub { fileno($rx) };
+    local *WiringPi::API::_arm_interrupt  = sub { 0 };
+    local *WiringPi::API::wiringPiISRStop = sub { 0 };
+
+    stop_interrupts();   # ensure no stale cached read handle from a prior block
+
+    # $max stops the loop after N dispatched events
+    my @seen;
+    set_interrupt(3, INT_EDGE_RISING, sub { push @seen, $_[0] });
+    syswrite($tx, pack REC, 3, 17, 2, 1, 10);
+    syswrite($tx, pack REC, 3, 17, 2, 1, 20);
+    is(run_interrupt_loop(50, 2), 2,
+        'run_interrupt_loop($timeout, $max) returns after $max events');
+    is(scalar(@seen), 2, 'the loop dispatched exactly $max events to the callback');
+
+    # stop_interrupt_loop() called from a callback breaks the loop
+    @seen = ();
+    set_interrupt(3, INT_EDGE_RISING, sub { push @seen, $_[0]; stop_interrupt_loop() });
+    syswrite($tx, pack REC, 3, 17, 2, 1, 30);
+    is(run_interrupt_loop(50), 1,
+        'stop_interrupt_loop() in a callback breaks run_interrupt_loop()');
+
+    stop_interrupts();
+}
+
+eval { run_interrupt_loop(0) };
+like($@, qr/positive integer/, 'run_interrupt_loop() rejects a zero timeout');
+
+eval { run_interrupt_loop(100, 0) };
+like($@, qr/positive integer/, 'run_interrupt_loop() rejects a zero $max');
 
 # ---------------------------------------------------------------------------
 # Real hardware (opt-in via PI_BOARD). Uses BCM17 driven by toggling its

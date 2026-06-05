@@ -78,6 +78,7 @@ my @wpi_perl_functions = qw(
     wait_interrupts interrupt_dropped   stop_interrupt
     stop_interrupts background_interrupt auto_dispatch_interrupts
     last_interrupt  interrupt_buffer
+    run_interrupt_loop                  stop_interrupt_loop
     bmp180_setup    bmp180_pressure     bmp180_temp
     shift_reg_setup analog_read     analog_write        pin_mode
     ads1115_setup   spi_setup       spi_data            i2c_setup
@@ -137,6 +138,9 @@ my $_auto_dispatch_fd;              # the fd we wired O_ASYNC/F_SETOWN onto
 # whenever the self-pipe is (re)created, so it can be set before arming.
 my $_interrupt_buffer_req;          # requested pipe size in bytes, or undef
 my $_interrupt_buffer_fd;           # the fd we last applied the size to
+
+# run_interrupt_loop() state - cleared by stop_interrupt_loop() to break out.
+my $_run_loop = 0;
 
 sub new {
     return bless {}, shift;
@@ -369,6 +373,44 @@ sub interrupt_buffer {
     $_interrupt_buffer_fd = fileno($fh);
 
     return $set;   # the actual size the kernel granted
+}
+sub run_interrupt_loop {
+    shift if @_ && ref $_[0];   # drop $self on method calls
+    my ($timeout_ms, $max) = @_;
+
+    $timeout_ms = 1000 if ! defined $timeout_ms;
+
+    if ($timeout_ms !~ /^\d+$/ || $timeout_ms == 0) {
+        croak "run_interrupt_loop() \$timeout_ms must be a positive integer";
+    }
+
+    if (defined $max && ($max !~ /^\d+$/ || $max == 0)) {
+        croak "run_interrupt_loop() \$max must be a positive integer";
+    }
+
+    $_run_loop = 1;
+    my $total = 0;
+
+    while ($_run_loop) {
+        # Nothing armed yet: sleep the poll interval rather than busy-spinning,
+        # since wait_interrupts() returns at once when there is no interrupt fd.
+        if (interrupt_fd() < 0) {
+            select undef, undef, undef, $timeout_ms / 1000;
+            next;
+        }
+
+        $total += wait_interrupts($timeout_ms);
+
+        last if defined $max && $total >= $max;
+    }
+
+    $_run_loop = 0;
+    return $total;
+}
+sub stop_interrupt_loop {
+    shift if @_ == 1;   # drop $self on method calls
+    $_run_loop = 0;
+    return 1;
 }
 
 sub auto_dispatch_interrupts {
@@ -2392,6 +2434,38 @@ to a page and caps at F</proc/sys/fs/pipe-max-size>:
 The request is remembered, so you may set it B<before> arming (it is applied when
 the pipe is created) and it persists across C<stop_interrupts()> - the new pipe
 from a later C<set_interrupt()> is sized the same way.
+
+=head2 run_interrupt_loop($timeout_ms, $max)
+
+A blocking dispatch loop, so you don't have to write C<< wait_interrupts(...)
+while 1 >> yourself. It repeatedly calls C<wait_interrupts($timeout_ms)> (poll
+interval, default 1000 ms) and returns the total number of events dispatched.
+
+It runs until one of:
+
+=over 4
+
+=item * C<stop_interrupt_loop()> is called - from inside a callback, or from a
+signal handler (it only flips a flag, so it is signal-safe);
+
+=item * C<$max> events have been dispatched, if you pass a positive C<$max>.
+
+=back
+
+The C<$timeout_ms> is just the poll granularity - how often the loop checks the
+stop flag - not a run time limit. Arm your interrupts first; if nothing is armed
+the loop sleeps the interval rather than spinning.
+
+    set_interrupt(0, INT_EDGE_RISING, sub {
+        my ($edge, $ts) = @_;
+        stop_interrupt_loop() if done_enough();   # break out from the callback
+    });
+    my $count = run_interrupt_loop(1000);          # blocks, dispatching, until stopped
+
+=head2 stop_interrupt_loop()
+
+Breaks out of C<run_interrupt_loop()> at the next iteration. Safe to call from a
+callback or a signal handler, and a no-op if no loop is running.
 
 =head2 last_interrupt()
 

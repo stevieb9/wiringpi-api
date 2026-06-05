@@ -145,6 +145,11 @@ Revision history for Perl extension WiringPi::API.
           overflow policy in the interrupt_dropped() POD: edges FIFO-queue and,
           on a full pipe, are dropped (not merged, not blocked) and counted - so
           loss is never silent
+        - Added run_interrupt_loop($timeout_ms, $max) and stop_interrupt_loop():
+          a blocking dispatch loop so you needn't write "wait_interrupts while 1"
+          yourself. Returns the total dispatched; stops on stop_interrupt_loop()
+          (callback/signal-safe) or after $max events; sleeps rather than
+          busy-spinning when nothing is armed
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks
