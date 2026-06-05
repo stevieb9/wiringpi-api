@@ -120,9 +120,11 @@ void spiDataRW(int channel, SV* byte_ref, int len){
  * even if several per-pin ISR threads fire concurrently. */
 
 typedef struct {
-    int       pin;      /* the caller's pin (from userdata, NOT wfiStatus.pinBCM) */
-    int       edge;
-    long long ts_us;
+    int          pin;      /* the caller's pin (from userdata, NOT wfiStatus.pinBCM) */
+    unsigned int pin_bcm;  /* wfiStatus.pinBCM - the BCM gpio that fired */
+    int          edge;
+    int          status;   /* wfiStatus.statusOK (1 = real irq on this path) */
+    long long    ts_us;
 } isr_event_t;
 
 static int           interrupt_pipe[2] = { -1, -1 };  /* [0] read, [1] write */
@@ -136,9 +138,11 @@ static unsigned long interrupts_dropped = 0;          /* events lost to a full p
 static void isr2_writer(struct WPIWfiStatus wfiStatus, void *userdata){
     isr_event_t rec;
 
-    rec.pin   = (int)(intptr_t)userdata;
-    rec.edge  = wfiStatus.edge;
-    rec.ts_us = wfiStatus.timeStamp_us;
+    rec.pin     = (int)(intptr_t)userdata;
+    rec.pin_bcm = wfiStatus.pinBCM;
+    rec.edge    = wfiStatus.edge;
+    rec.status  = wfiStatus.statusOK;
+    rec.ts_us   = wfiStatus.timeStamp_us;
 
     if (interrupt_pipe[1] < 0){
         return;

@@ -436,7 +436,7 @@ setup();
 pin_mode(0, 0);                          # INPUT — plain config, before fork
 
 # This $rx/$tx pipe is YOUR OWN results channel (child -> parent), separate from
-# the library's internal self-pipe (a fixed 16-byte {pin,edge,ts} record). You
+# the library's internal self-pipe (a fixed 24-byte {pin, pin_bcm, edge, status, ts} record). You
 # choose this channel's format; here, one newline-terminated text line per edge —
 # self-delimiting, and portable (no 64-bit pack template, no fixed-width framing
 # to get wrong).
@@ -559,6 +559,7 @@ ithreads. "Background" does not imply `use threads`; only the ithread variants i
 | `dispatch_interrupts()` | non-blocking: dispatch pending events | count dispatched |
 | `interrupt_fd()` | read fd for `select`/event loops | int fd |
 | `interrupt_dropped()` | count of events dropped on a full pipe | int count |
+| `last_interrupt()` | full status of the most recent dispatched event | hashref `{pin, pin_bcm, edge, status, ts_us}` or `undef` |
 | `stop_interrupt($pin)` / `stop_interrupts()` | teardown | — |
 | `INT_EDGE_FALLING` (1) / `INT_EDGE_RISING` (2) / `INT_EDGE_BOTH` (3) | edge constants | int |
 
@@ -611,7 +612,7 @@ original.
    only need 7 or 8" signpost in *About* — **without** reordering 1–6 (they define
    the model 7/8 hide).
 9. **Two-channels clarification** in scenario 9: the `$rx`/`$tx` results pipe is the
-   user's own channel, distinct from the internal 16-byte self-pipe; its format is
+   user's own channel, distinct from the internal 24-byte self-pipe; its format is
    independent.
 10. **Return-value column** in the API reference (flagged provisional, with the
     "keep doc/spec/XS in sync" warning) — the original documented no return values.

@@ -133,6 +133,12 @@ Revision history for Perl extension WiringPi::API.
           callbacks fire automatically in-process with no dispatch loop; runs at
           Perl safe points (lock-free shared state); disable restores the prior
           handler. Both verified on Pi 5 hardware
+        - Added last_interrupt(): returns a hashref {pin, pin_bcm, edge, status,
+          ts_us} for the most recently dispatched event (undef if none), so a
+          callback - which only receives ($edge, $ts_us) - can obtain the BCM pin
+          and status. The self-pipe record widened to carry wfiStatus.pinBCM and
+          wfiStatus.statusOK (now a 24-byte {pin, pin_bcm, edge, status, ts}
+          record); the callback signature is unchanged
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

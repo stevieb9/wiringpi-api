@@ -77,6 +77,7 @@ my @wpi_perl_functions = qw(
     set_interrupt   interrupt_fd        dispatch_interrupts
     wait_interrupts interrupt_dropped   stop_interrupt
     stop_interrupts background_interrupt auto_dispatch_interrupts
+    last_interrupt
     bmp180_setup    bmp180_pressure     bmp180_temp
     shift_reg_setup analog_read     analog_write        pin_mode
     ads1115_setup   spi_setup       spi_data            i2c_setup
@@ -121,6 +122,7 @@ $EXPORT_TAGS{all} = [@wpi_c_functions, @wpi_perl_functions, @wpi_constants];
 my %_interrupt_cb;                  # pin => CODE ref
 my $_interrupt_fh;                  # cached read handle (dup of interrupt_fd())
 my $_interrupt_fh_fd;               # the fd $_interrupt_fh was opened on
+my $_last_interrupt;                # hashref of the most recently dispatched event
 
 # background_interrupt() state - handles of forked children, reaped at exit.
 my @_bg_children;
@@ -231,7 +233,7 @@ sub dispatch_interrupts {
 
     while (1) {
         my $buf = "";
-        my $n = sysread($fh, $buf, 16);
+        my $n = sysread($fh, $buf, 24);
 
         if (! defined $n) {
             next if $!{EINTR};      # interrupted before any data - retry
@@ -239,9 +241,22 @@ sub dispatch_interrupts {
         }
 
         last if $n == 0;            # EOF: all write ends closed
-        last if $n != 16;           # short read (16-byte writes are atomic)
+        last if $n != 24;           # short read (24-byte writes are atomic)
 
-        my ($pin, $edge, $ts_us) = unpack "i i q", $buf;
+        # Record layout mirrors isr_event_t in API.xs: caller pin, BCM pin,
+        # edge, statusOK, timestamp. Keep this in sync with that struct.
+        my ($pin, $pin_bcm, $edge, $status, $ts_us) = unpack "i I i i q", $buf;
+
+        # Publish the full event before running the callback, so the callback
+        # may query last_interrupt() for the BCM pin / status it doesn't get
+        # in its ($edge, $ts_us) arguments.
+        $_last_interrupt = {
+            pin     => $pin,
+            pin_bcm => $pin_bcm,
+            edge    => $edge,
+            status  => $status,
+            ts_us   => $ts_us,
+        };
 
         my $cb = $_interrupt_cb{$pin};
         $cb->($edge, $ts_us) if $cb;
@@ -301,7 +316,18 @@ sub stop_interrupts {
     # pipe and (if auto-dispatch is still on) re-wires the new fd.
     $_auto_dispatch_fd = undef;
 
+    # Forget the last event - the interrupt subsystem is torn down.
+    $_last_interrupt = undef;
+
     return 1;
+}
+sub last_interrupt {
+    shift if @_ == 1;   # drop $self on method calls
+
+    return undef if ! defined $_last_interrupt;
+
+    # Return a copy so callers can't mutate our internal state.
+    return { %$_last_interrupt };
 }
 
 sub auto_dispatch_interrupts {
@@ -2280,6 +2306,30 @@ becomes readable.
 Returns the number of interrupt events dropped because the self-pipe was full
 when an edge fired (bursts beyond the pipe buffer). Normally C<0>; reset by
 C<stop_interrupts()>.
+
+=head2 last_interrupt()
+
+Returns a hash reference describing the most recently B<dispatched> interrupt
+event, or C<undef> if none has been dispatched yet (or since the last
+C<stop_interrupts()>). The keys are:
+
+    pin       the pin you armed (your numbering scheme - the dispatch key)
+    pin_bcm   the BCM gpio that fired
+    edge      INT_EDGE_FALLING (1) or INT_EDGE_RISING (2)
+    status    wiringPi's statusOK (1 for a real edge on this path)
+    ts_us     edge timestamp, in microseconds
+
+The event is published B<before> the callback runs, so a callback - which only
+receives C<($edge, $ts_us)> - can call C<last_interrupt()> to obtain the BCM pin
+or status as well. Handy when one shared callback is armed on several pins:
+
+    set_interrupt($pin, INT_EDGE_BOTH, sub {
+        my $i = last_interrupt();
+        printf "BCM %d went %s\n", $i->{pin_bcm},
+            $i->{edge} == INT_EDGE_RISING ? "high" : "low";
+    });
+
+Returns a fresh copy each call, so mutating it won't affect later reads.
 
 =head2 stop_interrupt($pin)
 

@@ -10,12 +10,14 @@ use WiringPi::API qw(
     setup           setup_gpio          pin_mode            pull_up_down
     set_interrupt   dispatch_interrupts wait_interrupts
     stop_interrupt  stop_interrupts     interrupt_fd        interrupt_dropped
+    last_interrupt
     INT_EDGE_SETUP  INT_EDGE_FALLING    INT_EDGE_RISING     INT_EDGE_BOTH
 );
 
-# The wiringPi ISR thread writes a fixed {int pin; int edge; long long ts}
-# record to the self-pipe; Perl unpacks it as "i i q".
-use constant REC => 'i i q';
+# The wiringPi ISR thread writes a fixed record to the self-pipe (isr_event_t in
+# API.xs): {int pin; unsigned int pin_bcm; int edge; int status; long long ts}.
+# Perl unpacks it as "i I i i q" (24 bytes).
+use constant REC => 'i I i i q';
 
 # ---------------------------------------------------------------------------
 # Hardware-free: edge constants
@@ -66,28 +68,36 @@ like($@, qr/debounce/, 'set_interrupt rejects a non-integer debounce');
     set_interrupt(7, INT_EDGE_RISING,  sub { push @got, "7:$_[0]:$_[1]" });
     set_interrupt(9, INT_EDGE_FALLING, sub { push @got, "9:$_[0]:$_[1]" });
 
-    syswrite($tx, pack REC, 7, 2, 111);
-    syswrite($tx, pack REC, 9, 1, 222);
-    syswrite($tx, pack REC, 7, 2, 333);
+    # Records carry {pin, pin_bcm, edge, status, ts}; pin 7 = BCM 17, pin 9 = BCM 27.
+    syswrite($tx, pack REC, 7, 17, 2, 1, 111);
+    syswrite($tx, pack REC, 9, 27, 1, 1, 222);
+    syswrite($tx, pack REC, 7, 17, 2, 1, 333);
 
     is(dispatch_interrupts(), 3, 'dispatch_interrupts() drains all 3 pending records');
     is_deeply(\@got, ['7:2:111', '9:1:222', '7:2:333'],
         'records route to the right per-pin callback with (edge, ts)');
+
+    # last_interrupt() reflects the most recent dispatched record, full wfiStatus
+    is_deeply(last_interrupt(),
+        { pin => 7, pin_bcm => 17, edge => 2, status => 1, ts_us => 333 },
+        'last_interrupt() reports the most recent event with the full wfiStatus');
+
     is(dispatch_interrupts(), 0, 'a second drain returns 0 (no busy-spin when empty)');
 
     # stop_interrupt removes one pin only
     @got = ();
     stop_interrupt(7);
-    syswrite($tx, pack REC, 7, 2, 444);
-    syswrite($tx, pack REC, 9, 1, 555);
+    syswrite($tx, pack REC, 7, 17, 2, 1, 444);
+    syswrite($tx, pack REC, 9, 27, 1, 1, 555);
     dispatch_interrupts();
     is_deeply(\@got, ['9:1:555'], 'stop_interrupt($pin) forgets only that pin');
 
     # stop_interrupts clears the rest
     @got = ();
     stop_interrupts();
+    is(last_interrupt(), undef, 'last_interrupt() is undef after stop_interrupts()');
     set_interrupt(9, INT_EDGE_FALLING, sub { push @got, "again" }) if 0;  # do not re-register
-    syswrite($tx, pack REC, 9, 1, 666);
+    syswrite($tx, pack REC, 9, 27, 1, 1, 666);
     dispatch_interrupts();
     is_deeply(\@got, [], 'stop_interrupts() clears the whole registry');
 }
