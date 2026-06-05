@@ -177,6 +177,13 @@ Revision history for Perl extension WiringPi::API.
           partial data instead of spuriously failing), and croaks on a read
           error. Documented serial_gets() in the POD (it was exported but
           previously undocumented)
+        - Hardened the XS spiDataRW() (backing spi_data()): each av_fetch() is
+          now NULL-checked so a sparse or undefined element in the data aref
+          croaks cleanly instead of crashing, each byte is converted once
+          (was twice), and the function was rewritten as an idiomatic PPCODE
+          XSUB (dropping the plagued dXSARGS-in-plain-C + PL_markstack_ptr
+          juggling). Behaviour for valid input is unchanged - it still returns
+          a list of the bytes read
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

@@ -32,67 +32,6 @@
 #include <softTone.h>
 #include <sr595.h>
 
-void spiDataRW(int channel, SV* byte_ref, int len){
-
-     /*
-      * Custom wrapper for wiringPiSPIDataRW() as we
-      * need to translate an aref into an unsigned char *,
-      * and then send back an array containing the bytes
-      * read from the device
-      */ 
-
-    if (channel != 0 && channel != 1){
-        croak("channel param must be 0 or 1\n");
-    }
-
-    if (! SvROK(byte_ref) || SvTYPE(SvRV(byte_ref)) != SVt_PVAV){
-        croak("data param must be an array reference\n");
-    }
-
-    AV* bytes = (AV*)SvRV(byte_ref);
-
-    int num_bytes = av_len(bytes) + 1;
-
-    if (len != num_bytes){
-        croak("len param doesn't match element count in data\n");
-    }
-
-    unsigned char *buf;
-    Newx(buf, num_bytes, unsigned char);
-
-    int i;
-
-    for (i=0; i<len; i++){
-        SV** elem = av_fetch(bytes, i, 0);
-
-        int elem_int = (int)SvNV(*elem);
-
-        if (elem_int < 0 || elem_int > 255){
-            Safefree(buf);
-            croak("byte %d in data param out of range: (%d)\n", i, elem_int);
-        }
-
-        buf[i] = (unsigned char)SvNV(*elem);
-    }
-
-    if (wiringPiSPIDataRW(channel, buf, len) < 0){
-        Safefree(buf);
-        croak("failed to write to the SPI bus\n");
-    }
-
-    inline_stack_vars;
-    inline_stack_reset;
-
-    int x;
-    for (x=0; x<len; x++){
-        inline_stack_push(sv_2mortal(newSViv(buf[x])));
-    }
-
-    inline_stack_done;
-
-    Safefree(buf);
-}
-
 // Used for interrupts (self-pipe: the wiringPi ISR thread write()s a fixed
 // event record to a pipe and never touches Perl; the Perl side reads + dispatches)
 
@@ -583,19 +522,47 @@ wiringPiSPISetup(channel, speed)
 
 void
 spiDataRW (channel, byte_ref, len)
-	int	channel
-	SV *	byte_ref
-	int	len
-        PREINIT:
-        I32* temp;
-        PPCODE:
-        temp = PL_markstack_ptr++;
-        spiDataRW(channel, byte_ref, len);
-        if (PL_markstack_ptr != temp) {
-          PL_markstack_ptr = temp;
-          XSRETURN_EMPTY;
+    int channel
+    SV *byte_ref
+    int len
+    PREINIT:
+        AV *bytes;
+        unsigned char *buf;
+        int i;
+        int num_bytes;
+    PPCODE:
+        if (channel != 0 && channel != 1)
+            croak("spiDataRW: channel param must be 0 or 1");
+        if (! SvROK(byte_ref) || SvTYPE(SvRV(byte_ref)) != SVt_PVAV)
+            croak("spiDataRW: data param must be an array reference");
+        bytes = (AV*)SvRV(byte_ref);
+        num_bytes = av_len(bytes) + 1;
+        if (len != num_bytes)
+            croak("spiDataRW: len param does not match element count in data");
+        Newx(buf, len > 0 ? len : 1, unsigned char);
+        for (i = 0; i < len; i++) {
+            SV **elem = av_fetch(bytes, i, 0);
+            int val;
+            if (elem == NULL || ! SvOK(*elem)) {
+                Safefree(buf);
+                croak("spiDataRW: byte %d in data param is undefined", i);
+            }
+            val = (int)SvNV(*elem);
+            if (val < 0 || val > 255) {
+                Safefree(buf);
+                croak("spiDataRW: byte %d in data param out of range: (%d)", i, val);
+            }
+            buf[i] = (unsigned char)val;
         }
-        return;
+        if (wiringPiSPIDataRW(channel, buf, len) < 0) {
+            Safefree(buf);
+            croak("spiDataRW: failed to write to the SPI bus");
+        }
+        EXTEND(SP, (SSize_t)len);
+        for (i = 0; i < len; i++)
+            PUSHs(sv_2mortal(newSViv(buf[i])));
+        Safefree(buf);
+
 
 int
 wiringPiSPIGetFd(channel)
