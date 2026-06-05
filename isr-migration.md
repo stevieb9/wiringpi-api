@@ -367,7 +367,7 @@ B5: *(promoted to V17 — `background_interrupt` opt-in `results` data-back chan
 
 B6: *(promoted to V20 — `auto_dispatch_interrupts` configurable signal + per-`set_interrupt` opt-in; slot retired)*
 
-B8: Determine whether RPi::WiringPi's cleanup path must call `stop_interrupts()` (V6). RPi::WiringPi has a `cleanup`/`DESTROY` that resets pins; once V6 lands, check whether a consumer that armed interrupts via the OO/`set_interrupt` layer leaks the wiringPi ISR thread + the self-pipe fds at teardown if cleanup doesn't also call `stop_interrupts()`. If so, wire `stop_interrupts()` into RPi::WiringPi's cleanup (committed in that repo) and/or document it as the consumer's responsibility. Cross-link to the V9 downstream gate. (The new design has no dispatcher thread to join, but armed pins still hold a wiringPi ISR thread + the pipe until `wiringPiISRStop` + pipe close.)
+B8: *(✅ RESOLVED — see Archived Fixes. Wired into RPi::WiringPi cleanup in V9, made fork-safe in V12, cleanup POD updated 2026-06-05; slot retired.)*
 
 ## Explicitly NOT doing
 
