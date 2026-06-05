@@ -86,6 +86,23 @@ Revision history for Perl extension WiringPi::API.
           :all / :perl but backed by no XS or Perl sub (importing succeeded,
           calling it died). An :all or explicit import of testChar now fails
           at use-time instead
+        - added interrupt edge constants INT_EDGE_SETUP / INT_EDGE_FALLING /
+          INT_EDGE_RISING / INT_EDGE_BOTH (exported via :constants and :all)
+        - set_interrupt() now validates its arguments and croaks on bad input:
+          $pin must be a positive integer, $edge must be INT_EDGE_FALLING (1),
+          INT_EDGE_RISING (2) or INT_EDGE_BOTH (3), and $callback must be a
+          CODE reference
+        - wrapped wiringPiISRStop($pin) to stop/remove an armed interrupt
+          (exported via :wiringPi and :all)
+        - reworked the interrupt subsystem to use wiringPi's wiringPiISR2()
+          with a self-pipe: the wiringPi ISR thread now writes a fixed event
+          record to a pipe instead of calling a Perl callback from a foreign
+          thread, removing the per-pin trampolines and the dispatcher thread
+          (eliminates the cross-thread callback races). Added interrupt_fd()
+          returning the readable end of the pipe; the Perl-side dispatch
+          helpers (wait_interrupts/dispatch_interrupts) follow
+        - removed the camelCase setInterrupt export (use set_interrupt()) and
+          the dead, never-exposed initThread
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

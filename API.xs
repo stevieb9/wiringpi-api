@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <pthread.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #define PERL_NO_GET_CONTEXT
 
@@ -109,158 +111,87 @@ void spiDataRW(int channel, SV* byte_ref, int len){
     Safefree(buf);
 }
 
-// Used for interrupts and threads
-
-PerlInterpreter * mine;
-
-/* Per-pin callback storage so multiple interrupts can coexist. */
+// Used for interrupts (self-pipe: the wiringPi ISR thread write()s a fixed
+// event record to a pipe and never touches Perl; the Perl side reads + dispatches)
 
 #define MAX_PINS 40
-static SV *perl_callbacks[MAX_PINS] = { NULL };
 
-/* Event queue for ISR -> dispatcher communication */
+/* Fixed-size event record. Stays well under PIPE_BUF, so each write() is atomic
+ * even if several per-pin ISR threads fire concurrently. */
 
-#define EVENT_QUEUE_SIZE 256
 typedef struct {
-    int events[EVENT_QUEUE_SIZE];
-    int head;
-    int tail;
-    int count;
-} event_queue_t;
+    int       pin;      /* the caller's pin (from userdata, NOT wfiStatus.pinBCM) */
+    int       edge;
+    long long ts_us;
+} isr_event_t;
 
-static event_queue_t event_queue = { .head = 0, .tail = 0, .count = 0 };
-static pthread_mutex_t event_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t event_cond = PTHREAD_COND_INITIALIZER;
-static pthread_t dispatcher_thread;
-static int dispatcher_started = 0;
-static int dispatcher_shutdown = 0;
+static int           interrupt_pipe[2] = { -1, -1 };  /* [0] read, [1] write */
+static unsigned long interrupts_dropped = 0;          /* events lost to a full pipe */
 
-static void ISR_enqueue_event(int pin){
-    pthread_mutex_lock(&event_mutex);
-    if (event_queue.count < EVENT_QUEUE_SIZE) {
-        event_queue.events[event_queue.tail] = pin;
-        event_queue.tail = (event_queue.tail + 1) % EVENT_QUEUE_SIZE;
-        event_queue.count++;
-        pthread_cond_signal(&event_cond);
+/* Runs in wiringPi's per-pin ISR thread. Async-safe: only a write() and an
+ * atomic counter bump - it never enters the Perl interpreter. The caller's pin
+ * arrives via userdata (keyed to the user's numbering scheme); wfiStatus.pinBCM
+ * is always BCM and would mis-key callbacks under setup() (wiringPi numbering). */
+
+static void isr2_writer(struct WPIWfiStatus wfiStatus, void *userdata){
+    isr_event_t rec;
+
+    rec.pin   = (int)(intptr_t)userdata;
+    rec.edge  = wfiStatus.edge;
+    rec.ts_us = wfiStatus.timeStamp_us;
+
+    if (interrupt_pipe[1] < 0){
+        return;
     }
-    pthread_mutex_unlock(&event_mutex);
+
+    if (write(interrupt_pipe[1], &rec, sizeof(rec)) != (ssize_t)sizeof(rec)){
+        __sync_fetch_and_add(&interrupts_dropped, 1);
+    }
 }
 
-static int ISR_dequeue_event(int *pin){
-    pthread_mutex_lock(&event_mutex);
-    while (event_queue.count == 0 && !dispatcher_shutdown) {
-        pthread_cond_wait(&event_cond, &event_mutex);
-    }
-    if (event_queue.count == 0 && dispatcher_shutdown) {
-        pthread_mutex_unlock(&event_mutex);
+/* Lazily create the self-pipe, both ends non-blocking. Returns 0 on success. */
+
+static int ensure_interrupt_pipe(void){
+    int i;
+
+    if (interrupt_pipe[0] >= 0){
         return 0;
     }
-    *pin = event_queue.events[event_queue.head];
-    event_queue.head = (event_queue.head + 1) % EVENT_QUEUE_SIZE;
-    event_queue.count--;
-    pthread_mutex_unlock(&event_mutex);
-    return 1;
-}
 
-static void *ISR_dispatcher_main(void *arg){
-    int pin;
-    PERL_SET_CONTEXT(mine);
-    while (ISR_dequeue_event(&pin)){
-        if (pin < 0 || pin >= MAX_PINS) continue;
-
-        if (! perl_callbacks[pin]) continue;
-        if (! SvROK(perl_callbacks[pin]) || SvTYPE(SvRV(perl_callbacks[pin])) != SVt_PVCV) continue;
-
-        dSP; ENTER; SAVETMPS; PUSHMARK(SP); PUTBACK;
-        call_sv(SvRV(perl_callbacks[pin]), G_DISCARD|G_NOARGS);
-        FREETMPS; LEAVE;
+    if (pipe(interrupt_pipe) != 0){
+        return -1;
     }
-    return NULL;
+
+    for (i = 0; i < 2; i++){
+        int flags = fcntl(interrupt_pipe[i], F_GETFL, 0);
+        fcntl(interrupt_pipe[i], F_SETFL, flags | O_NONBLOCK);
+    }
+
+    return 0;
 }
 
-/* Generate a small wrapper handler for each pin that enqueues the pin */
+/* Arm (or re-arm) an interrupt on pin via wiringPiISR2, carrying the caller's
+ * pin as userdata. Always stops any existing listener first, so re-arming can
+ * never stack a second wiringPi thread on the pin. */
 
-#define MAKE_HANDLER(n) \
-static void interruptHandler_##n(void){ \
-    ISR_enqueue_event(n); \
-}
-
-/* Apply macro to every pin index to generate handlers and handler table. */
-
-#define APPLY_TO_PINS(m) \
-    m(0)  m(1)  m(2)  m(3)  m(4)  m(5)  m(6)  m(7)  \
-    m(8)  m(9)  m(10) m(11) m(12) m(13) m(14) m(15) \
-    m(16) m(17) m(18) m(19) m(20) m(21) m(22) m(23) \
-    m(24) m(25) m(26) m(27) m(28) m(29) m(30) m(31) \
-    m(32) m(33) m(34) m(35) m(36) m(37) m(38) m(39)
-
-/* Generate handlers */
-
-APPLY_TO_PINS(MAKE_HANDLER)
-
-/* Array of function pointers to pass to wiringPiISR */
-
-#define HANDLER_PTR(n) interruptHandler_##n,
-static void (*interrupt_handlers[MAX_PINS])(void) = { APPLY_TO_PINS(HANDLER_PTR) };
-
-#undef HANDLER_PTR
-#undef APPLY_TO_PINS
-
-int setInterrupt(int pin, int edge, SV * callback){
-    mine = Perl_get_context();
-
-    if (pin < 0 || pin >= MAX_PINS) {
+int _arm_interrupt(int pin, int edge, unsigned long debounce){
+    if (pin < 0 || pin >= MAX_PINS){
         croak("pin out of range\n");
     }
 
-    if (! callback || ! SvROK(callback) || SvTYPE(SvRV(callback)) != SVt_PVCV) {
-        croak("callback param must be a CODE reference\n");
+    if (ensure_interrupt_pipe() != 0){
+        croak("could not create interrupt pipe\n");
     }
 
-    if (perl_callbacks[pin]) SvREFCNT_dec(perl_callbacks[pin]);
-    perl_callbacks[pin] = callback;
-    SvREFCNT_inc(perl_callbacks[pin]);
+    wiringPiISRStop(pin);
 
-    /* Start dispatcher once (captures `mine` above). */
-
-    if (! dispatcher_started) {
-        dispatcher_shutdown = 0;
-        if (pthread_create(&dispatcher_thread, NULL, ISR_dispatcher_main, NULL) == 0) {
-            dispatcher_started = 1;
-        }
-    }
-
-    return wiringPiISR(pin, edge, interrupt_handlers[pin]);
+    return wiringPiISR2(pin, edge, isr2_writer, debounce, (void *)(intptr_t)pin);
 }
 
-static SV *thread_callback_sv = NULL; /* code-ref for thread entry */
+/* Read end of the self-pipe; -1 until the first arm creates the pipe. */
 
-int initThread(SV * callback){
-    mine = Perl_get_context();
-
-    if (! callback || ! SvROK(callback) || SvTYPE(SvRV(callback)) != SVt_PVCV) {
-        croak("callback param must be a CODE reference\n");
-    }
-
-    if (thread_callback_sv) SvREFCNT_dec(thread_callback_sv);
-    thread_callback_sv = callback;
-    SvREFCNT_inc(thread_callback_sv);
-
-    PI_THREAD (myThread){
-        PERL_SET_CONTEXT(mine);
-        dSP;
-        ENTER;
-        SAVETMPS;
-        PUSHMARK(SP);
-        PUTBACK;
-
-        call_sv(SvRV(thread_callback_sv), G_DISCARD|G_NOARGS);
-
-        FREETMPS;
-        LEAVE;
-    }
-
-    return piThreadCreate(myThread);
+int interrupt_fd(void){
+    return interrupt_pipe[0];
 }
 
 int physPinToWpi(int wpi_pin){
@@ -585,18 +516,17 @@ bmp180Temp(pin)
 # custom
 
 int
-setInterrupt(pin, edge, callback)
-    int pin
-    int edge
-    SV * callback
-
-int
 wiringPiISRStop(pin)
     int pin
 
 int
-initThread(callback)
-    SV * callback
+_arm_interrupt(pin, edge, debounce)
+    int pin
+    int edge
+    unsigned long debounce
+
+int
+interrupt_fd()
 
 int
 physPinToWpi(wpi_pin)

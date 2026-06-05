@@ -14,12 +14,6 @@ int bmp180Setup(int pin_base);
 int bmp180Pressure(int pin);
 int bmp180Temp(int pin);
 
-// threads
-int initThread(SV * callback);
-
-// interrupts
-int setInterrupt(int pin, int edge, SV * callback);
-
 // setup routines
 int wiringPiI2CSetup (int devId);
 int wiringPiI2CSetupInterface (char* device, int devId);

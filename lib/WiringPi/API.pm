@@ -41,8 +41,7 @@ my @wpi_c_functions = qw(
     lcdInit             lcdHome             lcdClear
     lcdDisplay          lcdCursor           lcdCursorBlink
     lcdSendCommand      lcdPosition         lcdCharDef
-    lcdPutchar          lcdPuts             setInterrupt
-    wiringPiISRStop
+    lcdPutchar          lcdPuts             wiringPiISRStop
     sr595Setup          bmp180Setup         bmp180Pressure
     bmp180Temp          analogRead          analogWrite
     physPinToWpi        wiringPiVersion     ads1115Setup
@@ -73,7 +72,8 @@ my @wpi_perl_functions = qw(
     lcd_init        lcd_home        lcd_clear
     lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
     lcd_position    lcd_char_def    lcd_put_char        lcd_puts
-    set_interrupt   bmp180_setup    bmp180_pressure     bmp180_temp
+    set_interrupt   interrupt_fd
+    bmp180_setup    bmp180_pressure     bmp180_temp
     shift_reg_setup analog_read     analog_write        pin_mode
     ads1115_setup   spi_setup       spi_data            i2c_setup
     i2c_interface   i2c_read        i2c_read_byte       i2c_read_word
@@ -182,7 +182,9 @@ sub set_interrupt {
         croak "set_interrupt() requires \$callback to be a CODE reference";
     }
 
-    setInterrupt($pin, $edge, $callback);
+    # V5 stores $callback in the per-interpreter registry and adds the
+    # dispatch/wait helpers; for now arm the pin (debounce 0) via the self-pipe.
+    _arm_interrupt($pin, $edge, 0);
 }
 
 # system functions
