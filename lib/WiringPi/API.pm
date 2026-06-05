@@ -175,8 +175,8 @@ sub serial_gets {
 # interrupt functions
 
 sub set_interrupt {
-    shift if @_ == 4;
-    my ($pin, $edge, $callback) = @_;
+    shift if @_ && ref $_[0];   # drop $self on method calls ($pin is never a ref)
+    my ($pin, $edge, $callback, $debounce_us) = @_;
 
     if (! defined $pin || $pin !~ /^\d+$/) {
         croak "set_interrupt() requires \$pin to be a positive integer";
@@ -191,12 +191,18 @@ sub set_interrupt {
         croak "set_interrupt() requires \$callback to be a CODE reference";
     }
 
+    $debounce_us = 0 if ! defined $debounce_us;
+
+    if ($debounce_us !~ /^\d+$/) {
+        croak "set_interrupt() \$debounce_us must be a non-negative integer";
+    }
+
     # The callback stays in Perl, keyed by the user's pin; the ISR thread only
     # writes {pin, edge, ts} records to the self-pipe. dispatch_interrupts()
     # fans them back out to these callbacks in the consuming interpreter.
     $_interrupt_cb{$pin} = $callback;
 
-    return _arm_interrupt($pin, $edge, 0);
+    return _arm_interrupt($pin, $edge, $debounce_us);
 }
 sub dispatch_interrupts {
     shift if @_ == 1;
@@ -229,7 +235,7 @@ sub dispatch_interrupts {
     return $dispatched;
 }
 sub wait_interrupts {
-    shift if @_ == 2;
+    shift if @_ && ref $_[0];   # drop $self on method calls
     my ($timeout_ms) = @_;
 
     my $fh = _interrupt_fh();
@@ -1223,7 +1229,7 @@ Maps to C<int digitalRead(int pin)>
 Returns the current state (HIGH/on, LOW/off) of a given pin.
 
 Parameters:
-    
+
     $pin
 
 Mandatory: The pin number, in the pin numbering scheme dictated by whichever
@@ -1255,7 +1261,7 @@ analog pins, so this is used when connected through an ADC or to pseudo analog
 pins.
 
 Parameters:
-    
+
     $pin
 
 Mandatory: The pseudo pin number, in the pin numbering scheme dictated by
@@ -1320,7 +1326,7 @@ This returns the current mode of the pin (using C<getAlt()> C call). Modes are
 INPUT C<0>, OUTPUT C<1>, PWM_OUT C<2> and CLOCK C<3>.
 
 Parameters:
-    
+
     $pin
 
 Mandatory: The pin number, in the pin numbering scheme dictated by whichever
@@ -1989,15 +1995,21 @@ Mandatory: A string to display.
 
 =head1 INTERRUPT FUNCTIONS
 
-=head2 set_interrupt($pin, $edge, $callback)
+=head2 set_interrupt($pin, $edge, $callback, $debounce_us)
 
-IMPORTANT: The interrupt functionality requires that your Perl can be used
-in pthreads. If you do not have a threaded Perl, the program will cause a
-segmentation fault.
+Arms an interrupt handler on C<$pin>. Maps to wiringPi's C<wiringPiISR2()>.
 
-Wrapper around wiringPi's C<wiringPiISR()> that allows you to send in a code
-reference to a Perl sub in your own code that will be called if an interrupt is
-triggered.
+The wiringPi interrupt thread never calls into Perl: when an edge fires it
+writes a small event record to an internal pipe (the "self-pipe"). Your
+C<$callback> runs later, in B<your> interpreter, when you service that pipe with
+C<wait_interrupts()> or C<dispatch_interrupts()>. Because Perl is only ever
+entered by the interpreter that owns it, this works on B<any> Perl - threaded or
+not - and the old "interrupts need a threaded Perl or they segfault" caveat no
+longer applies.
+
+Arm in the same process that will dispatch. For background handling while your
+main program does other work, C<fork> a child that arms and dispatches (see the
+examples below).
 
 Parameters:
 
@@ -2008,15 +2020,98 @@ C<setup*()> routine you used.
 
     $edge
 
-Mandatory: C<1> (C<EDGE_FALLING>), C<2> (C<EDGE_RISING>) or C<3> (C<EDGE_BOTH>).
+Mandatory: one of C<INT_EDGE_FALLING> (C<1>), C<INT_EDGE_RISING> (C<2>) or
+C<INT_EDGE_BOTH> (C<3>). C<INT_EDGE_SETUP> (C<0>) is B<not> a valid trigger and
+is rejected. These constants are importable via the C<:constants> or C<:all>
+tags.
 
     $callback
 
-Mandatory: A code reference to a Perl subroutine in your own code 
-that will be called when the interrupt is triggered. This is your interrupt
-handler.
+Mandatory: A code reference that runs when the interrupt is dispatched. It
+receives two arguments: the edge that fired and the event timestamp in
+microseconds.
 
- =head1 ADC FUNCTIONS
+    $debounce_us
+
+Optional: debounce period in microseconds, passed through to C<wiringPiISR2()>
+(default C<0> = no debounce).
+
+Re-arming the same pin is safe - the previous listener is stopped first, so a
+second wiringPi thread is never stacked on the pin.
+
+=head2 dispatch_interrupts()
+
+Non-blocking. Reads every event currently waiting in the self-pipe, runs the
+registered callback for each, and returns the number dispatched (C<0> if none
+were waiting). Never blocks waiting for an edge.
+
+=head2 wait_interrupts($timeout_ms)
+
+Blocks until at least one interrupt event is available (or C<$timeout_ms>
+milliseconds elapse), dispatches all pending events via C<dispatch_interrupts()>,
+and returns the number dispatched (C<0> on timeout). An undefined C<$timeout_ms>
+blocks indefinitely. The usual single-threaded pattern is:
+
+    wait_interrupts(1000) while 1;
+
+=head2 interrupt_fd()
+
+Returns the readable file descriptor of the self-pipe (an integer), or C<-1>
+before any interrupt has been armed. Use this to drive your own C<select>/C<poll>
+loop instead of C<wait_interrupts()>; call C<dispatch_interrupts()> when it
+becomes readable.
+
+=head2 interrupt_dropped()
+
+Returns the number of interrupt events dropped because the self-pipe was full
+when an edge fired (bursts beyond the pipe buffer). Normally C<0>; reset by
+C<stop_interrupts()>.
+
+=head2 stop_interrupt($pin)
+
+Stops the interrupt on C<$pin> (C<wiringPiISRStop()>) and forgets its callback.
+
+=head2 stop_interrupts()
+
+Stops every armed interrupt, closes the self-pipe and resets interrupt state.
+There is no dispatcher thread to join. A later C<set_interrupt()> re-creates the
+pipe automatically.
+
+=head3 Example - single-threaded event loop (any Perl)
+
+    use WiringPi::API qw(setup pin_mode set_interrupt wait_interrupts
+                         INT_EDGE_RISING);
+
+    setup();
+    pin_mode(0, 0);
+    set_interrupt(0, INT_EDGE_RISING, sub {
+        my ($edge, $ts_us) = @_;
+        print "edge $edge at $ts_us us\n";
+    });
+
+    wait_interrupts(1000) while 1;   # dispatches in THIS process
+
+=head3 Example - background handling via fork
+
+    use WiringPi::API qw(setup pin_mode set_interrupt wait_interrupts
+                         INT_EDGE_RISING);
+
+    setup();                          # once, in the parent, before forking
+    pin_mode(0, 0);
+
+    my $pid = fork // die "fork: $!";
+    if ($pid == 0) {                  # child owns + dispatches the interrupt
+        set_interrupt(0, INT_EDGE_RISING, sub {
+            my ($edge, $ts_us) = @_;
+            # ... handle the edge ...
+        });
+        wait_interrupts(1000) while 1;
+        exit 0;
+    }
+
+    # parent is free to do other work; reap $pid at exit
+
+=head1 ADC FUNCTIONS
 
 Analog to digital converters (ADC) allow you to read analog data on the
 Raspberry Pi, as the Pi doesn't have any analog input pins.
@@ -2657,7 +2752,7 @@ Takes no parameters, returns the byte value as an unsigned int.
 
 =head2 digitalReadByte2()
 
-Same as L</digitalReadByte>, but reads from the second group of eight GPIO pins.
+Same as L</digitalReadByte()>, but reads from the second group of eight GPIO pins.
 
 =head1 AUTHOR
 

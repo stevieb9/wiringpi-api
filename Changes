@@ -113,6 +113,11 @@ Revision history for Perl extension WiringPi::API.
           for that pin and forgets its callback; stop_interrupts() stops every
           armed pin, closes the self-pipe and resets state (a later
           set_interrupt() re-creates it). No dispatcher thread to join
+        - set_interrupt() takes an optional 4th argument $debounce_us (default 0)
+          passed through to wiringPiISR2(); rewrote the INTERRUPT FUNCTIONS POD
+          for the self-pipe dispatch model (no threaded Perl required) and fixed
+          pre-existing POD errors (the ADC FUNCTIONS / digitalReadByte internal
+          links and stray whitespace) so podchecker is clean
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

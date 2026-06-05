@@ -1,8 +1,8 @@
 # Plan: Migrate interrupts to `wiringPiISR2` via a self-pipe
 
-> **NEXT ACTION:** V7 — POD + concurrency contract: document `set_interrupt` (unchanged signature), `interrupt_fd`/`wait_interrupts`/`dispatch_interrupts`/`stop_interrupt(s)`/`interrupt_dropped`, the `INT_EDGE_*` constants, and the optional 4th `$debounce_us`. State plainly: single-threaded event-loop works on any Perl; background handling uses `fork`. **Reconcile the `EDGE_RISING`→`INT_EDGE_*` naming** in examples/`isr-examples-final.md` (Discovery Tracking).
-> **LAST SESSION:** **2026-06-04.** Ran **V6 on `rpi1` — PASS**: teardown. `stop_interrupt($pin)` (`wiringPiISRStop` + forget callback) and `stop_interrupts()` (stop all armed pins, close the cached read dup + the C self-pipe via new XS `_close_interrupt_pipe()`, reset `interrupts_dropped`; no thread to join). Exports added. Hardware-free teardown test passed (both fire → `stop_interrupt(7)` leaves pin-9 → `stop_interrupts()` clears all; dropped=0); clean build + `make test` PASS. Changes kept current. **B8 unblocked** (`stop_interrupts()` now exists for RPi::WiringPi cleanup assessment). Prior: V5 PASS (dispatch: `dispatch_interrupts`/`wait_interrupts`/`interrupt_dropped`; interrupts fire end-to-end); V4 PASS (self-pipe core; deleted dispatcher/trampolines/`mine`/`setInterrupt`/dead `initThread`, completing threads-patch.md V1); V3 PASS (`wiringPiISRStop`); V2 PASS (`INT_EDGE_*` + validation); V1 PASS. **Changes kept current per-task** (user 2026-06-04); `isr-examples-final.md` awaits commit. **Remaining: V7 (POD), V8 (full gate + on-Pi exercisers), V9 (downstream); B7 (unit tests), B8 (RPi cleanup).** Drain contract for V5/V8: EINTR→retry, other-errno→remove+stop, EOF→remove+stop. `isr-examples-final.md` awaits commit.
-> **ARCHIVE:** See isr-migration-archive.md for completed V tasks (V1-V6 archived)
+> **NEXT ACTION:** V8 — **Full gate (Pi)**: `perl Makefile.PL && make && make test`, then on-hardware exercisers — (a) single-threaded: arm, drive real edges, `wait_interrupts` loop dispatches the right callbacks under **both** `setup()` (wpi 0 = BCM 17) and `setup_gpio()`; (b) fork: child arms + loops while main works (true background); re-arm twice (no stacked listener); `stop_interrupt(s)` clean. `valgrind --leak-check=full`: no leaks, no leaked fds. This is the first REAL-hardware run of the whole chain — needs GPIO permissions + a wired edge source. Update Changes.
+> **LAST SESSION:** **2026-06-04.** Ran **V7 on `rpi1` — PASS**: rewrote INTERRUPT FUNCTIONS POD for the self-pipe model (all new subs + `INT_EDGE_*` + two worked examples; deleted the stale threaded-Perl/segfault caveat). `set_interrupt` gained the optional 4th `$debounce_us` (default 0, validated, → `_arm_interrupt`); `set_interrupt`/`wait_interrupts` switched to `shift if @_ && ref $_[0]` OO-detection (optional args made `@_==N` ambiguous). Reconciled `EDGE_RISING`→`INT_EDGE_RISING` in this plan's examples (Discovery item closed; `isr-examples-final.md` already correct). Folded in **UPGRADE-3.18 B8** (POD link/whitespace fixes) → `podchecker` now fully clean. Clean build; debounce passthrough verified (function+method); `make test` PASS. Changes updated. Prior: V6 PASS (teardown); V5 PASS (dispatch, interrupts fire e2e); V4 PASS (self-pipe core; completed threads-patch.md V1); V3/V2/V1 PASS. **Changes kept current per-task** (user 2026-06-04); `isr-examples-final.md` awaits commit. **Remaining: V8 (Pi full gate + exercisers), V9 (downstream); B7 (unit tests), B8 (RPi::WiringPi cleanup).** Drain contract for V5/V8: EINTR→retry, other-errno→remove+stop, EOF→remove+stop. `isr-examples-final.md` awaits commit.
+> **ARCHIVE:** See isr-migration-archive.md for completed V tasks (V1-V7 archived)
 
 ## Goal
 
@@ -110,7 +110,6 @@ on the Mac). Off-Pi: parse/syntax only.
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V7 | **POD + concurrency contract.** Document `set_interrupt` (unchanged signature), `interrupt_fd`/`wait_interrupts`/`dispatch_interrupts`/`stop_interrupt(s)`, and the optional 4th `$debounce_us`. State plainly: single-threaded event-loop usage works on any Perl; for background handling, `fork` a child that arms + dispatches (no threaded Perl; see `isr-examples.md`). | `podchecker lib/WiringPi/API.pm` + `perl -c` | POD clean; both usage modes documented | ⏳ |
 | V8 | **Full gate (Pi).** `perl Makefile.PL && make && make test`. Exercisers: (a) **single-threaded** — arm, drive edges, `wait_interrupts` loop dispatches correct callbacks under **both** `setup()` (wpi 0 = BCM 17) and `setup_gpio()`; (b) **fork** — a child arms + loops `wait_interrupts` while main does other work (proves true background handling); re-arm twice (no stacked listener); `stop_interrupt(s)` clean. `valgrind --leak-check=full`: no leaks, no leaked fds. Update Changes (`3.1801 UNREL`). | `perl Makefile.PL && make && make test` + exercisers (Pi) | green; correct dispatch in both modes + background via fork; no leaks; Changes updated | ⏳ |
 | V9 | **Downstream gate (RPi::WiringPi).** Install converted module; run `t/200-interrupt_rising_and_pud.t`, `t/201-…falling…`, `t/202-…both…`, `build_testing/build/defacto_interrupt.pl`. Externally-observable behavior unchanged (rising/falling/both fire). Note new dispatch model if a consumer must call `wait_interrupts`. | `cd ~/repos/rpi-wiringpi && prove -Ilib t/200-interrupt_rising_and_pud.t t/201*.t t/202*.t` (Pi) | interrupt suite green on wired hardware | ⏳ |
 | V10 | **`background_interrupt` (hidden fork — additive convenience).** Wrap fork+arm+loop+reap so the user gets background handling in one call: `my $h = background_interrupt($pin, $edge, $cb [, $debounce_us])` forks; the **child** arms the interrupt and runs `$cb` on each edge; returns a handle with `$h->stop` (+ `pid`/`running`). Reap children explicitly by PID via an `END` block — **never** a global `$SIG{CHLD}`. Depends on V4-V6; build/verify with the V8 gate. Full spec in the design section below. | `perl -c` + Pi fork exerciser (handler fires; `stop` reaps; no zombie) | one-call background handler works; child reaped cleanly | ⏳ |
@@ -126,17 +125,17 @@ is the key, not `wfiStatus.pinBCM`.
 
 **Single-threaded / event-driven (any Perl):**
 ```perl
-use WiringPi::API qw(setup pin_mode set_interrupt wait_interrupts EDGE_RISING);
+use WiringPi::API qw(setup pin_mode set_interrupt wait_interrupts INT_EDGE_RISING);
 setup();
 pin_mode(0, 0);
-set_interrupt(0, EDGE_RISING, sub { my ($edge, $ts) = @_; print "edge=$edge at $ts us\n" });
+set_interrupt(0, INT_EDGE_RISING, sub { my ($edge, $ts) = @_; print "edge=$edge at $ts us\n" });
 wait_interrupts(1000) while 1;     # blocks on the fd, dispatches in THIS thread
 ```
 
 **Background via `fork` (main stays free; no threaded Perl):**
 ```perl
 use IO::Select;
-use WiringPi::API qw(setup pin_mode set_interrupt wait_interrupts EDGE_RISING);
+use WiringPi::API qw(setup pin_mode set_interrupt wait_interrupts INT_EDGE_RISING);
 
 setup();                           # ONCE in main, before forking (audit contract)
 pin_mode(0, 0);
@@ -145,7 +144,7 @@ pipe(my $rx, my $tx) or die "pipe: $!";
 my $pid = fork // die "fork: $!";
 if ($pid == 0) {                   # child owns the interrupt; arm HERE
     close $rx;
-    set_interrupt(0, EDGE_RISING, sub { my ($e, $ts) = @_; syswrite $tx, "$ts\n" });
+    set_interrupt(0, INT_EDGE_RISING, sub { my ($e, $ts) = @_; syswrite $tx, "$ts\n" });
     wait_interrupts(1000) while 1; # dispatch here, concurrent with main
     exit 0;
 }
@@ -352,7 +351,7 @@ kernel (a signal) here, your loop in cooperative mode, a forked child in
 
 ## Discovery Tracking
 
-- Found during **V2**, non-blocking → reconcile in **V7 (POD)** + **V8 (exercisers)**: V2 named the edge constants `INT_EDGE_*` (mirrors wiringPi's `#define`s: SETUP=0/FALLING=1/RISING=2/BOTH=3), but the design-section examples here (lines ~134/137/144/153) and `isr-examples-final.md` use the shorter `EDGE_RISING`. Those examples/POD must switch to `INT_EDGE_*` (or, if the short names are preferred, V7 must add `EDGE_*` aliases) so the V8 exercisers import a real symbol. No code change needed for V2 itself.
+- ✅ RESOLVED in **V7**: the `EDGE_RISING` vs `INT_EDGE_*` naming mismatch (raised in V2). The design-section examples here now use `INT_EDGE_RISING`; `isr-examples-final.md` already used `INT_EDGE_*`; the POD documents the `INT_EDGE_*` constants. No `EDGE_*` aliases added — `INT_EDGE_*` (wiringPi's own names) is canonical.
 
 ## Backlog
 
