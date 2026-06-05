@@ -6,7 +6,7 @@ use warnings;
 our $VERSION = '3.1801';
 
 use Carp qw(croak);
-use Fcntl qw(F_GETFL F_SETFL F_SETOWN O_ASYNC);
+use Fcntl qw(F_GETFL F_SETFL F_SETOWN O_ASYNC F_GETPIPE_SZ F_SETPIPE_SZ);
 use POSIX qw(WNOHANG);
 
 # WPIPinType pin-numbering constants for the wiringpi_setup_pin_type() /
@@ -77,7 +77,7 @@ my @wpi_perl_functions = qw(
     set_interrupt   interrupt_fd        dispatch_interrupts
     wait_interrupts interrupt_dropped   stop_interrupt
     stop_interrupts background_interrupt auto_dispatch_interrupts
-    last_interrupt
+    last_interrupt  interrupt_buffer
     bmp180_setup    bmp180_pressure     bmp180_temp
     shift_reg_setup analog_read     analog_write        pin_mode
     ads1115_setup   spi_setup       spi_data            i2c_setup
@@ -132,6 +132,11 @@ my @_bg_children;
 my $_auto_dispatch      = 0;        # is auto-dispatch currently enabled?
 my $_auto_dispatch_prev;            # prior $SIG{IO}, restored on disable
 my $_auto_dispatch_fd;              # the fd we wired O_ASYNC/F_SETOWN onto
+
+# interrupt_buffer() state. A requested pipe capacity is remembered and applied
+# whenever the self-pipe is (re)created, so it can be set before arming.
+my $_interrupt_buffer_req;          # requested pipe size in bytes, or undef
+my $_interrupt_buffer_fd;           # the fd we last applied the size to
 
 sub new {
     return bless {}, shift;
@@ -217,9 +222,10 @@ sub set_interrupt {
 
     my $rv = _arm_interrupt($pin, $edge, $debounce_us);
 
-    # Arming lazily creates the self-pipe; if auto-dispatch is on, wire the
-    # (possibly new) read fd for SIGIO now that it exists.
-    _auto_dispatch_apply() if $_auto_dispatch;
+    # Arming lazily creates the self-pipe; apply any pending pipe-size request
+    # and (if auto-dispatch is on) wire the (possibly new) read fd for SIGIO.
+    _apply_interrupt_buffer() if defined $_interrupt_buffer_req;
+    _auto_dispatch_apply()    if $_auto_dispatch;
 
     return $rv;
 }
@@ -313,8 +319,10 @@ sub stop_interrupts {
     _close_interrupt_pipe();
 
     # The fd we wired for SIGIO is gone; a later set_interrupt() re-creates the
-    # pipe and (if auto-dispatch is still on) re-wires the new fd.
-    $_auto_dispatch_fd = undef;
+    # pipe and (if auto-dispatch is still on) re-wires the new fd. The pipe-size
+    # request persists and is re-applied to the new pipe on the next arm.
+    $_auto_dispatch_fd     = undef;
+    $_interrupt_buffer_fd  = undef;
 
     # Forget the last event - the interrupt subsystem is torn down.
     $_last_interrupt = undef;
@@ -328,6 +336,39 @@ sub last_interrupt {
 
     # Return a copy so callers can't mutate our internal state.
     return { %$_last_interrupt };
+}
+sub interrupt_buffer {
+    shift if @_ && ref $_[0];   # drop $self on method calls
+    my ($bytes) = @_;
+
+    my $fh = _interrupt_fh();
+
+    if (! defined $bytes) {
+        # Getter: the live pipe capacity, or the pending request if not armed.
+        return $_interrupt_buffer_req if ! defined $fh;
+        return fcntl($fh, F_GETPIPE_SZ, 0);
+    }
+
+    # Setter.
+    if ($bytes !~ /^\d+$/ || $bytes == 0) {
+        croak "interrupt_buffer() requires a positive integer size in bytes";
+    }
+
+    # Remember it so a (re)created pipe gets the same capacity; the kernel
+    # rounds up to a page and caps at /proc/sys/fs/pipe-max-size.
+    $_interrupt_buffer_req = 0 + $bytes;
+
+    return $_interrupt_buffer_req if ! defined $fh;   # applied on the next arm
+
+    my $set = fcntl($fh, F_SETPIPE_SZ, $_interrupt_buffer_req);
+    if (! defined $set) {
+        croak "interrupt_buffer() could not set the pipe size to " .
+            "$_interrupt_buffer_req bytes: $!";
+    }
+
+    $_interrupt_buffer_fd = fileno($fh);
+
+    return $set;   # the actual size the kernel granted
 }
 
 sub auto_dispatch_interrupts {
@@ -452,6 +493,21 @@ sub _auto_dispatch_apply {
     dispatch_interrupts();
 
     return 1;
+}
+sub _apply_interrupt_buffer {
+    # Apply a pending pipe-size request to the (possibly newly created) pipe.
+    # Best-effort: the explicit interrupt_buffer() setter reports errors; here
+    # we only re-apply the remembered size, and skip if already applied.
+    my $fh = _interrupt_fh();
+    return if ! defined $fh;
+
+    my $fd = fileno($fh);
+    return if defined $_interrupt_buffer_fd && $_interrupt_buffer_fd == $fd;
+
+    fcntl($fh, F_SETPIPE_SZ, $_interrupt_buffer_req);
+    $_interrupt_buffer_fd = $fd;
+
+    return;
 }
 sub _auto_dispatch_clear {
     # Remove async mode from the interrupt read fd, if we wired it.
@@ -2306,6 +2362,36 @@ becomes readable.
 Returns the number of interrupt events dropped because the self-pipe was full
 when an edge fired (bursts beyond the pipe buffer). Normally C<0>; reset by
 C<stop_interrupts()>.
+
+B<Overflow policy.> Edges are FIFO-queued in the kernel pipe (capacity is the
+kernel default - typically 64 KiB to 256 KiB - holding thousands of the
+fixed-size event records). The wiringPi ISR thread writes each edge with a
+B<non-blocking> C<write()>, so it never stalls. If the pipe is full (your code
+isn't draining fast enough - e.g. stuck in a long, non-yielding C/XS call), the
+overflowing edges are B<dropped, not merged and not blocked>, and each one
+increments C<interrupt_dropped()> - so loss is never silent. Order is preserved;
+no two edges are ever coalesced into one (debounce, via C<set_interrupt>'s
+C<$debounce_us>, is the only mechanism that intentionally collapses edges). If
+you see drops, drain faster (C<wait_interrupts>/C<auto_dispatch_interrupts>),
+move handling to its own process (C<background_interrupt>), raise the queue size
+with C<interrupt_buffer()>, or debounce to cut the edge rate.
+
+=head2 interrupt_buffer($bytes)
+
+Gets or sets the capacity of the interrupt self-pipe (the queue that absorbs
+edge bursts before C<interrupt_dropped()> starts counting).
+
+With no argument, returns the current capacity in bytes (or the pending request
+if no interrupt has been armed yet). With C<$bytes>, requests that capacity
+(C<F_SETPIPE_SZ>) and returns the size the kernel actually granted - it rounds up
+to a page and caps at F</proc/sys/fs/pipe-max-size>:
+
+    interrupt_buffer(1 << 20);    # ask for ~1 MiB of queue
+    my $size = interrupt_buffer;  # what we actually got
+
+The request is remembered, so you may set it B<before> arming (it is applied when
+the pipe is created) and it persists across C<stop_interrupts()> - the new pipe
+from a later C<set_interrupt()> is sized the same way.
 
 =head2 last_interrupt()
 

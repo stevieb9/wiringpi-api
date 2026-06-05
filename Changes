@@ -139,6 +139,12 @@ Revision history for Perl extension WiringPi::API.
           and status. The self-pipe record widened to carry wfiStatus.pinBCM and
           wfiStatus.statusOK (now a 24-byte {pin, pin_bcm, edge, status, ts}
           record); the callback signature is unchanged
+        - Added interrupt_buffer([$bytes]): get/set the self-pipe capacity
+          (F_GETPIPE_SZ/F_SETPIPE_SZ). May be set before arming (applied when the
+          pipe is created) and persists across stop_interrupts(). Documented the
+          overflow policy in the interrupt_dropped() POD: edges FIFO-queue and,
+          on a full pipe, are dropped (not merged, not blocked) and counted - so
+          loss is never silent
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

@@ -10,7 +10,7 @@ use WiringPi::API qw(
     setup           setup_gpio          pin_mode            pull_up_down
     set_interrupt   dispatch_interrupts wait_interrupts
     stop_interrupt  stop_interrupts     interrupt_fd        interrupt_dropped
-    last_interrupt
+    last_interrupt  interrupt_buffer
     INT_EDGE_SETUP  INT_EDGE_FALLING    INT_EDGE_RISING     INT_EDGE_BOTH
 );
 
@@ -104,6 +104,33 @@ like($@, qr/debounce/, 'set_interrupt rejects a non-integer debounce');
 
 # interrupt_dropped() accessor is callable and returns a number
 like(interrupt_dropped(), qr/^\d+$/, 'interrupt_dropped() returns a count');
+
+# ---------------------------------------------------------------------------
+# Hardware-free: interrupt_buffer() get/set + validation. Fake the pipe so the
+# F_GETPIPE_SZ/F_SETPIPE_SZ path runs against a real kernel pipe, no GPIO.
+# ---------------------------------------------------------------------------
+
+{
+    pipe(my $rx, my $tx) or die "pipe: $!";
+
+    no warnings 'redefine';
+    local *WiringPi::API::interrupt_fd = sub { fileno($rx) };
+
+    like(interrupt_buffer(), qr/^\d+$/,
+        'interrupt_buffer() getter returns the current pipe size');
+
+    my $want = 64 * 1024;
+    my $got  = interrupt_buffer($want);
+    cmp_ok($got, '>=', $want,
+        'interrupt_buffer($bytes) sets the capacity (kernel grants >= request)');
+    is(interrupt_buffer(), $got, 'getter reflects the size just set');
+
+    eval { interrupt_buffer(0) };
+    like($@, qr/positive integer/, 'interrupt_buffer(0) is rejected');
+
+    eval { interrupt_buffer("big") };
+    like($@, qr/positive integer/, 'interrupt_buffer(non-integer) is rejected');
+}
 
 # ---------------------------------------------------------------------------
 # Real hardware (opt-in via PI_BOARD). Uses BCM17 driven by toggling its
