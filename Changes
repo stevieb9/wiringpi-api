@@ -77,6 +77,11 @@ Revision history for Perl extension WiringPi::API.
         - moved #define PERL_NO_GET_CONTEXT above the perl headers so the
           context optimisation actually applies (it was a no-op after the
           include) - internal build change, no consumer-visible effect
+        - lcd_char_def() no longer writes a stray newline to the display
+          before defining the character (visible only if a consumer relied on
+          that side effect)
+        - removed a duplicate pwm_set_range entry from the export list
+          (internal; pwm_set_range is still exported and unchanged)
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

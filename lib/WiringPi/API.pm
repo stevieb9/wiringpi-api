@@ -59,7 +59,7 @@ my @wpi_perl_functions = qw(
     setup           setup_gpio      pull_up_down        read_pin
     write_pin       pwm_write
     get_alt         gpio_layout     wpi_to_gpio         phys_to_gpio
-    pwm_set_range   lcd_init        lcd_home            lcd_clear
+    lcd_init        lcd_home        lcd_clear
     lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
     lcd_position    lcd_char_def    lcd_put_char        lcd_puts
     set_interrupt   bmp180_setup    bmp180_pressure     bmp180_temp
@@ -510,7 +510,6 @@ sub lcd_position {
 sub lcd_char_def {
     shift if @_ == 4;
     my ($fd, $index, $data) = @_;
-    lcdPuts($fd, "\n");
     my $unsigned_char = pack "C[8]", @$data;
     lcdCharDef($fd, $index, $unsigned_char);
 }
