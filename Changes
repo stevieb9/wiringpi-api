@@ -158,6 +158,12 @@ Revision history for Perl extension WiringPi::API.
           background child services many pins (instead of one child per pin). The
           handle adds arm($pin)/disarm($pin) over a control pipe (callbacks are
           fixed at fork time; the control channel toggles the registered set)
+        - auto_dispatch_interrupts() now takes an optional second argument, the
+          delivery signal (default SIGIO). A named signal (eg 'USR1') is wired
+          via F_SETSIG so it won't clash with other SIGIO/O_ASYNC users
+        - set_interrupt() now accepts an optional trailing options hashref; the
+          {auto_dispatch => 1} (or {auto_dispatch => 'USR1'}) option turns on
+          auto-dispatch as part of arming (the process-wide switch)
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

@@ -12,6 +12,7 @@ use WiringPi::API qw(
     stop_interrupt  stop_interrupts     interrupt_fd        interrupt_dropped
     last_interrupt  interrupt_buffer    background_interrupts
     run_interrupt_loop                  stop_interrupt_loop
+    auto_dispatch_interrupts
     INT_EDGE_SETUP  INT_EDGE_FALLING    INT_EDGE_RISING     INT_EDGE_BOTH
 );
 
@@ -189,6 +190,22 @@ like($@, qr/CODE reference/, 'background_interrupts() rejects a non-coderef in a
 
 eval { background_interrupts([5, 9, sub {}]) };
 like($@, qr/\$edge/, 'background_interrupts() rejects a bad edge in a spec');
+
+# auto_dispatch_interrupts() validation + signal selection (no pipe required:
+# the fd wiring no-ops with no interrupt armed, so this stays hardware-free).
+eval { auto_dispatch_interrupts() };
+like($@, qr/boolean/, 'auto_dispatch_interrupts() requires a boolean');
+
+eval { auto_dispatch_interrupts(1, 'NOPE') };
+like($@, qr/unknown signal/, 'auto_dispatch_interrupts() rejects an unknown signal');
+
+{
+    is(auto_dispatch_interrupts(1, 'USR2'), 1, 'auto_dispatch_interrupts(1, USR2) enables');
+    ok(defined $SIG{USR2}, '... installs a handler on the chosen signal');
+    ok(! defined $SIG{IO}, '... leaving SIGIO untouched');
+    is(auto_dispatch_interrupts(0), 1, 'auto_dispatch_interrupts(0) disables');
+    ok(! defined $SIG{USR2}, '... and restores the chosen signal handler');
+}
 
 # ---------------------------------------------------------------------------
 # Real hardware (opt-in via PI_BOARD). Uses BCM17 driven by toggling its

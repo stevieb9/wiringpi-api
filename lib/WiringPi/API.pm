@@ -6,7 +6,7 @@ use warnings;
 our $VERSION = '3.1801';
 
 use Carp qw(croak);
-use Fcntl qw(F_GETFL F_SETFL F_SETOWN O_ASYNC F_GETPIPE_SZ F_SETPIPE_SZ);
+use Fcntl qw(F_GETFL F_SETFL F_SETOWN O_ASYNC F_GETPIPE_SZ F_SETPIPE_SZ F_SETSIG);
 use POSIX qw(WNOHANG);
 use Scalar::Util qw(blessed);
 
@@ -132,8 +132,11 @@ my @_bg_children;
 # auto_dispatch_interrupts() state. When enabled, the interrupt read fd is put
 # into async (SIGIO) mode and $SIG{IO} drains+dispatches at Perl safe points.
 my $_auto_dispatch      = 0;        # is auto-dispatch currently enabled?
-my $_auto_dispatch_prev;            # prior $SIG{IO}, restored on disable
+my $_auto_dispatch_prev;            # prior handler for the chosen signal
 my $_auto_dispatch_fd;              # the fd we wired O_ASYNC/F_SETOWN onto
+my $_auto_dispatch_sig  = 'IO';     # delivery signal name (default SIGIO)
+my $_auto_dispatch_signum;          # its number (for F_SETSIG; 0 = default SIGIO)
+my %_sig_num;                       # signal name -> number, lazily built
 
 # interrupt_buffer() state. A requested pipe capacity is remembered and applied
 # whenever the self-pipe is (re)created, so it can be set before arming.
@@ -198,8 +201,12 @@ sub serial_gets {
 # interrupt functions
 
 sub set_interrupt {
-    shift if @_ && ref $_[0];   # drop $self on method calls ($pin is never a ref)
-    my ($pin, $edge, $callback, $debounce_us) = @_;
+    shift if @_ && blessed($_[0]);   # drop $self on method calls
+    my ($pin, $edge, $callback, @rest) = @_;
+
+    # An optional trailing options hashref may follow the (optional) debounce.
+    my %opts = (@rest && ref $rest[-1] eq 'HASH') ? %{ pop @rest } : ();
+    my ($debounce_us) = @rest;
 
     if (! defined $pin || $pin !~ /^\d+$/) {
         croak "set_interrupt() requires \$pin to be a positive integer";
@@ -226,6 +233,15 @@ sub set_interrupt {
     $_interrupt_cb{$pin} = $callback;
 
     my $rv = _arm_interrupt($pin, $edge, $debounce_us);
+
+    # Opt-in: turn on auto-dispatch as part of arming. This enables the
+    # process-wide switch (it is not selective per pin); a non-"1" true value
+    # (eg 'USR1') picks the delivery signal.
+    if ($opts{auto_dispatch} && ! $_auto_dispatch) {
+        my $v = $opts{auto_dispatch};
+        my $sig = ($v =~ /^[A-Za-z]/) ? $v : undef;
+        auto_dispatch_interrupts(1, $sig);
+    }
 
     # Arming lazily creates the self-pipe; apply any pending pipe-size request
     # and (if auto-dispatch is on) wire the (possibly new) read fd for SIGIO.
@@ -415,21 +431,34 @@ sub stop_interrupt_loop {
 }
 
 sub auto_dispatch_interrupts {
-    shift if @_ && ref $_[0];   # drop $self on method calls
-    my ($enable) = @_;
+    shift if @_ && blessed($_[0]);   # drop $self on method calls
+    my ($enable, $signal) = @_;
 
     if (! defined $enable || $enable !~ /^[01]$/) {
-        croak "auto_dispatch_interrupts() requires a boolean argument (0 or 1)";
+        croak "auto_dispatch_interrupts() requires a boolean first argument (0 or 1)";
     }
 
     if ($enable) {
         return 1 if $_auto_dispatch;            # idempotent
 
+        # Choose the delivery signal (default SIGIO). A different named signal
+        # (eg 'USR1') is wired via F_SETSIG so it won't clash with other SIGIO
+        # users. 'SIGUSR1' and 'USR1' are both accepted.
+        $signal = 'IO' if ! defined $signal;
+        $signal =~ s/^SIG//;
+
+        my $signum = _signal_number($signal);
+        if (! defined $signum) {
+            croak "auto_dispatch_interrupts() unknown signal '$signal'";
+        }
+
         # Safe-signal handler: Perl runs it between ops, so the dispatched
         # callbacks touch your variables with no locking. Save the prior
         # handler so disable can restore it.
-        $_auto_dispatch_prev = $SIG{IO};
-        $SIG{IO} = \&dispatch_interrupts;
+        $_auto_dispatch_sig    = $signal;
+        $_auto_dispatch_signum = $signum;
+        $_auto_dispatch_prev   = $SIG{$signal};
+        $SIG{$signal} = \&dispatch_interrupts;
         $_auto_dispatch = 1;
 
         # Wire the read fd now if the pipe already exists; otherwise the next
@@ -443,14 +472,16 @@ sub auto_dispatch_interrupts {
     _auto_dispatch_clear();
 
     if (defined $_auto_dispatch_prev) {
-        $SIG{IO} = $_auto_dispatch_prev;
+        $SIG{$_auto_dispatch_sig} = $_auto_dispatch_prev;
     }
     else {
-        delete $SIG{IO};
+        delete $SIG{$_auto_dispatch_sig};
     }
 
-    $_auto_dispatch_prev = undef;
-    $_auto_dispatch      = 0;
+    $_auto_dispatch_prev   = undef;
+    $_auto_dispatch_sig    = 'IO';
+    $_auto_dispatch_signum = undef;
+    $_auto_dispatch        = 0;
 
     return 1;
 }
@@ -680,6 +711,13 @@ sub _auto_dispatch_apply {
     defined fcntl($fh, F_SETOWN, $owner)
         or croak "auto_dispatch_interrupts() F_SETOWN failed: $!";
 
+    # Choose the delivery signal: 0 = the default (SIGIO), otherwise the chosen
+    # signal's number so O_ASYNC raises that instead. Force numeric - a string
+    # would be passed to fcntl as a pointer (EINVAL).
+    my $setsig = ($_auto_dispatch_sig ne 'IO') ? 0 + $_auto_dispatch_signum : 0;
+    defined fcntl($fh, F_SETSIG, $setsig)
+        or croak "auto_dispatch_interrupts() F_SETSIG failed: $!";
+
     my $flags = fcntl($fh, F_GETFL, 0);
     defined $flags
         or croak "auto_dispatch_interrupts() F_GETFL failed: $!";
@@ -717,10 +755,24 @@ sub _auto_dispatch_clear {
     if (defined $flags) {
         fcntl($_interrupt_fh, F_SETFL, $flags & ~O_ASYNC);
     }
+    fcntl($_interrupt_fh, F_SETSIG, 0);   # back to the default signal
 
     $_auto_dispatch_fd = undef;
 
     return 1;
+}
+sub _signal_number {
+    my ($name) = @_;
+
+    if (! %_sig_num) {
+        require Config;
+        my @names = split ' ', $Config::Config{sig_name};
+        my @nums  = split ' ', $Config::Config{sig_num};
+        @_sig_num{@names} = @nums;
+    }
+
+    my $num = $_sig_num{$name};
+    return defined $num ? 0 + $num : undef;
 }
 sub _interrupt_fh {
     my $fd = interrupt_fd();
@@ -2623,6 +2675,14 @@ microseconds.
 Optional: debounce period in microseconds, passed through to C<wiringPiISR2()>
 (default C<0> = no debounce).
 
+    \%opts
+
+Optional: a trailing options hash reference. The only option is C<auto_dispatch>:
+a true value turns on auto-dispatch (see C<auto_dispatch_interrupts()>) as part
+of arming, so the callback fires on its own without a dispatch loop. This enables
+the B<process-wide> switch (it is not selective per pin); a string value picks
+the delivery signal, eg C<< { auto_dispatch =E<gt> 'USR1' } >>.
+
 Re-arming the same pin is safe - the previous listener is stopped first, so a
 second wiringPi thread is never stacked on the pin.
 
@@ -2750,23 +2810,29 @@ Stops every armed interrupt, closes the self-pipe and resets interrupt state.
 There is no dispatcher thread to join. A later C<set_interrupt()> re-creates the
 pipe automatically.
 
-=head2 auto_dispatch_interrupts($bool)
+=head2 auto_dispatch_interrupts($bool, $signal)
 
 Enables (C<1>) or disables (C<0>) async auto-dispatch. When enabled, the
-interrupt read fd is put into async (C<SIGIO>) mode and a C<$SIG{IO}> handler
-drains and dispatches pending events, so C<set_interrupt()> callbacks fire
-B<automatically in this process> with no C<wait_interrupts()>/
-C<dispatch_interrupts()> loop to write. Callbacks run at Perl safe points
-(between ops, and on interrupted C<sleep>/C<select>), so they may read and
-modify your program's variables with no locking.
+interrupt read fd is put into async mode and a signal handler drains and
+dispatches pending events, so C<set_interrupt()> callbacks fire B<automatically
+in this process> with no C<wait_interrupts()>/C<dispatch_interrupts()> loop to
+write. Callbacks run at Perl safe points (between ops, and on interrupted
+C<sleep>/C<select>), so they may read and modify your program's variables with
+no locking.
+
+The optional C<$signal> chooses the delivery signal (default C<'IO'>, i.e.
+C<SIGIO>). Pass a signal name - eg C<'USR1'> (C<'SIGUSR1'> is also accepted) -
+to deliver via that signal instead (wired with C<F_SETSIG>), which avoids
+clashing with other C<SIGIO>/C<O_ASYNC> users in your program. The name must be
+one Perl knows (it croaks otherwise).
 
 You can call it before or after C<set_interrupt()>; arming creates the pipe and
-wires it for you. Disabling restores the previous C<$SIG{IO}> handler.
+wires it for you. Disabling restores the previous handler for the chosen signal.
 
 Caveats: a long, non-yielding C/XS call defers the callback until it returns
 (use C<background_interrupt()> if you need it to fire even then); and it claims
-the process-global C<SIGIO> - don't enable it if your program already drives
-C<SIGIO>/C<O_ASYNC>. See the example below.
+a process-global signal - don't enable it on a signal your program already
+drives. See the example below.
 
 =head2 background_interrupt($pin, $edge, $callback, $debounce_us)
 
