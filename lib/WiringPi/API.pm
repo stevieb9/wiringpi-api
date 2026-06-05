@@ -16,6 +16,16 @@ use constant {
     WPI_PIN_WPI => 2,
 };
 
+# Interrupt edge-trigger constants (mirror wiringPi's INT_EDGE_* #defines).
+# INT_EDGE_SETUP (0) is a setup-only mode, not a real trigger, so set_interrupt()
+# rejects it - the valid triggers are FALLING (1), RISING (2) and BOTH (3).
+use constant {
+    INT_EDGE_SETUP   => 0,
+    INT_EDGE_FALLING => 1,
+    INT_EDGE_RISING  => 2,
+    INT_EDGE_BOTH    => 3,
+};
+
 require XSLoader;
 XSLoader::load('WiringPi::API', $VERSION);
 
@@ -87,6 +97,7 @@ my @wpi_perl_functions = qw(
 
 my @wpi_constants = qw(
     WPI_PIN_BCM     WPI_PIN_WPI
+    INT_EDGE_SETUP  INT_EDGE_FALLING    INT_EDGE_RISING     INT_EDGE_BOTH
 );
 
 our @EXPORT_OK;
@@ -156,6 +167,20 @@ sub serial_gets {
 sub set_interrupt {
     shift if @_ == 4;
     my ($pin, $edge, $callback) = @_;
+
+    if (! defined $pin || $pin !~ /^\d+$/) {
+        croak "set_interrupt() requires \$pin to be a positive integer";
+    }
+
+    if (! defined $edge || $edge !~ /^[123]$/) {
+        croak "set_interrupt() \$edge must be INT_EDGE_FALLING (1), " .
+            "INT_EDGE_RISING (2) or INT_EDGE_BOTH (3)";
+    }
+
+    if (! defined $callback || ref $callback ne 'CODE') {
+        croak "set_interrupt() requires \$callback to be a CODE reference";
+    }
+
     setInterrupt($pin, $edge, $callback);
 }
 

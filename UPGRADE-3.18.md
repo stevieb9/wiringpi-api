@@ -1,8 +1,8 @@
 # Plan: Upgrade WiringPi::API to wiringPi 3.18
 
-> **NEXT ACTION:** V24 — **Formal review pass**: interrupt subsystem (dispatcher lifecycle, per-pin callback refcounting, shutdown; **F12** ISR2 trampoline collapse — gated on V13) and **F9** audit of the hardcoded `phys_wpi_map` for Pi5/RP1. Record findings in `## Review Findings`; schedule fixes as new V#/B#. (Review only — no code changes.)
-> **LAST SESSION (2026-06-04):** Ran **V35 on `rpi1` — PASS**. Removed the dead `testChar` export (in `@wpi_perl_functions` but backed by no XS/Perl sub; grep confirmed no impl anywhere). ⚠ consumer-facing: an `:all`/explicit import of `testChar` now fails at `use` time. `perl -c` OK; clean rebuild + `make test` PASS. Prior: V23 PASS (dup pwm_set_range, lcd_char_def newline); V22 PASS; V21 PASS; V20 PASS; V18 + V19 PASS; V1-V12, V14-V17 + V34 PASS; V13 deferred. Standing flags: V13 deferred; Phase 4 V26-V32 ⏸ HOLD; B8/B9/B10; V33 downstream gate (installed WiringPi::API "executable stack" load error); rpi-wiringpi cleanup under `refactor-setup-modes.md` V2-V9.
-> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V12, V14-V23, V34, V35 archived)
+> **NEXT ACTION:** V25 — **Phase 3 full gate**: final `perl Makefile.PL && make && make test` on the Pi + targeted hardware sanity; confirm Changes is up to date. (Phase 3 exit criterion; last ⏳ before the V33 downstream gate.)
+> **LAST SESSION (2026-06-04):** Ran **V24 on `rpi1` — PASS** (closed by reference, user-directed). Review-only; no new F#. Interrupt-subsystem review → roadmap is `isr-migration.md` (F17/F18/F19 dissolved by the self-pipe ISR2 redesign; F12 collapse → isr-mig V4; F23/F24/F25 → isr-mig V2/V5/V4-V6; all gated on V13/deferred). F9 `phys_wpi_map` → validated on this Pi5/RP1 by V1's `t/20` (28 header pins agree); residual is maintenance only (B5 programmatic map; F21/V31 bounds-check). Findings in `## Review Findings`. Prior: V35 PASS (testChar); V23 PASS; V22 PASS; V21 PASS; V20 PASS; V18 + V19 PASS; V1-V12, V14-V17 + V34 PASS; V13 deferred. Standing flags: V13 deferred; Phase 4 V26-V32 ⏸ HOLD; B8/B9/B10; V33 downstream gate (installed WiringPi::API "executable stack" load error); rpi-wiringpi cleanup under `refactor-setup-modes.md` V2-V9.
+> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V12, V14-V24, V34, V35 archived)
 
 ## Goal
 
@@ -88,7 +88,6 @@ caveat assumed a different dev box and no longer applies.) Note: this is a
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V24 | Formal review pass: interrupt subsystem (dispatcher thread lifecycle, per-pin callback refcounting at API.xs:204-229, shutdown path; **F12** — evaluate replacing the 40 trampolines + global callback array with one generic `wiringPiISR2` handler once V13 lands; carry the user-scheme pin via `userdata`, **not** `wfiStatus.pinBCM`, and keep the single dispatcher — see F12) and **F9** — audit the hardcoded `phys_wpi_map` (API.h:64-99) for Pi5/RP1 correctness (wiringPi warns against wpi/phys mapping outside 0-63 on RP1). Log any new findings as F22+ | review (record findings in `## Review Findings`) | findings logged; fixes scheduled as new V#/B# | ⏳ |
 | V25 | **Full gate** — Phase 3 exit: final `perl Makefile.PL && make && make test` on a Pi plus targeted hardware sanity; update Changes (bottom of the `3.1801 UNREL` section) | `perl Makefile.PL && make && make test` (on Pi) | all green; Changes updated | ⏳ |
 
 ### Phase 4 — Custom-XS behavior audit & hardening (⏸ HOLD — work live on a Pi)
@@ -325,6 +324,47 @@ Interrupt/ISR cursory review (off-Pi, 2026-06-02) — F22-F25:
 - **F23** (interrupt review; minor): Neither `set_interrupt` (API.pm:119-123) nor XS `setInterrupt` (API.xs:204-229) validates `$edge`. `$pin` and `$callback` are checked, but `edge` is passed straight to `wiringPiISR()`, so out-of-range/garbage edge values reach the C layer silently. Add a guard (INT_EDGE_FALLING=1, RISING=2, BOTH=3; SETUP=0 if intended).
 - **F24** (interrupt review; fold into V28/V29): `ISR_enqueue_event` silently drops interrupts once the ring buffer is full (`if (event_queue.count < EVENT_QUEUE_SIZE)` with no else branch, API.xs:135-141) — no overflow flag, counter or diagnostic, so bursty interrupts are lost invisibly. Consider an overflow counter exposed to Perl and/or documenting the coalescing/loss semantics.
 - **F25** (interrupt review; depends on V13, fold into V29): Re-arming a pin leaks/duplicates the wiringPi listener. `setInterrupt` always ends with `wiringPiISR(pin, edge, handler)` (API.xs:228) and never calls `wiringPiISRStop(pin)` first, so calling `set_interrupt` twice on the same pin re-registers it — in 3.18 this risks a second internal waitForInterrupt thread / stacked registration for that pin. Once V13 lands, call `wiringPiISRStop(pin)` before re-arming. (Minor, same area: the `dispatcher_started` check-then-create at API.xs:221-226 is a TOCTOU if `set_interrupt` is ever called from multiple ithreads, and the global `mine` is overwritten on every call.)
+
+### V24 formal review pass — conclusions (2026-06-04)
+
+V24 split into two unrelated halves; **no new F# raised** — every issue was already
+captured and scheduled.
+
+**(a) Interrupt subsystem review.** The substantive review was already done (cursory
+pass 2026-06-02 → F22-F25; full thread-safety audit 2026-06-03) and its remediation
+roadmap **is `isr-migration.md`** (self-pipe `wiringPiISR2` rewrite). Mapping of every
+V24-scoped concern to its scheduled home:
+
+- Dispatcher thread lifecycle / shutdown / join, per-pin callback refcounting, the
+  cross-thread `perl_callbacks[]`/`SvRV` race (**F17/F18/F19**) → **dissolved** by the
+  self-pipe design (callback table moves to Perl; no dispatcher thread to race or
+  join), not "fixed". Documented in isr-migration.md ## Thread-safety audit.
+- **F12** — collapse the 40 trampolines + `interrupt_handlers[]` into one generic
+  `isr2_writer`, carrying the user-scheme pin via `userdata` (NOT `wfiStatus.pinBCM`),
+  single writer per pin → isr-migration.md **V4**. Confirmed against wiringPi.c:
+  `pinBCM` is post-`ToBCMPin`, so under `setup()` (wpi numbering) BCM ≠ user pin;
+  keying on `userdata` is correct.
+- Dead `interruptHandler` (**F10/F22**) → already removed in V34; deletion of the
+  remaining `mine`/dispatcher residue → isr-migration.md V4.
+- Edge validation (**F23**) → isr-migration.md V2; dropped-event counter (**F24**) →
+  isr-migration.md V5; re-arm leak / `wiringPiISRStop`-before-rearm (**F25**) →
+  isr-migration.md V4/V6.
+
+All of the above are **gated on V13** (deferred), i.e. on the isr-migration.md run.
+V24 schedules nothing new here — the work is already enumerated there.
+
+**(b) F9 — `phys_wpi_map` Pi5/RP1 audit.** Validated on this board (Pi 5 / RP1) by
+**V1**'s `t/20-board_map_precheck.t`: all 28 mapped 40-pin-header positions satisfy
+`wpi_to_gpio(phys_to_wpi(p)) == phys_to_gpio(p)` against the installed wiringPi 3.18
+tables — **no correctness defect found on this hardware**. Residual concern is
+maintenance, not correctness: it's a hardcoded table duplicating board data wiringPi
+owns, and upstream warns against wpi/phys mapping outside 0-63 on RP1 — but our table
+is bounds-limited to the 64-entry physical header and agrees with wiringPi here.
+Programmatic replacement stays **B5** (non-blocking); the OOB-read bounds-check on
+`physPinToWpi` is already **F21 → V31** (Phase 4). No new F#.
+
+**Net:** V24 logs no F22+ findings; the interrupt fixes live in isr-migration.md
+(gated on V13), F9 is validated by V1 with B5/V31 covering the residual.
 
 ## Backlog
 

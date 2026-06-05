@@ -1,8 +1,8 @@
 # Plan: Migrate interrupts to `wiringPiISR2` via a self-pipe
 
-> **NEXT ACTION:** V1 — on the Pi, confirm the installed `<wiringPi.h>` declares `wiringPiISR2` / `wiringPiISRStop` / `struct WPIWfiStatus` (≥ 3.16).
-> **LAST SESSION:** **2026-06-04.** Finalized the user-facing examples as `isr-examples-final.md` (11 fixes + changelog appendix) and ran a cross-model red-team with DS (Claude/DeepSeek): graded **A-**, converged. One real bug found & fixed in scenario 9's results-pipe drain — a non-`EINTR` `sysread` error (or EOF) busy-spins unless the fd is removed from the `IO::Select` set; corrected contract is **EINTR→retry, other-errno→`remove`+stop, EOF→`remove`+stop** (also took an idempotent `END` reaper, `$pid=undef` after `waitpid`). **V5 (`dispatch_interrupts`/`wait_interrupts`) and the V8 exercisers must mirror this drain contract.** Brought this plan's embedded fork example in line. `isr-examples-final.md` is finalized, awaiting your commit. (Design context — the 2026-06-03 self-pipe rewrite that dissolves F17/F18/F19 and works on threaded + non-threaded Perl — is in ## Why self-pipe + ## Thread-safety audit below.)
-> **ARCHIVE:** See isr-migration-archive.md for completed V tasks
+> **NEXT ACTION:** V3 — Wrap `wiringPiISRStop(int pin)`: thin XS wrap + `@wpi_c_functions` export (needed for re-arm + teardown; wrap only `wiringPiISRStop`, not the legacy `waitForInterruptClose` alias).
+> **LAST SESSION:** **2026-06-04.** Ran **V2 on `rpi1` — PASS** (F23): added the four `INT_EDGE_*` constants (SETUP=0/FALLING=1/RISING=2/BOTH=3) to `:constants`/`:all`, and ordered validation in Perl `set_interrupt` (`$pin` int → `$edge`∈{1,2,3}, rejects SETUP=0/junk → `$callback` CODE ref). `perl -c` OK; clean build; functional check confirms constants + all reject paths. Changes deferred to V8 (this plan's model). **Discovery:** examples/`isr-examples-final.md` use `EDGE_RISING` vs the `INT_EDGE_*` chosen here — reconcile in V7/V8 (logged in ## Discovery Tracking). Prior: V1 PASS (header declares ISR2/ISRStop/WPIWfiStatus; `void* userdata` confirmed). Design context (self-pipe rewrite dissolving F17/F18/F19; the V5/V8 drain contract = EINTR→retry, other-errno→remove+stop, EOF→remove+stop) is in ## Why self-pipe + ## Thread-safety audit; `isr-examples-final.md` awaits commit.
+> **ARCHIVE:** See isr-migration-archive.md for completed V tasks (V1-V2 archived)
 
 ## Goal
 
@@ -109,8 +109,6 @@ on the Mac). Off-Pi: parse/syntax only.
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V1 | **Prereq gate (Pi, first).** Confirm installed `<wiringPi.h>` declares `wiringPiISR2`, `wiringPiISRStop`, `struct WPIWfiStatus` (≥ 3.16). No threaded-Perl requirement (self-pipe); background handling uses `fork`. | `grep -n "wiringPiISR2\|wiringPiISRStop\|WPIWfiStatus" /usr/include/wiringPi.h` | both ISR2 symbols + struct present | ⏳ |
-| V2 | **Edge validation + constants (F23).** Validate `$edge` ∈ {`INT_EDGE_FALLING`=1, `RISING`=2, `BOTH`=3} (reject `SETUP`=0/junk); expose the four `INT_EDGE_*` constants to Perl. Order: `$pin`, then `$edge`, then `$callback`. | `perl -c -Ilib lib/WiringPi/API.pm` + XS parse | syntax/XS OK; bad edge croaks; constants importable | ⏳ |
 | V3 | **Wrap `wiringPiISRStop(int pin)`.** Thin XS wrap + `@wpi_c_functions` export. Needed for re-arm + teardown. (`waitForInterruptClose` is a legacy alias — wrap only `wiringPiISRStop`.) | XS parse + `perl -c` | XS parses; symbol present | ⏳ |
 | V4 | **Self-pipe core (F12 / F10 / F22).** Create a `pipe2()` (or `pipe`+`O_NONBLOCK`) at first arm; write end non-blocking. Add one generic `isr2_writer(struct WPIWfiStatus, void *userdata)` that builds a fixed record `{int pin; int edge; long long ts_us;}` (pin from `userdata`, **not** `wfiStatus.pinBCM`) and `write()`s it (count drops on `EAGAIN`). `_arm_interrupt(pin, edge, debounce)` calls `wiringPiISRStop(pin)` if re-arming, then `wiringPiISR2(pin, edge, isr2_writer, debounce, (void*)(intptr_t)pin)`. Expose `interrupt_fd()` (read end). **Delete** the 40 trampolines + `interrupt_handlers[]` + `MAKE_HANDLER`/`APPLY_TO_PINS`, the dead `interruptHandler()` (+ API.h decl + export), and `mine`/`perl_callbacks[]`/`event_queue`/mutex/cond/dispatcher. | XS parse + `perl -c` + grep that `interruptHandler_`/`mine`/`perl_callbacks`/`event_queue` are gone | XS parses; only `wiringPiISR2` + pipe remain; no dispatcher/trampoline residue | ⏳ |
 | V5 | **Perl-side dispatch.** Keep the callback registry in Perl: `set_interrupt($pin,$edge,$cb)` stores `$cb` in a lexical `%_interrupt_cb` (per-interpreter) then calls `_arm_interrupt`. Add `dispatch_interrupts()` (non-blocking: `sysread` all available 16-byte records from `interrupt_fd`, `unpack "i i q"`, call `$_interrupt_cb{$pin}->($edge, $ts_us)`; on a `sysread` `undef` retry only on `EINTR`, else stop, and treat `0`/EOF as terminal — never busy-spin, per the 2026-06-04 examples review) and `wait_interrupts($timeout_ms)` (`select` on the fd, then dispatch). Expose `interrupt_dropped()` (F24 overflow count). | `perl -c -Ilib lib/WiringPi/API.pm` | OK; dispatch reads records and fans out to callbacks | ⏳ |
@@ -357,7 +355,7 @@ kernel (a signal) here, your loop in cooperative mode, a forked child in
 
 ## Discovery Tracking
 
-_None yet._
+- Found during **V2**, non-blocking → reconcile in **V7 (POD)** + **V8 (exercisers)**: V2 named the edge constants `INT_EDGE_*` (mirrors wiringPi's `#define`s: SETUP=0/FALLING=1/RISING=2/BOTH=3), but the design-section examples here (lines ~134/137/144/153) and `isr-examples-final.md` use the shorter `EDGE_RISING`. Those examples/POD must switch to `INT_EDGE_*` (or, if the short names are preferred, V7 must add `EDGE_*` aliases) so the V8 exercisers import a real symbol. No code change needed for V2 itself.
 
 ## Backlog
 
