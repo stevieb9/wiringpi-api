@@ -66,7 +66,7 @@ my @wpi_perl_functions = qw(
     shift_reg_setup analog_read     analog_write        pin_mode
     ads1115_setup   spi_setup       spi_data            i2c_setup
     i2c_interface   i2c_read        i2c_read_byte       i2c_read_word
-    i2c_write       i2c_write_byte  i2c_write_word      testChar
+    i2c_write       i2c_write_byte  i2c_write_word
     i2c_read_block  i2c_raw_read    i2c_write_block     i2c_raw_write
     spi_get_fd      spi_setup_mode  spi_close
     soft_tone_create                soft_tone_stop      soft_tone_write

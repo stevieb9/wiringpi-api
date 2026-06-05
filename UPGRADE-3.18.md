@@ -1,8 +1,8 @@
 # Plan: Upgrade WiringPi::API to wiringPi 3.18
 
-> **NEXT ACTION:** V23 — Fix **F7/F8**: remove duplicate `pwm_set_range` in `@wpi_perl_functions` (API.pm); review/justify or drop the stray `lcdPuts($fd,"\n")` in `lcd_char_def`. ⚠ consumer-facing (lcd_char_def stray newline).
-> **LAST SESSION (2026-06-04):** Ran **V22 on `rpi1` — PASS**. Fixed F6: moved `#define PERL_NO_GET_CONTEXT` above the perl headers (was after `perl.h`, a no-op) → now API.xs:16. XS parses; built clean + `make test` PASS (confirms hand-written C compiles under the now-effective macro; non-threaded perl so runtime no-op here). Internal build change. Prior: V21 PASS (XS exit→croak, drop VLA); V20 PASS; V18 + V19 PASS; V1-V12, V14-V17 + V34 PASS; V13 deferred. Standing flags: V13 deferred; Phase 4 V26-V32 ⏸ HOLD; B8/B9/B10; V35 (testChar); V33 downstream gate (installed WiringPi::API "executable stack" load error); rpi-wiringpi cleanup under `refactor-setup-modes.md` V2-V9.
-> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V12, V14-V22, V34 archived)
+> **NEXT ACTION:** V24 — **Formal review pass**: interrupt subsystem (dispatcher lifecycle, per-pin callback refcounting, shutdown; **F12** ISR2 trampoline collapse — gated on V13) and **F9** audit of the hardcoded `phys_wpi_map` for Pi5/RP1. Record findings in `## Review Findings`; schedule fixes as new V#/B#. (Review only — no code changes.)
+> **LAST SESSION (2026-06-04):** Ran **V35 on `rpi1` — PASS**. Removed the dead `testChar` export (in `@wpi_perl_functions` but backed by no XS/Perl sub; grep confirmed no impl anywhere). ⚠ consumer-facing: an `:all`/explicit import of `testChar` now fails at `use` time. `perl -c` OK; clean rebuild + `make test` PASS. Prior: V23 PASS (dup pwm_set_range, lcd_char_def newline); V22 PASS; V21 PASS; V20 PASS; V18 + V19 PASS; V1-V12, V14-V17 + V34 PASS; V13 deferred. Standing flags: V13 deferred; Phase 4 V26-V32 ⏸ HOLD; B8/B9/B10; V33 downstream gate (installed WiringPi::API "executable stack" load error); rpi-wiringpi cleanup under `refactor-setup-modes.md` V2-V9.
+> **ARCHIVE:** See UPGRADE-3.18-archive.md for completed V tasks (V1-V12, V14-V23, V34, V35 archived)
 
 ## Goal
 
@@ -88,7 +88,6 @@ caveat assumed a different dev box and no longer applies.) Note: this is a
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V35 | **Remove dead `testChar` export** (found during V8 audit): `testChar` is in `@wpi_perl_functions` (API.pm:49 → `:all`/`:perl`/`@EXPORT_OK`) but has **no XS sub and no Perl sub** — importing it succeeds, calling it dies (same class as the V2 camelCase orphans). Remove the token; no real target exists. ⚠ consumer-facing: an `:all`/explicit import of `testChar` will fail at `use` time instead of dying on call (document under Public API impact alongside V2). | `perl -c -Ilib lib/WiringPi/API.pm` + grep `testChar` absent from exports | OK; `testChar` gone; no dangling export | ⏳ |
 | V24 | Formal review pass: interrupt subsystem (dispatcher thread lifecycle, per-pin callback refcounting at API.xs:204-229, shutdown path; **F12** — evaluate replacing the 40 trampolines + global callback array with one generic `wiringPiISR2` handler once V13 lands; carry the user-scheme pin via `userdata`, **not** `wfiStatus.pinBCM`, and keep the single dispatcher — see F12) and **F9** — audit the hardcoded `phys_wpi_map` (API.h:64-99) for Pi5/RP1 correctness (wiringPi warns against wpi/phys mapping outside 0-63 on RP1). Log any new findings as F22+ | review (record findings in `## Review Findings`) | findings logged; fixes scheduled as new V#/B# | ⏳ |
 | V25 | **Full gate** — Phase 3 exit: final `perl Makefile.PL && make && make test` on a Pi plus targeted hardware sanity; update Changes (bottom of the `3.1801 UNREL` section) | `perl Makefile.PL && make && make test` (on Pi) | all green; Changes updated | ⏳ |
 
@@ -287,7 +286,7 @@ the calls wrapped in Phase 2 make them redundant.
 
 ## Discovery Tracking
 
-- Found during **V8** (audit), non-blocking → raised as **V35**: `testChar` is exported via `@wpi_perl_functions` but has no XS or Perl implementation (dead export, dies on call). Not fixed during V8 (consumer-facing export removal warrants its own task + Public API note).
+(none open)
 
 ## Review Findings
 

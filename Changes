@@ -82,6 +82,10 @@ Revision history for Perl extension WiringPi::API.
           that side effect)
         - removed a duplicate pwm_set_range entry from the export list
           (internal; pwm_set_range is still exported and unchanged)
+        - removed the dead testChar export: it was listed in @EXPORT_OK /
+          :all / :perl but backed by no XS or Perl sub (importing succeeded,
+          calling it died). An :all or explicit import of testChar now fails
+          at use-time instead
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks
