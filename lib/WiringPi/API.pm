@@ -6,7 +6,8 @@ use warnings;
 our $VERSION = '3.1801';
 
 use Carp qw(croak);
-use Fcntl qw(F_GETFL F_SETFL F_SETOWN O_ASYNC F_GETPIPE_SZ F_SETPIPE_SZ F_SETSIG);
+use Fcntl qw(F_GETFL F_SETFL F_SETOWN O_ASYNC O_NONBLOCK
+             F_GETPIPE_SZ F_SETPIPE_SZ F_SETSIG);
 use POSIX qw(WNOHANG);
 use Scalar::Util qw(blessed);
 
@@ -709,6 +710,25 @@ sub worker {
         croak "worker() \%opts must be a hash reference";
     }
 
+    $opts ||= {};
+
+    # Opt-in channels carrying $body's defined return value back to the parent,
+    # both length-framed over an inherited pipe (the background_interrupt model):
+    #   results => every value, streamed; parent drains with read()/fh().
+    #   shared  => latest value only, lossy; parent reads with value().
+    # Set up before forking so both ends inherit.
+    my ($res_r, $res_w);
+    if ($opts->{results}) {
+        pipe($res_r, $res_w)
+            or croak "worker() results pipe failed: $!";
+    }
+
+    my ($val_r, $val_w);
+    if ($opts->{shared}) {
+        pipe($val_r, $val_w)
+            or croak "worker() shared pipe failed: $!";
+    }
+
     my $pid = fork;
     croak "worker() fork failed: $!" if ! defined $pid;
 
@@ -716,18 +736,36 @@ sub worker {
         # CHILD: run the body repeatedly until the parent stops us. TERM flips
         # the loop guard so the current iteration finishes, then we exit cleanly
         # for the parent's stop()/END reaper.
+        close $res_r if $res_r;
+        close $val_r if $val_r;
+
+        # The shared channel is lossy: never let a slow/absent reader block the
+        # worker. A full pipe just drops the update (the parent only wants latest).
+        if ($val_w) {
+            my $flags = fcntl($val_w, F_GETFL, 0);
+            fcntl($val_w, F_SETFL, $flags | O_NONBLOCK) if defined $flags;
+        }
+
         my $run = 1;
         $SIG{TERM} = sub { $run = 0; };
 
         while ($run) {
-            $body->();
+            my $ret = $body->();
+            next if ! defined $ret;
+
+            my $frame = pack("N", length "$ret") . "$ret";
+            syswrite $res_w, $frame if $res_w;
+            syswrite $val_w, $frame if $val_w;
         }
 
         exit 0;
     }
 
     # PARENT: record the child so $w->stop / the END reaper can clean it up.
-    my $handle = WiringPi::API::Worker->_new($pid);
+    close $res_w if $res_w;
+    close $val_w if $val_w;
+
+    my $handle = WiringPi::API::Worker->_new($pid, $res_r, $val_r);
     push @_bg_children, $handle;
 
     return $handle;
@@ -1677,12 +1715,51 @@ sub stop {
 
 # Handle returned by worker(). Owns one forked child that runs the user body in
 # a loop. The pid/running/stop/DESTROY lifecycle (TERM -> poll -> KILL -> reap)
-# is mechanism-agnostic, so it is inherited wholesale from BackgroundInterrupt;
-# the results-channel read()/fh() are inherited too (used from V2 on).
+# is mechanism-agnostic, so it is inherited wholesale from BackgroundInterrupt,
+# as are the {results=>1} streaming read()/fh(). value() adds the lossy
+# latest-value drain for the {shared=>1} channel.
 
 package WiringPi::API::Worker;
 
 our @ISA = ('WiringPi::API::BackgroundInterrupt');
+
+sub _new {
+    my ($class, $pid, $results_fh, $value_fh) = @_;
+
+    my $self = $class->SUPER::_new($pid, $results_fh);
+    $self->{value_fh} = $value_fh;
+
+    return $self;
+}
+sub value {
+    # Lossy latest value from the {shared=>1} channel: drain every record the
+    # child has written and keep only the most recent, caching it so a later
+    # call with nothing new pending still returns the last seen value.
+    my ($self) = @_;
+
+    my $fh = $self->{value_fh};
+    return $self->{value} if ! defined $fh;
+
+    while (1) {
+        my $rin = "";
+        vec($rin, fileno($fh), 1) = 1;
+        my $nfound = select(my $rout = $rin, undef, undef, 0);
+        last if ! $nfound || $nfound < 0;
+
+        # Each record is one atomic syswrite from the single child, so once the
+        # length prefix is readable the payload is too - read_exact won't block.
+        my $len_buf = WiringPi::API::BackgroundInterrupt::_read_exact($fh, 4);
+        last if ! defined $len_buf;
+
+        my $rec = WiringPi::API::BackgroundInterrupt::_read_exact(
+            $fh, unpack("N", $len_buf));
+        last if ! defined $rec;
+
+        $self->{value} = $rec;
+    }
+
+    return $self->{value};
+}
 
 1;
 __END__

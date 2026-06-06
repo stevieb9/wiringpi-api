@@ -6,6 +6,7 @@ See threads-rewrite.md for the active plan.
 ## Archived V Tasks
 
 - V1: `worker()` core (fork-based) + `WiringPi::API::Worker` handle — ✅ 2026-06-05 attempt 1: PASS
+- V2: shared (`$w->value`) + results (`$w->read`/`$w->fh`) channels, length-framed over inherited pipes — ✅ 2026-06-05 attempt 1: PASS
 
 ## Archived Fixes
 

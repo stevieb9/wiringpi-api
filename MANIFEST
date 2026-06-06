@@ -33,6 +33,7 @@ t/65-soft_tone.t
 t/70-i2c_fixes.t
 t/75-interrupts.t
 t/80-phys_to_wpi_bounds.t
+t/85-worker.t
 t/manifest.t
 t/pod-coverage.t
 t/pod.t

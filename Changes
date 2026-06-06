@@ -196,6 +196,12 @@ Revision history for Perl extension WiringPi::API.
           with idempotent stop/pid/running; a DESTROY + END block reap the child
           so a forgotten stop() can't leak a zombie. $body is validated to be a
           CODE reference before forking
+        - worker() gained {results => 1} and {shared => 1} options that ship
+          $body's defined return value back to the parent over a length-framed
+          pipe. {results} streams every value, drained via the handle's read()
+          (non-blocking) / fh() (for select); {shared} keeps only the latest
+          value (lossy, non-blocking child write) read via the handle's value().
+          Default behaviour is unchanged
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks
