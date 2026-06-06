@@ -3,7 +3,7 @@
 > **Status — implemented and shipping.** The self-pipe interrupt API described
 > here is implemented in `WiringPi::API` 3.18 and verified on Pi 5 hardware; the
 > snippets run as written. This doc is **ISR-only and uses no `use threads`** —
-> general concurrency/worker examples live in `threads-examples.md` (parked).
+> general concurrency/worker examples (`worker()`) live in `threads-examples.md`.
 > Callbacks fire in your own interpreter when you service dispatch, so they work
 > on **any** Perl, threaded or not.
 
@@ -48,8 +48,8 @@
   hands-off calls, but **most programs only need 7 or 8.**
 - **If you fork yourself** (scenario 9): call `setup()` and `pin_mode` in the
   parent **before** forking, and arm the interrupt in the child that dispatches it.
-- An **ithread**-based background alternative exists but lives in
-  `threads-examples.md`, which is parked behind the ISR work.
+- For **running** background work (not reacting to edges), see `worker()` in
+  `threads-examples.md`. An **ithread**-based alternative lives there too.
 
 ## Decision guide
 
@@ -595,7 +595,7 @@ parent sleeps when idle instead of spinning on `can_read(0)`.
 > record-aligned). Text framing avoids both constraints and is the better default.
 
 > An `ithread`-based equivalent (shared variables instead of a results pipe) is in
-> `threads-examples.md`, which is parked until the ISR work lands.
+> `threads-examples.md` — see `worker()` with `{ mechanism => 'thread' }`.
 
 ### 10. Many pins in one background child (background_interrupts)
 
@@ -693,8 +693,8 @@ ithreads. "Background" does not imply `use threads`; only the ithread variants i
 | `INT_EDGE_FALLING` (1) / `INT_EDGE_RISING` (2) / `INT_EDGE_BOTH` (3) | edge constants | int |
 
 > See L<WiringPi::API> POD for the authoritative per-function documentation. For
-> worker threads, shared state, and periodic events, see `threads-examples.md`
-> (parked).
+> background workers, shared state, and periodic events, see `worker()` in
+> `threads-examples.md`.
 
 ## Code flow — Perl → API.pm → API.xs → wiringPi
 

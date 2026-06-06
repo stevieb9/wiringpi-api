@@ -219,6 +219,13 @@ Revision history for Perl extension WiringPi::API.
           BACKGROUND WORKERS" section covering worker(), all its options, the
           handle, the setup-once-in-main contract and a hands-off one-liner, plus
           a cross-link from THREAD/LOCK FUNCTIONS
+        - rewrote docs/threads-examples.md to lead with worker() (heartbeat,
+          periodic sampler, results stream, one-shot, distinct-pin workers,
+          opt-in ithread), demoted the raw fork/threads->create/
+          Async::Event::Interval patterns to an "under the hood" reference, and
+          un-parked it (the ISR blocker landed). Added lib/WORKERS.pod as the
+          perldoc form of that guide; cross-linked both ways with the interrupt
+          docs
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

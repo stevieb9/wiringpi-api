@@ -9,9 +9,9 @@ The self-pipe interrupt API described here is implemented in C<WiringPi::API>
 3.18 and verified on Pi 5 hardware; the snippets run as written.
 
 This document is B<ISR-only and uses no> C<use threads> - general
-concurrency/worker examples live in C<docs/threads-examples.md> (parked). Callbacks
-fire in your own interpreter when you service dispatch, so they work on B<any>
-Perl, threaded or not.
+concurrency/worker examples (C<worker()>) live in L<WiringPi::API::WORKERS> /
+C<docs/threads-examples.md>. Callbacks fire in your own interpreter when you
+service dispatch, so they work on B<any> Perl, threaded or not.
 
 See the L<WiringPi::API> POD for the authoritative per-function reference.
 

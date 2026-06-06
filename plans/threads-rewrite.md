@@ -1,8 +1,8 @@
 # Plan: Rewrite the threads/concurrency story around a hands-off `worker()` helper
 
-> **NEXT ACTION:** V6 — rewrite `docs/threads-examples.md` to lead with `worker()`, demote raw `threads->create`/`fork`/`Async::Event::Interval` to "under the hood", un-park it, and align with `interrupt-examples.md`.
-> **LAST SESSION:** 2026-06-05. V5 done: added a "CONCURRENCY / BACKGROUND WORKERS" POD section (worker() + all options + the handle + setup-once-in-main contract + hands-off one-liner + periodic-sampler and opt-in-ithread examples), a TOC entry, and a cross-link from THREAD/LOCK FUNCTIONS. `podchecker` clean, `perl -c` OK, `worker` now POD-covered (the pod-coverage test still fails overall on pre-existing naked XS camelCase subs — unrelated/baseline).
-> **ARCHIVE:** See threads-rewrite-archive.md for completed V tasks (V1-V5)
+> **NEXT ACTION:** V7 — add `t/8x-worker.t` (extend the existing `t/85-worker.t`): construction, arg-validation croaks, stop idempotency, child reaping, shared/results framing, once/interval pacing — off-Pi assertions + a PI_BOARD-gated GPIO block.
+> **LAST SESSION:** 2026-06-05. V6 done: rewrote `docs/threads-examples.md` to lead with `worker()` (heartbeat, periodic sampler, results stream, once, distinct-pin workers, opt-in ithread); demoted raw fork/threads->create/Async::Event::Interval to an "under the hood" section; un-parked it; pointed the background-edge scenario at `background_interrupt`. Added `lib/WORKERS.pod` (perldoc form). Cross-linked both ways and dropped the stale "(parked)" refs in `interrupt-examples.md`/`INTERRUPTS.pod`. All 30 in-page anchors resolve; both pods `podchecker`-clean; `WORKERS.pod` added to MANIFEST.
+> **ARCHIVE:** See threads-rewrite-archive.md for completed V tasks (V1-V6)
 
 ## Goal
 
@@ -125,9 +125,9 @@ mechanism and are folded in here (V5). Its C-only `piThreadCreate2` backlog
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V6 | **Rewrite `docs/threads-examples.md`.** Lead with `worker()` (decision guide + minimal-code scenarios: heartbeat, shared sampler, periodic, once, distinct-pin workers). Demote raw `threads->create`/`fork`/`Async::Event::Interval` to an "under the hood" reference section. Remove the PARKED banner (blocker landed). Align voice/structure with `interrupt-examples.md`; cross-link both ways; point the interrupt-thread scenario at `background_interrupt`. | markdown render sanity; internal anchors resolve; cross-refs to `interrupt-examples.md` valid | hands-off helpers lead; boilerplate demoted; un-parked; links resolve | ⏳ |
 | V7 | **Tests.** Add `t/8x-worker.t`: construction, arg-validation croaks, `stop` idempotency, child reaping (END + explicit), shared/results framing, once/interval pacing — structured so the GPIO-free assertions run off-Pi and the pin-driving block guards on `PI_BOARD`. | `prove -Ilib t/8x-worker.t` (off-Pi portions) | new test green off-Pi; GPIO block self-skips without hardware | ⏳ |
 | V8 | **Verify on hardware (Pi).** Worker exerciser: distinct-pin workers, a `{shared=>1}` sampler read by main via `$w->value`, a `{interval=>...}` periodic worker, a `{once=>1}` worker, stop/reap + forgotten-stop END reaping; optionally the `{mechanism=>'thread'}` path on a threaded Perl. Run `perl Makefile.PL && make && make test` and the exerciser under `valgrind --leak-check=full`. Confirm Changes covers all consumer-visible additions. | `perl Makefile.PL && make && make test` + worker exerciser under valgrind (Pi) | green; no leaks/zombies; contract holds; Changes complete | ⏳ |
+| V9 | **(HOLD)** Create `THREADS.pod` in the **rpi-wiringpi** project documenting that project's threads/worker story, written to match `WiringPi::API`'s `worker()` implementation here (the `lib/WORKERS.pod` guide is the reference). HELD until all the threads work in this plan (V1-V8) is implemented and hardware-verified, so the doc reflects the final, shipped surface. | (in rpi-wiringpi) `podchecker THREADS.pod` once unblocked | accurate `THREADS.pod` matching the shipped `worker()` API | ⏸ HOLD — blocked on V1-V8 |
 
 ## Discovery Tracking
 
