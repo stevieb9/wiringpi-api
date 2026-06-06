@@ -1,8 +1,8 @@
 # Plan: Rewrite the threads/concurrency story around a hands-off `worker()` helper
 
-> **NEXT ACTION:** V9 — create `lib/THREADS.pod` in **rpi-wiringpi** leading with the `$pi->worker(...)` method (V12-V14) as the headline; `lib/WORKERS.pod` here is the reference. **Last remaining task** (V16 was done ahead of it). Also fold in the V17 (B3) FAQ→THREADS cross-link once the file exists.
-> **LAST SESSION:** 2026-06-06. Completed V16 (full Pi gate, done ahead of V9): `perl Makefile.PL && make` clean, `make test` PASS (peripheral tests self-skip without the wired rig). Added `build_testing/valgrind_worker.pl` (+MANIFEST), the OO worker exerciser; under `valgrind --leak-check=full` the parent and every forked worker report definitely/indirectly lost = 0 (rest is byte-identical libperl baseline), no zombies. `t/213-worker.t` re-confirmed on hardware (`PI_BOARD=1`, 25 tests). Changes bullet added. Perl is non-threaded so `{mechanism=>'thread'}` stays out of scope (as in V8).
-> **ARCHIVE:** See threads-rewrite-archive.md for completed V tasks (V1-V8, V10-V17; V9 still pending)
+> **NEXT ACTION:** None — all V tasks (Phase 1 + Phase 2) complete and wrap-up done: `threads-patch.md` deleted (superseded), `WORKERS.pod`/`INTERRUPTS.pod` namespaced. Plan complete.
+> **LAST SESSION:** 2026-06-06. Doc-structure cleanup (see Archived Fixes). Namespaced both `WORKERS.pod` (clash fix) and `wiringpi-api`'s `INTERRUPTS.pod` (`lib/WiringPi/API/INTERRUPTS.pod`, fixing 6 dangling `L<WiringPi::API::INTERRUPTS>` links). Restructured `rpi-wiringpi` docs to mirror `wiringpi-api`: moved `lib/INTERRUPTS.md` → `docs/interrupt-examples.md`, added `lib/RPi/WiringPi/INTERRUPTS.pod` and `docs/threads-examples.md`, so both topics have the `docs/*.md` + `lib/.../*.pod` split. All cross-links/MANIFESTs/Changes updated; both repos `podchecker`/`manicheck`/`make` clean, `rpi-wiringpi` `make test` PASS.
+> **ARCHIVE:** See threads-rewrite-archive.md for completed V tasks (V1-V17; all complete)
 
 ## Goal
 
@@ -75,15 +75,14 @@ Validate every argument **before** forking — never fork into a guaranteed fail
 (the existing `background_interrupt` rule). `body` must be a CODE ref; `interval`
 a positive number; `mechanism` one of the two known values; etc.
 
-## Relationship to the parked `threads-patch.md`
+## Relationship to the (deleted) `threads-patch.md`
 
-`threads-patch.md` is parked and predates this. This plan **supersedes its
-doc/helper aims** (its V3 "document the contract" and backlog B3 "encapsulate the
-interrupt-ithread boilerplate" — `background_interrupt` already covers the latter).
-Its `pi_lock`/`pi_unlock` wrappers (V2) are still wanted for the opt-in ithread
-mechanism and are folded in here (V5). Its C-only `piThreadCreate2` backlog
-(B1/B2) is **out of scope** and stays in that plan. When this plan lands, mark
-`threads-patch.md` superseded.
+`threads-patch.md` predated this plan and was **superseded then deleted**
+(2026-06-06). This plan absorbed its still-relevant aims: the `pi_lock`/`pi_unlock`
+wrappers (its V2) shipped here (V5), and the doc/contract work is covered by
+`WORKERS.pod`/`THREADS`-style docs. Its C-only `piThreadCreate2`/`thread_create`
+idea is **out of scope** (see "Explicitly NOT doing"). Stale references to
+`threads-patch.md` may remain in other plans' archives as historical record.
 
 ## Validation environment
 
@@ -151,7 +150,7 @@ exerciser) runs on the Pi, same as Phase 1's V8.
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V9 | Create `lib/THREADS.pod` in **rpi-wiringpi** documenting the OO threads/worker story, leading with the new `$pi->worker(...)` method (V12-V14) as the headline and demoting raw `fork`/`threads` to "under the hood"; match the voice/structure of the sibling's interrupt docs. `lib/WORKERS.pod` here is the reference; document `{mechanism=>'thread'}` bodies calling `WiringPi::API::pi_lock`/`pi_unlock` directly (no OO proxy — thread mode is a niche opt-in). Depends on V12-V14. **Also add the FAQ→THREADS cross-link folded from V17 (B3):** add `L<THREADS\|THREADS>` to the `lib/RPi/WiringPi/FAQ.pod` "Perlbrew configuration" note now that the target exists. | (in rpi-wiringpi) `podchecker lib/THREADS.pod` | accurate `THREADS.pod` matching the shipped OO `worker()` method | ⏳ |
+| _(none)_ | All V tasks complete. | — | — | ✅ |
 
 ## Discovery Tracking
 
@@ -163,7 +162,7 @@ _None._
 
 ## Explicitly NOT doing
 
-- **C-only `piThreadCreate2`/`thread_create`** — stays in parked `threads-patch.md` (B1/B2). Perl-in-a-shared-interpreter is unsafe; the ithread + fork mechanisms here cover the Perl cases.
+- **C-only `piThreadCreate2`/`thread_create`** — dropped with the deleted `threads-patch.md`. Perl-in-a-shared-interpreter is unsafe; the ithread + fork mechanisms here cover the Perl cases.
 - **Requiring `threads` / a threaded Perl in the dist** — `worker()` is fork-first; `use threads` is opt-in via `{mechanism=>'thread'}` only. The module stays usable single-threaded and on non-threaded Perl.
 - **Reinventing ithreads in XS** (per-thread `perl_clone`, cross-interpreter SV marshalling) — duplicates core Perl badly.
 - **Keeping the boilerplate scenarios as the headline** — the raw `threads->create`/`fork` patterns survive only as an "under the hood" reference behind `worker()`.

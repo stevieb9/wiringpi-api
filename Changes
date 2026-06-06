@@ -164,9 +164,10 @@ Revision history for Perl extension WiringPi::API.
         - set_interrupt() now accepts an optional trailing options hashref; the
           {auto_dispatch => 1} (or {auto_dispatch => 'USR1'}) option turns on
           auto-dispatch as part of arming (the process-wide switch)
-        - Added lib/INTERRUPTS.pod: a complete, runnable guide to the interrupt
-          API (cooperative dispatch, hands-off auto_dispatch/background, the
-          shared-child and results channels, queue sizing, and the code flow)
+        - Added lib/WiringPi/API/INTERRUPTS.pod (perldoc WiringPi::API::INTERRUPTS):
+          a complete, runnable guide to the interrupt API (cooperative dispatch,
+          hands-off auto_dispatch/background, the shared-child and results
+          channels, queue sizing, and the code flow)
         - Fixed a heap buffer overflow in serial_gets(): the Perl wrapper passed
           a zero-length scalar that the XS serialGets() then wrote up to $nbytes
           into. serialGets() is now a self-allocating XSUB (Newx/Safefree) that
@@ -223,7 +224,8 @@ Revision history for Perl extension WiringPi::API.
           periodic sampler, results stream, one-shot, distinct-pin workers,
           opt-in ithread), demoted the raw fork/threads->create/
           Async::Event::Interval patterns to an "under the hood" reference, and
-          un-parked it (the ISR blocker landed). Added lib/WORKERS.pod as the
+          un-parked it (the ISR blocker landed). Added
+          lib/WiringPi/API/WORKERS.pod (perldoc WiringPi::API::WORKERS) as the
           perldoc form of that guide; cross-linked both ways with the interrupt
           docs
         - added t/85-worker.t covering worker(): argument-validation croaks,
@@ -234,7 +236,8 @@ Revision history for Perl extension WiringPi::API.
         - added testing/valgrind_worker.pl, a hardware worker() exerciser
           (distinct-pin workers, {shared} sampler, {interval}/{once} pacing,
           stop/reap, forgotten-stop END reaping) for leak-checking under valgrind
-        - fixed the worker() examples in the POD synopsis, lib/WORKERS.pod and
+        - fixed the worker() examples in the POD synopsis,
+          lib/WiringPi/API/WORKERS.pod and
           docs/threads-examples.md to call the real exported pin functions
           write_pin()/read_pin() - they previously used digital_write()/
           digital_read(), which are not exported and would die as written

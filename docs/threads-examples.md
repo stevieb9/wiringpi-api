@@ -488,5 +488,6 @@ at load time, so it does not compose with a hand-rolled `fork`/`waitpid` or with
 | `background_interrupt(...)` | background **edge** handler (see `interrupt-examples.md`) | handle `$h` |
 
 > See the `WiringPi::API` POD ("CONCURRENCY / BACKGROUND WORKERS") for the
-> authoritative per-function documentation, and `lib/WORKERS.pod` for this guide
-> in `perldoc` form. For interrupts, see `interrupt-examples.md`.
+> authoritative per-function documentation, and `lib/WiringPi/API/WORKERS.pod`
+> (`perldoc WiringPi::API::WORKERS`) for this guide in `perldoc` form. For
+> interrupts, see `interrupt-examples.md`.
