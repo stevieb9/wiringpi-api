@@ -234,6 +234,10 @@ Revision history for Perl extension WiringPi::API.
         - added testing/valgrind_worker.pl, a hardware worker() exerciser
           (distinct-pin workers, {shared} sampler, {interval}/{once} pacing,
           stop/reap, forgotten-stop END reaping) for leak-checking under valgrind
+        - fixed the worker() examples in the POD synopsis, lib/WORKERS.pod and
+          docs/threads-examples.md to call the real exported pin functions
+          write_pin()/read_pin() - they previously used digital_write()/
+          digital_read(), which are not exported and would die as written
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

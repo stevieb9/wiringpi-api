@@ -3269,13 +3269,13 @@ fork-based worker inherits that state; you drive the pins from inside the body.
 
 The hands-off heartbeat LED - the helper owns the loop and the lifecycle:
 
-    use WiringPi::API qw(setup pin_mode digital_write worker);
+    use WiringPi::API qw(setup pin_mode write_pin worker);
 
     setup();
     pin_mode(2, 1);                   # OUTPUT, once in main
 
-    my $w = worker(sub { digital_write(2, 1); sleep 1;
-                         digital_write(2, 0); sleep 1 });
+    my $w = worker(sub { write_pin(2, 1); sleep 1;
+                         write_pin(2, 0); sleep 1 });
 
     # ... main does its own work ...
 

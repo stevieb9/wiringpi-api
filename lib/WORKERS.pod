@@ -127,14 +127,14 @@ the body; C<worker()> repeats it until you C<stop>.
 
     use strict;
     use warnings;
-    use WiringPi::API qw(setup pin_mode digital_write worker);
+    use WiringPi::API qw(setup pin_mode write_pin worker);
 
     setup();
     pin_mode(2, 1);                   # OUTPUT, once in main
 
     my $w = worker(sub {
-        digital_write(2, 1); sleep 1;
-        digital_write(2, 0); sleep 1;
+        write_pin(2, 1); sleep 1;
+        write_pin(2, 0); sleep 1;
     });
 
     # ... main does its own work ...
@@ -221,15 +221,15 @@ or just let the END reaper clean up.
 
     use strict;
     use warnings;
-    use WiringPi::API qw(setup pin_mode digital_write worker);
+    use WiringPi::API qw(setup pin_mode write_pin worker);
 
     setup();
     pin_mode(5, 1);                   # OUTPUT, once in main
 
     my $w = worker(sub {
-        digital_write(5, 1);
+        write_pin(5, 1);
         select(undef, undef, undef, 0.2);     # 200ms pulse
-        digital_write(5, 0);
+        write_pin(5, 0);
     }, { once => 1 });
 
     # ... main carries on; the pulse fires in the background ...
@@ -249,15 +249,15 @@ per pin. Each runs independently; each returns its own handle.
 
     use strict;
     use warnings;
-    use WiringPi::API qw(setup pin_mode digital_write worker);
+    use WiringPi::API qw(setup pin_mode write_pin worker);
 
     setup();
     pin_mode($_, 1) for (2, 3, 4);    # OUTPUT - all config in main, up front
 
     my @workers = (
-        worker(sub { digital_write(2, 1); sleep 1; digital_write(2, 0); sleep 1 }),
-        worker(sub { digital_write(3, 1); sleep 2; digital_write(3, 0); sleep 2 }),
-        worker(sub { digital_write(4, 1); sleep 3; digital_write(4, 0); sleep 3 }),
+        worker(sub { write_pin(2, 1); sleep 1; write_pin(2, 0); sleep 1 }),
+        worker(sub { write_pin(3, 1); sleep 2; write_pin(3, 0); sleep 2 }),
+        worker(sub { write_pin(4, 1); sleep 3; write_pin(4, 0); sleep 3 }),
     );
 
     # ... main's own work ...
@@ -353,7 +353,7 @@ A fork worker inherits that configuration; a thread worker shares it.
 
 =item *
 
-Afterwards, workers may freely C<digital_read>/C<digital_write> on B<distinct>
+Afterwards, workers may freely C<read_pin>/C<write_pin> on B<distinct>
 pins. B<Never> call C<setup()>/C<pin_mode>/device C<*Setup> concurrently - they
 read-modify-write shared registers.
 
@@ -382,7 +382,7 @@ pipe, and reap it yourself.
 
     use strict;
     use warnings;
-    use WiringPi::API qw(setup pin_mode digital_write);
+    use WiringPi::API qw(setup pin_mode write_pin);
 
     setup();
     pin_mode(2, 1);                          # OUTPUT - before fork
@@ -391,8 +391,8 @@ pipe, and reap it yourself.
 
     if ($pid == 0) {
         while (1) {                          # child: heartbeat forever
-            digital_write(2, 1); sleep 1;
-            digital_write(2, 0); sleep 1;
+            write_pin(2, 1); sleep 1;
+            write_pin(2, 0); sleep 1;
         }
         exit 0;
     }
@@ -417,7 +417,7 @@ lexicals - share only via C<:shared> variables guarded by C<pi_lock>/C<lock>.
     use warnings;
     use threads;
     use threads::shared;
-    use WiringPi::API qw(setup pin_mode digital_read pi_lock pi_unlock);
+    use WiringPi::API qw(setup pin_mode read_pin pi_lock pi_unlock);
 
     setup();
     pin_mode(3, 0);                          # INPUT
@@ -426,7 +426,7 @@ lexicals - share only via C<:shared> variables guarded by C<pi_lock>/C<lock>.
 
     my $thr = threads->create(sub {
         while (1) {
-            my $v = digital_read(3);
+            my $v = read_pin(3);
             pi_lock(0); $latest = $v; pi_unlock(0);
             select(undef, undef, undef, 0.05);
         }
@@ -455,7 +455,7 @@ reads the latest value via the module's C<shared_scalar> (lossy).
     use strict;
     use warnings;
     use Async::Event::Interval;
-    use WiringPi::API qw(setup pin_mode digital_read);
+    use WiringPi::API qw(setup pin_mode read_pin);
 
     setup();
     pin_mode(3, 0);                              # INPUT - before the event forks
@@ -471,7 +471,7 @@ reads the latest value via the module's C<shared_scalar> (lossy).
     }
 
     sub sample {
-        $$latest = digital_read(3);
+        $$latest = read_pin(3);
     }
 
 B<Honest fit:> this is a I<timer> with B<latest-value (lossy)> shared state -
@@ -501,7 +501,7 @@ single pass; a C<while (1)> inside the body defeats C<stop>/C<once>/C<interval>.
 
 B<Concurrent> C<pin_mode> / C<setup> / device C<*Setup>. Read-modify-write on
 shared registers; do them once, in main, before starting any worker. Only
-C<digital_read>/C<digital_write> on distinct pins are safe concurrently.
+C<read_pin>/C<write_pin> on distinct pins are safe concurrently.
 
 =item *
 
@@ -541,9 +541,9 @@ Init (wiringPi / BCM numbering); once, in main. Returns int status (C<0> = ok).
 
 C<0>=INPUT, C<1>=OUTPUT.
 
-=item C<digital_write($pin, $val)> / C<digital_read($pin)>
+=item C<write_pin($pin, $val)> / C<read_pin($pin)>
 
-Pin I/O; C<digital_read> returns the pin level (C<0>/C<1>).
+Pin I/O; C<read_pin> returns the pin level (C<0>/C<1>).
 
 =item C<worker(\&body [, \%opts])>
 

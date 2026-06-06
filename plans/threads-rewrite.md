@@ -1,8 +1,8 @@
 # Plan: Rewrite the threads/concurrency story around a hands-off `worker()` helper
 
-> **NEXT ACTION:** V10 — fix the `digital_write`/`digital_read` doc bug: those names are not exported (real subs are `write_pin`/`read_pin`). Audit & correct the `worker()` POD synopsis in `lib/WiringPi/API.pm`, `lib/WORKERS.pod`, and `docs/threads-examples.md`; re-`podchecker`. (Then V9: `THREADS.pod` in the sibling rpi-wiringpi project, now unblocked.)
-> **LAST SESSION:** 2026-06-05. V8 done: hardware-verified on a Pi 5 (wiringPi 3.18). `perl Makefile.PL && make && PI_BOARD=1 make test` → PASS (279 tests; the new `t/85-worker.t` GPIO block drove BCM17 for real). Added `testing/valgrind_worker.pl` (distinct-pin workers, `{shared}` sampler, `{interval}`/`{once}`, stop/reap, forgotten-stop END reaping); plain run leaves no zombies. Under `valgrind --leak-check=full`: definitely lost 0 / indirectly lost 0; the 242 errors are all libperl baseline (a module-load-only baseline run shows the same 214-error floor, 0 definite). `{mechanism=>'thread'}` not exercised — this Perl is built without ithreads. Added the exerciser to MANIFEST + a Changes bullet.
-> **ARCHIVE:** See threads-rewrite-archive.md for completed V tasks (V1-V8)
+> **NEXT ACTION:** V11 — apply the same `digital_write`/`digital_read` -> `write_pin`/`read_pin` fix to `docs/interrupt-examples.md` (function-reference table; `lib/INTERRUPTS.pod` already clean). (Then V9: `THREADS.pod` in the sibling rpi-wiringpi project, now unblocked.)
+> **LAST SESSION:** 2026-06-05. V10 done: fixed the `digital_write`/`digital_read` doc bug (neither is exported; real subs are `write_pin`/`read_pin`) in the `worker()` POD synopsis (`lib/WiringPi/API.pm`), `lib/WORKERS.pod`, and `docs/threads-examples.md` — code, imports, prose, and signature tables. Byte variants (`digital_write_byte` etc.) untouched. `perl -c` + `podchecker` clean. Discovered the identical bug in `docs/interrupt-examples.md` (out of V10 scope) and logged it as V11.
+> **ARCHIVE:** See threads-rewrite-archive.md for completed V tasks (V1-V8, V10)
 
 ## Goal
 
@@ -126,7 +126,7 @@ mechanism and are folded in here (V5). Its C-only `piThreadCreate2` backlog
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
 | V9 | **(HOLD)** Create `THREADS.pod` in the **rpi-wiringpi** project documenting that project's threads/worker story, written to match `WiringPi::API`'s `worker()` implementation here (the `lib/WORKERS.pod` guide is the reference). Unblocked now V1-V8 are implemented and hardware-verified; do after V10 so the reference docs it mirrors are corrected first. | (in rpi-wiringpi) `podchecker THREADS.pod` once unblocked | accurate `THREADS.pod` matching the shipped `worker()` API | ⏳ |
-| V10 | **Doc bug.** The `worker()` POD synopsis (and the heartbeat example in `docs/threads-examples.md` / `lib/WORKERS.pod`) call `digital_write(2, ...)`, but no such sub exists/is exported — the real single-pin writer is `write_pin()`. Audit all worker docs and replace `digital_write` with `write_pin` (and `digital_read` -> `read_pin` if present). | `grep -rn 'digital_write\|digital_read\b' lib/ docs/` then `podchecker` | docs use the real exported names; examples run as written | ⏳ |
+| V11 | **Doc bug (interrupt docs).** Same `digital_write`/`digital_read` -> `write_pin`/`read_pin` fix in the non-worker consumer docs: `docs/interrupt-examples.md` (the function-reference table at the bottom) uses the non-existent names. (`lib/INTERRUPTS.pod` is already clean.) | `grep -rnE 'digital_(write\|read)([^_]\|$)' docs/interrupt-examples.md lib/INTERRUPTS.pod` | interrupt docs use the real exported names | ⏳ |
 
 ## Discovery Tracking
 

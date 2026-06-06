@@ -91,14 +91,14 @@ the body; `worker()` repeats it until you `stop`.
 ```perl
 use strict;
 use warnings;
-use WiringPi::API qw(setup pin_mode digital_write worker);
+use WiringPi::API qw(setup pin_mode write_pin worker);
 
 setup();
 pin_mode(2, 1);                   # OUTPUT, once in main
 
 my $w = worker(sub {
-    digital_write(2, 1); sleep 1;
-    digital_write(2, 0); sleep 1;
+    write_pin(2, 1); sleep 1;
+    write_pin(2, 0); sleep 1;
 });
 
 # ... main does its own work ...
@@ -191,15 +191,15 @@ let the END reaper clean up.
 ```perl
 use strict;
 use warnings;
-use WiringPi::API qw(setup pin_mode digital_write worker);
+use WiringPi::API qw(setup pin_mode write_pin worker);
 
 setup();
 pin_mode(5, 1);                   # OUTPUT, once in main
 
 my $w = worker(sub {
-    digital_write(5, 1);
+    write_pin(5, 1);
     select(undef, undef, undef, 0.2);     # 200ms pulse
-    digital_write(5, 0);
+    write_pin(5, 0);
 }, { once => 1 });
 
 # ... main carries on; the pulse fires in the background ...
@@ -221,15 +221,15 @@ per pin. Each runs independently; each returns its own handle.
 ```perl
 use strict;
 use warnings;
-use WiringPi::API qw(setup pin_mode digital_write worker);
+use WiringPi::API qw(setup pin_mode write_pin worker);
 
 setup();
 pin_mode($_, 1) for (2, 3, 4);    # OUTPUT — all config in main, up front
 
 my @workers = (
-    worker(sub { digital_write(2, 1); sleep 1; digital_write(2, 0); sleep 1 }),
-    worker(sub { digital_write(3, 1); sleep 2; digital_write(3, 0); sleep 2 }),
-    worker(sub { digital_write(4, 1); sleep 3; digital_write(4, 0); sleep 3 }),
+    worker(sub { write_pin(2, 1); sleep 1; write_pin(2, 0); sleep 1 }),
+    worker(sub { write_pin(3, 1); sleep 2; write_pin(3, 0); sleep 2 }),
+    worker(sub { write_pin(4, 1); sleep 3; write_pin(4, 0); sleep 3 }),
 );
 
 # ... main's own work ...
@@ -323,7 +323,7 @@ on **distinct** pins.
 - Call `setup()`/`setup_gpio()`, every `pin_mode`, and any device `*Setup`
   **once, in the parent, before** the first `worker()`.
 - A fork worker inherits that configuration; a thread worker shares it.
-- Afterwards, workers may freely `digital_read`/`digital_write` on **distinct**
+- Afterwards, workers may freely `read_pin`/`write_pin` on **distinct**
   pins. **Never** call `setup()`/`pin_mode`/device `*Setup` concurrently — they
   read-modify-write shared registers.
 - For shared Perl data under `mechanism => 'thread'`, guard every access with
@@ -350,7 +350,7 @@ pipe, and reap it yourself.
 ```perl
 use strict;
 use warnings;
-use WiringPi::API qw(setup pin_mode digital_write);
+use WiringPi::API qw(setup pin_mode write_pin);
 
 setup();
 pin_mode(2, 1);                          # OUTPUT — before fork
@@ -359,8 +359,8 @@ my $pid = fork // die "fork: $!";
 
 if ($pid == 0) {
     while (1) {                          # child: heartbeat forever
-        digital_write(2, 1); sleep 1;
-        digital_write(2, 0); sleep 1;
+        write_pin(2, 1); sleep 1;
+        write_pin(2, 0); sleep 1;
     }
     exit 0;
 }
@@ -387,7 +387,7 @@ use strict;
 use warnings;
 use threads;
 use threads::shared;
-use WiringPi::API qw(setup pin_mode digital_read pi_lock pi_unlock);
+use WiringPi::API qw(setup pin_mode read_pin pi_lock pi_unlock);
 
 setup();
 pin_mode(3, 0);                          # INPUT
@@ -396,7 +396,7 @@ my $latest :shared = 0;
 
 my $thr = threads->create(sub {
     while (1) {
-        my $v = digital_read(3);
+        my $v = read_pin(3);
         pi_lock(0); $latest = $v; pi_unlock(0);
         select(undef, undef, undef, 0.05);
     }
@@ -426,7 +426,7 @@ reads the latest value via the module's `shared_scalar` (lossy).
 use strict;
 use warnings;
 use Async::Event::Interval;
-use WiringPi::API qw(setup pin_mode digital_read);
+use WiringPi::API qw(setup pin_mode read_pin);
 
 setup();
 pin_mode(3, 0);                              # INPUT — before the event forks
@@ -442,7 +442,7 @@ while (1) {
 }
 
 sub sample {
-    $$latest = digital_read(3);
+    $$latest = read_pin(3);
 }
 ```
 
@@ -463,7 +463,7 @@ at load time, so it does not compose with a hand-rolled `fork`/`waitpid` or with
   pass; a `while (1)` inside the body defeats `stop`/`once`/`interval`.
 - **Concurrent `pin_mode` / `setup` / device `*Setup`.** Read-modify-write on
   shared registers; do them once, in main, before starting any worker. Only
-  `digital_read`/`digital_write` on distinct pins are safe concurrently.
+  `read_pin`/`write_pin` on distinct pins are safe concurrently.
 - **Expecting a fork worker to see main's variables.** Separate memory — hand data
   back with `{ results => 1 }` / `{ shared => 1 }`, not a shared Perl variable.
 - **Touching `:shared` data without a lock (thread mode).** Guard every access
@@ -482,7 +482,7 @@ at load time, so it does not compose with a hand-rolled `fork`/`waitpid` or with
 |---|---|---|
 | `setup()` / `setup_gpio()` | init (wiringPi / BCM numbering); once, in main | int status (`0` = ok) |
 | `pin_mode($pin, $mode)` | `0`=INPUT, `1`=OUTPUT | — |
-| `digital_write($pin, $val)` / `digital_read($pin)` | pin I/O | — / pin level (`0`/`1`) |
+| `write_pin($pin, $val)` / `read_pin($pin)` | pin I/O | — / pin level (`0`/`1`) |
 | `worker(\&body [, \%opts])` | run `\&body` in the background. `\%opts`: `{once, interval, results, shared, mechanism}` | handle `$w` (`stop` / `pid` / `running` / `read` / `fh` / `value`) |
 | `pi_lock($key)` / `pi_unlock($key)` | mutex (keys 0–3) for shared state under thread mode | — |
 | `background_interrupt(...)` | background **edge** handler (see `interrupt-examples.md`) | handle `$h` |
