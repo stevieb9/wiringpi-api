@@ -1,7 +1,7 @@
 # Plan: Rewrite the threads/concurrency story around a hands-off `worker()` helper
 
-> **NEXT ACTION:** V9 — create `THREADS.pod` in the **rpi-wiringpi** project (separate repo) documenting that project's threads/worker story, matching the now-shipped `worker()` surface; `lib/WORKERS.pod` here is the reference. Unblocked (V1-V8, V10, V11 all done) and the reference docs are now correct. Run `podchecker THREADS.pod` there.
-> **LAST SESSION:** 2026-06-05. V11 done: applied the same `digital_write`/`digital_read` -> `write_pin`/`read_pin` fix to `docs/interrupt-examples.md` (function-reference table); `lib/INTERRUPTS.pod` was already clean. Interrupt docs now grep-clean of the non-existent names. This clears all the doc-bug discoveries; only V9 (sibling-repo `THREADS.pod`) remains.
+> **NEXT ACTION:** V12 — add a first-class `worker()` method to `RPi::WiringPi` (OO layer, **rpi-wiringpi** repo), mirroring its `background_interrupts` proxy. Start of Phase 2 (OO-layer parity). Execution order: V12 → V13 → V14 → V15 → V9 → V16.
+> **LAST SESSION:** 2026-06-05. Audited the sibling `rpi-wiringpi` repo: the interrupt concurrency proxies were carried into the OO layer but **none** of the `worker()`/threads work was. Expanded this plan with Phase 2 (V12-V16) to give the OO layer first-class `worker()` parity, and re-scoped V9's `THREADS.pod` to document the new `$pi->worker` method as the headline. Phase 1 (V1-V8, V10, V11) remains complete in `WiringPi::API`.
 > **ARCHIVE:** See threads-rewrite-archive.md for completed V tasks (V1-V8, V10-V11)
 
 ## Goal
@@ -109,7 +109,7 @@ mechanism and are folded in here (V5). Its C-only `piThreadCreate2` backlog
   2. Append a new bullet at the bottom of threads-rewrite-archive.md's "Archived V Tasks" section: `- V#: description — ✅ YYYY-MM-DD attempt N: PASS`. One bullet per entry — never run two entries together.
   3. **Delete the V# row from this file's Validation Table.**
 - V task ❌: update Actual with `❌ YYYY-MM-DD attempt N: reason`. Rerun same V# with attempt N+1. Do NOT create a new V#.
-- **Changes bookkeeping**: every consumer-visible V task (new function, new option, doc-facing behaviour) appends a `Changes` bullet under `3.1801 UNREL` (at the bottom of the section, capitalized) as part of that task's completion — not deferred to the verify task.
+- **Changes bookkeeping**: every consumer-visible V task (new function, new option, doc-facing behaviour) appends a `Changes` bullet as part of that task's completion — not deferred to the verify task. **Phase 1 (`WiringPi::API`, this repo)** bullets go under `3.1801 UNREL` in this repo's `Changes`. **Phase 2 (`RPi::WiringPi`, sibling `rpi-wiringpi` repo)** bullets go under `3.1800 UNREL` in *that* repo's `Changes`.
 - Update ARCHIVE pointer to reflect what's archived (e.g., `V1-V2` → `V1-V3`)
 - Update NEXT ACTION to next ⏳ row; update LAST SESSION
 - Never renumber within a series. New items get next free number.
@@ -121,11 +121,42 @@ mechanism and are folded in here (V5). Its C-only `piThreadCreate2` backlog
 - Move resolved fixes to archive's "Archived Fixes" section; keep only unresolved in main Discovery Tracking
 - To promote a backlog item to an active task: assign it the next free V# (e.g., B3 becomes V4) and move to the Validation Table. The B# slot is retired and never reused.
 
+## Phase 2 — OO-layer parity (`RPi::WiringPi`, sibling `rpi-wiringpi` repo)
+
+Phase 1 shipped `worker()` in the low-level `WiringPi::API`. The sibling OO module
+`RPi::WiringPi` carried over the **interrupt** concurrency proxies
+(`background_interrupts`, `auto_dispatch_interrupts`, `run_interrupt_loop`,
+`stop_interrupt_loop`, `stop_interrupts`) but has **no `worker()` surface at all**.
+Phase 2 gives the OO layer the same first-class, hands-off `worker()` story.
+
+Mirror the established sibling patterns exactly:
+
+- The proxy lives in `lib/RPi/WiringPi.pm` next to `background_interrupts`, forwards
+  to `WiringPi::API::worker()`, and lets the low-level layer do all argument
+  validation (no duplicated croaks).
+- Lifecycle is owned by the object: track each returned handle on `$self` and stop
+  it in `RPi::WiringPi::Core::cleanup()` — beside the existing
+  `WiringPi::API::stop_interrupts()` call — respecting the same forked-child guard
+  (`$self->{proc} != $$`). `DESTROY` already routes through `cleanup`.
+- Prereq is already satisfied: `rpi-wiringpi` requires `WiringPi::API` `3.1801`,
+  which is the version shipping `worker()`. No prereq bump needed.
+- `{mechanism=>'thread'}` bodies call `WiringPi::API::pi_lock`/`pi_unlock` directly
+  (no new OO method); document this in `THREADS.pod` rather than wrapping it. Thread
+  mode is a niche opt-in and the fork default never locks.
+
+Off-Pi = parse/syntax/unit only; the full gate (build + `make test` + valgrind
+exerciser) runs on the Pi, same as Phase 1's V8.
+
 ## Validation Table
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V9 | Create `THREADS.pod` in the **rpi-wiringpi** project documenting that project's threads/worker story, written to match `WiringPi::API`'s `worker()` implementation here (the `lib/WORKERS.pod` guide is the reference). Unblocked: V1-V8 implemented + hardware-verified and the reference docs (V10/V11) are now correct. | (in rpi-wiringpi) `podchecker THREADS.pod` | accurate `THREADS.pod` matching the shipped `worker()` API | ⏳ |
+| V12 | Add a `worker(\&body, \%opts)` proxy **method** to `lib/RPi/WiringPi.pm` (beside `background_interrupts`): forward to `WiringPi::API::worker()`, push the returned handle onto `$self->{workers}` (arrayref) for cleanup reaping, and return the handle. No duplicated validation — let `WiringPi::API` croak. Append a sibling `Changes` bullet under `3.1800 UNREL`. | (in rpi-wiringpi) `perl -c -Ilib lib/RPi/WiringPi.pm` | compiles; `$pi->worker(sub{...})` returns a `WiringPi::API::Worker` handle that is tracked on the object | ⏳ |
+| V13 | Reap workers in `lib/RPi/WiringPi/Core.pm` `cleanup()`: after the forked-child proc-guard, idempotently `->stop` every handle in `$self->{workers}` and clear the list, beside the existing `WiringPi::API::stop_interrupts()`. A forked child (proc guard) must not stop the parent's workers. `DESTROY`/signal teardown inherit this via `cleanup`. Append a sibling `Changes` bullet. | (in rpi-wiringpi) `perl -c -Ilib lib/RPi/WiringPi/Core.pm` | compiles; `$pi->cleanup`/`DESTROY` stops tracked workers; child-process guard respected | ⏳ |
+| V14 | Add `=head3 worker(\&body, \%opts)` POD to `lib/RPi/WiringPi.pm` near the interrupt methods: document the handle (`stop`/`pid`/`running`), the `once`/`interval`/`shared`/`results`/`mechanism` options, that `cleanup`/`DESTROY` auto-stops workers, and cross-ref `WiringPi::API`, `lib/WORKERS.pod`, and `THREADS.pod`. Append a sibling `Changes` bullet. | (in rpi-wiringpi) `podchecker lib/RPi/WiringPi.pm` | podchecker clean; `worker()` method documented | ⏳ |
+| V15 | Add `t/NN-worker.t` to `rpi-wiringpi` (and MANIFEST), mirroring this repo's `t/85-worker.t`: off-Pi parts (proxy returns a handle of the right class, `WiringPi::API` validation croaks propagate, handle `stop` idempotency via a fork that writes to a channel, `cleanup` stops a tracked worker), plus a board-gated (`PI_BOARD`) GPIO block driving a real `$pi->worker` and confirming `cleanup` stops it. Append a sibling `Changes` bullet. | (in rpi-wiringpi) `prove -Ilib t/NN-worker.t` | off-Pi assertions pass; GPIO block runs under the board gate | ⏳ |
+| V9 | Create `lib/THREADS.pod` in **rpi-wiringpi** documenting the OO threads/worker story, leading with the new `$pi->worker(...)` method (V12-V14) as the headline and demoting raw `fork`/`threads` to "under the hood"; match the voice/structure of the sibling's interrupt docs. `lib/WORKERS.pod` here is the reference; document `{mechanism=>'thread'}` bodies calling `WiringPi::API::pi_lock`/`pi_unlock` directly (no OO proxy — thread mode is a niche opt-in). Depends on V12-V14. | (in rpi-wiringpi) `podchecker lib/THREADS.pod` | accurate `THREADS.pod` matching the shipped OO `worker()` method | ⏳ |
+| V16 | Full Pi gate for `rpi-wiringpi`: `perl Makefile.PL && make && make test`, plus an OO worker exerciser (`$pi->worker`) under `valgrind --leak-check=full` covering distinct-pin workers, a shared sampler read by main, periodic + once modes, stop/reap, cleanup-driven stop, and forgotten-stop END reaping — mirroring Phase 1's V8 + `valgrind_worker.pl`. | (in rpi-wiringpi, on Pi) `perl Makefile.PL && make && make test` + valgrind exerciser | full suite green; valgrind reports no worker-attributable leaks | ⏳ |
 
 ## Discovery Tracking
 
@@ -136,6 +167,8 @@ _None yet._
 B1: `worker_pool([\&a, \&b, ...])` — one shared child servicing several workers (the `background_interrupts`-to-`background_interrupt` analogue), with per-worker `arm`/`disarm`. Only if a concrete multi-worker need appears.
 
 B2: Bidirectional channel (parent → worker commands) so a running worker can be re-tasked without restart. Defer until a use-case needs it; `{once}`/restart covers most cases today.
+
+B3: Review the `threads` wording in `rpi-wiringpi`'s `lib/RPi/WiringPi/FAQ.pod` (the "system Perl does not use threads" note) once `THREADS.pod` lands — cross-link to it and confirm the framing matches the fork-first `worker()` story. Non-blocking copy edit.
 
 ## Explicitly NOT doing
 
