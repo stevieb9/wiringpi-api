@@ -1983,6 +1983,10 @@ See L</LCD FUNCTIONS>.
 
 See L</INTERRUPT FUNCTIONS>.
 
+=head2 CONCURRENCY / BACKGROUND WORKERS
+
+See L</CONCURRENCY / BACKGROUND WORKERS>.
+
 =head2 ANALOG TO DIGITAL CONVERTER
 
 See L</ADC FUNCTIONS>.
@@ -2486,7 +2490,9 @@ Mandatory: The pin number.
 
 =head1 THREAD/LOCK FUNCTIONS
 
-Mutex locks provided by wiringPi for synchronising access between threads.
+Mutex locks provided by wiringPi for synchronising access between threads. They
+are typically used to serialise shared state in a C<< mechanism => 'thread' >>
+worker - see L</CONCURRENCY / BACKGROUND WORKERS>.
 
 =head2 pi_lock($key)
 
@@ -3243,6 +3249,164 @@ blocked in long work. The library owns the fork, the loop and the cleanup:
     }
 
     $h->stop;                         # stops + reaps the background handler
+
+=head1 CONCURRENCY / BACKGROUND WORKERS
+
+C<worker()> runs a piece of code in the background with the least possible user
+code: it owns the spawn mechanism, the loop B<and> the lifecycle, so your body
+carries no C<fork>, no C<use threads>, no C<detach>, no C<while (1)> and no
+manual cleanup. It is the general-purpose sibling of
+L</background_interrupt($pin, $edge, $callback, $debounce_us)>.
+
+This module needs B<neither C<threads> nor a threaded Perl>: C<worker()> is
+fork-based by default and works on any Perl. An ithread mechanism is available
+as a documented opt-in (see C<mechanism> below) for users who specifically want
+shared-memory ergonomics on a threaded Perl.
+
+B<The setup-once-in-main contract:> call C<setup()> (or C<setup_gpio()>) and do
+your C<pin_mode()> calls B<once, in the parent, before> starting a worker. A
+fork-based worker inherits that state; you drive the pins from inside the body.
+
+The hands-off heartbeat LED - the helper owns the loop and the lifecycle:
+
+    use WiringPi::API qw(setup pin_mode digital_write worker);
+
+    setup();
+    pin_mode(2, 1);                   # OUTPUT, once in main
+
+    my $w = worker(sub { digital_write(2, 1); sleep 1;
+                         digital_write(2, 0); sleep 1 });
+
+    # ... main does its own work ...
+
+    $w->stop;                         # idempotent; END reaps if forgotten
+
+=head2 worker(\&body, \%opts)
+
+Spawns a background child that runs C<\&body> B<repeatedly> by default, and
+returns a handle (see L</The worker handle> below). All arguments are validated
+B<before> spawning, so a bad call croaks immediately rather than failing in the
+background.
+
+C<\&body> is mandatory and must be a C<CODE> reference. C<\%opts>, if given,
+must be a hash reference. The options are:
+
+=over 4
+
+=item C<< once => 1 >>
+
+Run C<\&body> a single time, then the child exits on its own (C<< $w->running >>
+becomes false). Without this, the body loops until the worker is stopped.
+
+=item C<< interval => $secs >>
+
+Pace the loop: sleep C<$secs> (a positive number, fractional allowed) between
+passes, so a periodic sampler/blinker needs no C<sleep> of its own. The sleep
+wakes early when the worker is stopped, so C<< $w->stop >> stays responsive even
+with a long cadence.
+
+=item C<< results => 1 >>
+
+Stream B<every> defined value the body returns back to the parent, length-framed
+over an inherited pipe. Drain it with C<< $w->read >> (non-blocking) or select on
+C<< $w->fh >> - identical to C<background_interrupt>'s results channel.
+
+=item C<< shared => 1 >>
+
+Publish the body's return value as a B<lossy latest value>: the parent reads the
+most recent value with C<< $w->value >>. The child never blocks on a slow or
+absent reader (a full pipe simply drops the update), so this suits a sampler
+whose intermediate readings don't matter.
+
+=item C<< mechanism => 'fork' | 'thread' >>
+
+The spawn mechanism. Defaults to C<'fork'> (no threaded Perl required).
+C<'thread'> runs the body in an ithread for shared-memory ergonomics; it
+B<requires C<threads> to be loaded> (C<use threads;> before calling C<worker()>)
+and croaks with a clear message otherwise. Under C<'thread'> the C<results> and
+C<shared> pipe channels are rejected - share a variable and serialise it with
+L</pi_lock($key)> / L</pi_unlock($key)> instead.
+
+=back
+
+=head2 The worker handle
+
+C<worker()> returns a handle - C<WiringPi::API::Worker> for a fork worker, or
+C<WiringPi::API::WorkerThread> for a thread worker - with the same shape as the
+L</background_interrupt($pin, $edge, $callback, $debounce_us)> handle:
+
+=over 4
+
+=item C<< $w->stop >>
+
+Stop the worker and reap it. B<Idempotent> - safe to call more than once, and a
+C<DESTROY> plus an C<END> block reap the worker if you forget, so a missed
+C<stop> can't leak a zombie or an orphaned thread.
+
+=item C<< $w->running >>
+
+True while the worker is still alive; false once it has stopped or (for
+C<< once => 1 >>) finished its single pass.
+
+=item C<< $w->pid >>
+
+The child's process id for a fork worker, or the thread id (tid) for a thread
+worker.
+
+=item C<< $w->read >> / C<< $w->fh >>
+
+Drain the next streamed value / get the readable filehandle, when the worker was
+started with C<< results => 1 >> (otherwise C<undef>).
+
+=item C<< $w->value >>
+
+The latest published value, when the worker was started with C<< shared => 1 >>
+(otherwise C<undef>).
+
+=back
+
+=head2 Periodic sampler handing data back to main
+
+    use WiringPi::API qw(setup pin_mode analog_read worker);
+
+    setup();
+    pin_mode(0, 0);                   # INPUT, once in main
+
+    # Sample once a second; main only ever wants the latest reading.
+    my $w = worker(sub { analog_read(0) }, { interval => 1, shared => 1 });
+
+    while (1) {
+        my $latest = $w->value;       # most recent sample, or undef yet
+        # ... act on $latest ...
+        sleep 5;
+    }
+
+    $w->stop;
+
+=head2 Shared-memory mechanism (opt-in ithread)
+
+On a threaded Perl you can run the body in an ithread instead of a fork, and
+share state directly. Serialise access to shared state with the wiringPi mutex
+locks (see L</THREAD/LOCK FUNCTIONS>):
+
+    use threads;                      # required for mechanism => 'thread'
+    use threads::shared;
+    use WiringPi::API qw(setup worker pi_lock pi_unlock);
+
+    setup();
+
+    my $count :shared = 0;
+
+    my $w = worker(sub {
+        pi_lock(0);
+        $count++;
+        pi_unlock(0);
+        select(undef, undef, undef, 0.1);
+    }, { mechanism => 'thread' });
+
+    # ... main reads $count under the same lock ...
+
+    $w->stop;                         # sets the stop flag and joins the thread
 
 =head1 ADC FUNCTIONS
 

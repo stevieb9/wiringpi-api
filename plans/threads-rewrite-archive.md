@@ -9,6 +9,7 @@ See threads-rewrite.md for the active plan.
 - V2: shared (`$w->value`) + results (`$w->read`/`$w->fh`) channels, length-framed over inherited pipes — ✅ 2026-06-05 attempt 1: PASS
 - V3: pacing — `{interval => $secs}` (helper paces the loop) + `{once => 1}` (run body once, child exits) — ✅ 2026-06-05 attempt 1: PASS
 - V4: opt-in ithread mechanism (`{mechanism => 'thread'}`) + `pi_lock`/`pi_unlock` key validation — ✅ 2026-06-05 attempt 1: PASS
+- V5: POD — "CONCURRENCY / BACKGROUND WORKERS" section documenting `worker()`, options, handle, `pi_lock`/`pi_unlock`, setup-once contract + one-liner — ✅ 2026-06-05 attempt 1: PASS
 
 ## Archived Fixes
 
