@@ -1,8 +1,8 @@
 # Plan: Rewrite the threads/concurrency story around a hands-off `worker()` helper
 
-> **NEXT ACTION:** V9 — create `lib/THREADS.pod` in **rpi-wiringpi** leading with the `$pi->worker(...)` method (V12-V14) as the headline; `lib/WORKERS.pod` here is the reference. Execution order: V9 → V16.
-> **LAST SESSION:** 2026-06-06. Completed V15 in the sibling `rpi-wiringpi` repo: added `t/213-worker.t` (and MANIFEST) mirroring this repo's `t/85-worker.t` — off-Pi proxy/validation/lifecycle/cleanup-reaping assertions plus a `PI_BOARD`-gated GPIO block. `prove` PASS (25 tests) both off-Pi and with `PI_BOARD=1`; GPIO block hardware-verified on BCM18 (worker drove HIGH/LOW, cleanup stopped it, no zombie). Changes bullet added under `3.1800 UNREL`.
-> **ARCHIVE:** See threads-rewrite-archive.md for completed V tasks (V1-V8, V10-V15)
+> **NEXT ACTION:** V9 — create `lib/THREADS.pod` in **rpi-wiringpi** leading with the `$pi->worker(...)` method (V12-V14) as the headline; `lib/WORKERS.pod` here is the reference. **Last remaining task** (V16 was done ahead of it). Also fold in the V17 (B3) FAQ→THREADS cross-link once the file exists.
+> **LAST SESSION:** 2026-06-06. Completed V16 (full Pi gate, done ahead of V9): `perl Makefile.PL && make` clean, `make test` PASS (peripheral tests self-skip without the wired rig). Added `build_testing/valgrind_worker.pl` (+MANIFEST), the OO worker exerciser; under `valgrind --leak-check=full` the parent and every forked worker report definitely/indirectly lost = 0 (rest is byte-identical libperl baseline), no zombies. `t/213-worker.t` re-confirmed on hardware (`PI_BOARD=1`, 25 tests). Changes bullet added. Perl is non-threaded so `{mechanism=>'thread'}` stays out of scope (as in V8).
+> **ARCHIVE:** See threads-rewrite-archive.md for completed V tasks (V1-V8, V10-V17; V9 still pending)
 
 ## Goal
 
@@ -151,8 +151,7 @@ exerciser) runs on the Pi, same as Phase 1's V8.
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V9 | Create `lib/THREADS.pod` in **rpi-wiringpi** documenting the OO threads/worker story, leading with the new `$pi->worker(...)` method (V12-V14) as the headline and demoting raw `fork`/`threads` to "under the hood"; match the voice/structure of the sibling's interrupt docs. `lib/WORKERS.pod` here is the reference; document `{mechanism=>'thread'}` bodies calling `WiringPi::API::pi_lock`/`pi_unlock` directly (no OO proxy — thread mode is a niche opt-in). Depends on V12-V14. | (in rpi-wiringpi) `podchecker lib/THREADS.pod` | accurate `THREADS.pod` matching the shipped OO `worker()` method | ⏳ |
-| V16 | Full Pi gate for `rpi-wiringpi`: `perl Makefile.PL && make && make test`, plus an OO worker exerciser (`$pi->worker`) under `valgrind --leak-check=full` covering distinct-pin workers, a shared sampler read by main, periodic + once modes, stop/reap, cleanup-driven stop, and forgotten-stop END reaping — mirroring Phase 1's V8 + `valgrind_worker.pl`. | (in rpi-wiringpi, on Pi) `perl Makefile.PL && make && make test` + valgrind exerciser | full suite green; valgrind reports no worker-attributable leaks | ⏳ |
+| V9 | Create `lib/THREADS.pod` in **rpi-wiringpi** documenting the OO threads/worker story, leading with the new `$pi->worker(...)` method (V12-V14) as the headline and demoting raw `fork`/`threads` to "under the hood"; match the voice/structure of the sibling's interrupt docs. `lib/WORKERS.pod` here is the reference; document `{mechanism=>'thread'}` bodies calling `WiringPi::API::pi_lock`/`pi_unlock` directly (no OO proxy — thread mode is a niche opt-in). Depends on V12-V14. **Also add the FAQ→THREADS cross-link folded from V17 (B3):** add `L<THREADS\|THREADS>` to the `lib/RPi/WiringPi/FAQ.pod` "Perlbrew configuration" note now that the target exists. | (in rpi-wiringpi) `podchecker lib/THREADS.pod` | accurate `THREADS.pod` matching the shipped OO `worker()` method | ⏳ |
 
 ## Discovery Tracking
 
@@ -160,11 +159,7 @@ _None yet._
 
 ## Backlog
 
-B1: `worker_pool([\&a, \&b, ...])` — one shared child servicing several workers (the `background_interrupts`-to-`background_interrupt` analogue), with per-worker `arm`/`disarm`. Only if a concrete multi-worker need appears.
-
-B2: Bidirectional channel (parent → worker commands) so a running worker can be re-tasked without restart. Defer until a use-case needs it; `{once}`/restart covers most cases today.
-
-B3: Review the `threads` wording in `rpi-wiringpi`'s `lib/RPi/WiringPi/FAQ.pod` (the "system Perl does not use threads" note) once `THREADS.pod` lands — cross-link to it and confirm the framing matches the fork-first `worker()` story. Non-blocking copy edit.
+_None._
 
 ## Explicitly NOT doing
 
@@ -172,3 +167,5 @@ B3: Review the `threads` wording in `rpi-wiringpi`'s `lib/RPi/WiringPi/FAQ.pod` 
 - **Requiring `threads` / a threaded Perl in the dist** — `worker()` is fork-first; `use threads` is opt-in via `{mechanism=>'thread'}` only. The module stays usable single-threaded and on non-threaded Perl.
 - **Reinventing ithreads in XS** (per-thread `perl_clone`, cross-interpreter SV marshalling) — duplicates core Perl badly.
 - **Keeping the boilerplate scenarios as the headline** — the raw `threads->create`/`fork` patterns survive only as an "under the hood" reference behind `worker()`.
+- **`worker_pool([\&a, \&b, ...])`** (was B1) — no concrete multi-worker need surfaced through V12-V15; workers share no resource forcing coalescence (unlike the interrupt ISR/pipe), so one fork per worker is the natural model and `$self->{workers}` already reaps N independent handles.
+- **Bidirectional parent → worker command channel** (was B2) — no re-tasking use-case surfaced through V12-V15; stop + restart (and `{once}`) covers every case, so re-tasking a live worker stays out of scope.
