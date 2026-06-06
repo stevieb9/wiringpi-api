@@ -11,6 +11,7 @@ See threads-rewrite.md for the active plan.
 - V4: opt-in ithread mechanism (`{mechanism => 'thread'}`) + `pi_lock`/`pi_unlock` key validation — ✅ 2026-06-05 attempt 1: PASS
 - V5: POD — "CONCURRENCY / BACKGROUND WORKERS" section documenting `worker()`, options, handle, `pi_lock`/`pi_unlock`, setup-once contract + one-liner — ✅ 2026-06-05 attempt 1: PASS
 - V6: rewrote `docs/threads-examples.md` to lead with `worker()`, demoted raw fork/threads/Async to "under the hood", un-parked, cross-linked; added `lib/WORKERS.pod` — ✅ 2026-06-05 attempt 1: PASS
+- V7: extended `t/85-worker.t` with a `PI_BOARD`-gated GPIO block (worker drives BCM17, parent observes both levels + reaping; `{shared}` sampler reads the pin back via `value()`); off-Pi assertions already present, GPIO block self-skips without hardware — ✅ 2026-06-05 attempt 1: PASS
 
 ## Archived Fixes
 

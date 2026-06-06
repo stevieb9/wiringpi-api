@@ -1,8 +1,8 @@
 # Plan: Rewrite the threads/concurrency story around a hands-off `worker()` helper
 
-> **NEXT ACTION:** V7 — add `t/8x-worker.t` (extend the existing `t/85-worker.t`): construction, arg-validation croaks, stop idempotency, child reaping, shared/results framing, once/interval pacing — off-Pi assertions + a PI_BOARD-gated GPIO block.
-> **LAST SESSION:** 2026-06-05. V6 done: rewrote `docs/threads-examples.md` to lead with `worker()` (heartbeat, periodic sampler, results stream, once, distinct-pin workers, opt-in ithread); demoted raw fork/threads->create/Async::Event::Interval to an "under the hood" section; un-parked it; pointed the background-edge scenario at `background_interrupt`. Added `lib/WORKERS.pod` (perldoc form). Cross-linked both ways and dropped the stale "(parked)" refs in `interrupt-examples.md`/`INTERRUPTS.pod`. All 30 in-page anchors resolve; both pods `podchecker`-clean; `WORKERS.pod` added to MANIFEST.
-> **ARCHIVE:** See threads-rewrite-archive.md for completed V tasks (V1-V6)
+> **NEXT ACTION:** V8 — verify on hardware (Pi): worker exerciser (distinct-pin workers, `{shared}` sampler read via `$w->value`, `{interval}` periodic, `{once}`, stop/reap + forgotten-stop END reaping, optional `{mechanism=>'thread'}`); run `perl Makefile.PL && make && make test` plus the exerciser under `valgrind --leak-check=full`; confirm Changes covers all consumer-visible additions.
+> **LAST SESSION:** 2026-06-05. V7 done: extended `t/85-worker.t` with a `PI_BOARD`-gated GPIO block — a worker drives BCM17 (OUTPUT) while the parent polls `read_pin` and must see both levels + clean reaping, and a `{shared=>1}` sampler reads the pin back through `$w->value` as the parent drives it. The off-Pi assertions V7 listed were already in the file; added imports for `setup_gpio`/`pin_mode`/`read_pin`/`write_pin`. `perl -c` clean; `prove` PASS off-Pi (39 tests, 5 GPIO tests skip cleanly). Logged the `digital_write` doc-bug discovery as V10.
+> **ARCHIVE:** See threads-rewrite-archive.md for completed V tasks (V1-V7)
 
 ## Goal
 
@@ -125,9 +125,9 @@ mechanism and are folded in here (V5). Its C-only `piThreadCreate2` backlog
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V7 | **Tests.** Add `t/8x-worker.t`: construction, arg-validation croaks, `stop` idempotency, child reaping (END + explicit), shared/results framing, once/interval pacing — structured so the GPIO-free assertions run off-Pi and the pin-driving block guards on `PI_BOARD`. | `prove -Ilib t/8x-worker.t` (off-Pi portions) | new test green off-Pi; GPIO block self-skips without hardware | ⏳ |
 | V8 | **Verify on hardware (Pi).** Worker exerciser: distinct-pin workers, a `{shared=>1}` sampler read by main via `$w->value`, a `{interval=>...}` periodic worker, a `{once=>1}` worker, stop/reap + forgotten-stop END reaping; optionally the `{mechanism=>'thread'}` path on a threaded Perl. Run `perl Makefile.PL && make && make test` and the exerciser under `valgrind --leak-check=full`. Confirm Changes covers all consumer-visible additions. | `perl Makefile.PL && make && make test` + worker exerciser under valgrind (Pi) | green; no leaks/zombies; contract holds; Changes complete | ⏳ |
 | V9 | **(HOLD)** Create `THREADS.pod` in the **rpi-wiringpi** project documenting that project's threads/worker story, written to match `WiringPi::API`'s `worker()` implementation here (the `lib/WORKERS.pod` guide is the reference). HELD until all the threads work in this plan (V1-V8) is implemented and hardware-verified, so the doc reflects the final, shipped surface. | (in rpi-wiringpi) `podchecker THREADS.pod` once unblocked | accurate `THREADS.pod` matching the shipped `worker()` API | ⏸ HOLD — blocked on V1-V8 |
+| V10 | **Doc bug.** The `worker()` POD synopsis (and the heartbeat example in `docs/threads-examples.md` / `lib/WORKERS.pod`) call `digital_write(2, ...)`, but no such sub exists/is exported — the real single-pin writer is `write_pin()`. Audit all worker docs and replace `digital_write` with `write_pin` (and `digital_read` -> `read_pin` if present). | `grep -rn 'digital_write\|digital_read\b' lib/ docs/` then `podchecker` | docs use the real exported names; examples run as written | ⏳ |
 
 ## Discovery Tracking
 

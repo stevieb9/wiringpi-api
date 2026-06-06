@@ -4,10 +4,14 @@ use warnings;
 use Test::More;
 use Time::HiRes qw(usleep);
 
-use WiringPi::API qw(worker pi_lock pi_unlock);
+use WiringPi::API qw(
+    worker      pi_lock     pi_unlock
+    setup_gpio  pin_mode    read_pin    write_pin
+);
 
-# worker() runs arbitrary Perl in a forked child - none of these cases touch
-# GPIO, so the whole file runs off-Pi.
+# worker() runs arbitrary Perl in a forked child. Every case above the final
+# block touches no hardware and runs off-Pi; the PI_BOARD-gated block at the end
+# drives a real pin through a worker.
 
 # ---------------------------------------------------------------------------
 # Argument validation: everything croaks BEFORE any fork.
@@ -209,6 +213,78 @@ like($@, qr/0, 1, 2 or 3/, 'pi_unlock() rejects a non-numeric key');
     ok(@got >= 3,  'interval worker produced several passes') or diag "n=" . @got;
     ok(@got <= 40, 'interval paced the loop (not a busy spin)') or diag "n=" . @got;
     is_deeply([@got[0 .. 2]], [0, 1, 2], 'interval passes arrive in order');
+}
+
+# ---------------------------------------------------------------------------
+# Real hardware (opt-in via PI_BOARD). Uses BCM17 as an OUTPUT and proves the
+# hands-off contract across the fork boundary: the parent does setup once, the
+# forked worker inherits the mapped GPIO and drives/reads the pin. Driving an
+# unwired output pin is electrically safe, so nothing need be connected.
+# ---------------------------------------------------------------------------
+
+SKIP: {
+    skip "set PI_BOARD=1 (and wire nothing to BCM17) to run the GPIO worker tests", 5
+        unless $ENV{PI_BOARD};
+
+    setup_gpio();           # BCM numbering, once in the parent
+    pin_mode(17, 1);        # OUTPUT - inherited by the forked worker
+
+    # A worker owns the loop and toggles the pin; the parent (sharing the same
+    # GPIO hardware) polls read_pin and must observe both levels. stop() then
+    # leaves no zombie.
+    {
+        my $w = worker(
+            sub { write_pin(17, 1); usleep 20_000; write_pin(17, 0); usleep 20_000 },
+        );
+
+        my %seen;
+        for (1 .. 400) {
+            $seen{ read_pin(17) } = 1;
+            last if $seen{0} && $seen{1};
+            usleep 5_000;
+        }
+
+        my $pid = $w->pid;
+        $w->stop;
+
+        ok($seen{1}, 'worker drove the pin HIGH (parent saw it)');
+        ok($seen{0}, 'worker drove the pin LOW (parent saw it)');
+        is(waitpid($pid, 1), -1, 'stopped GPIO worker left no zombie');  # WNOHANG
+    }
+
+    # {shared=>1} sampler: the worker reads the pin and publishes the latest
+    # level; the parent drives the pin and reads it back through value(). Proves
+    # the shared channel carries real GPIO state, not just synthetic returns.
+    {
+        write_pin(17, 1);
+        my $s = worker(
+            sub { return read_pin(17); },
+            { shared => 1, interval => 0.02 },
+        );
+
+        my $high;
+        for (1 .. 100) {
+            usleep 10_000;
+            $high = $s->value;
+            last if defined $high && $high == 1;
+        }
+
+        write_pin(17, 0);
+
+        my $low;
+        for (1 .. 100) {
+            usleep 10_000;
+            $low = $s->value;
+            last if defined $low && $low == 0;
+        }
+
+        $s->stop;
+
+        is($high, 1, '{shared} sampler published the HIGH level via value()');
+        is($low,  0, '{shared} sampler tracked the pin dropping to LOW');
+    }
+
+    write_pin(17, 0);       # Leave the pin low
 }
 
 done_testing();
