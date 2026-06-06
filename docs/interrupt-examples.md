@@ -677,7 +677,7 @@ ithreads. "Background" does not imply `use threads`; only the ithread variants i
 |---|---|---|
 | `setup()` / `setup_gpio()` | init (wiringPi / BCM numbering); once, in main | int status (`0` = ok) |
 | `pin_mode($pin, $mode)` | `0`=INPUT, `1`=OUTPUT | — |
-| `digital_write($pin, $val)` / `digital_read($pin)` | pin I/O | — / pin level (`0`/`1`) |
+| `write_pin($pin, $val)` / `read_pin($pin)` | pin I/O | — / pin level (`0`/`1`) |
 | `set_interrupt($pin, $edge, $cb [, $debounce_us] [, \%opts])` | arm; `$cb->($edge, $ts_us)`. `\%opts`: `{auto_dispatch=>1\|$sig}` | true on success |
 | `background_interrupt($pin, $edge, $cb [, $debounce_us] [, \%opts])` | run the handler in a forked child. `\%opts`: `{results=>1}` | handle `$h` (`stop` / `pid` / `running` / `read` / `fh`) |
 | `background_interrupts([$pin,$edge,$cb[,$deb]], ...)` | one shared child for many pins | handle `$h` (+ `arm($pin)` / `disarm($pin)`) |

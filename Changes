@@ -238,6 +238,8 @@ Revision history for Perl extension WiringPi::API.
           docs/threads-examples.md to call the real exported pin functions
           write_pin()/read_pin() - they previously used digital_write()/
           digital_read(), which are not exported and would die as written
+        - applied the same write_pin()/read_pin() correction to the function
+          reference in docs/interrupt-examples.md
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks
