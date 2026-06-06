@@ -207,6 +207,14 @@ Revision history for Perl extension WiringPi::API.
           once, then the child exits and running() goes false). interval is
           validated to be a positive number before forking; stop() stays
           responsive during an interval sleep
+        - worker() gained {mechanism => 'fork'|'thread'} (default 'fork'). The
+          opt-in 'thread' mechanism runs the body in an ithread for shared-memory
+          ergonomics; it croaks clearly if threads is not loaded, and rejects the
+          {results}/{shared} pipe channels (use a shared variable with pi_lock).
+          threads::shared is required only on this path - the module never loads
+          threads itself and stays usable on non-threaded Perl
+        - pi_lock()/pi_unlock() now validate the lock key (0..3) and croak on a
+          bad key, instead of passing it through to the XS layer unchecked
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

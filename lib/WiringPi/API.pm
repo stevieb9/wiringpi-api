@@ -717,6 +717,25 @@ sub worker {
         croak "worker() {interval} must be a positive number of seconds";
     }
 
+    my $mechanism = defined $opts->{mechanism} ? $opts->{mechanism} : 'fork';
+
+    if ($mechanism ne 'fork' && $mechanism ne 'thread') {
+        croak "worker() {mechanism} must be 'fork' or 'thread'";
+    }
+
+    if ($mechanism eq 'thread') {
+        if (! $INC{'threads.pm'}) {
+            croak "worker() {mechanism=>'thread'} requires threads to be " .
+                "loaded; add 'use threads;' before calling worker()";
+        }
+
+        if ($opts->{results} || $opts->{shared}) {
+            croak "worker() {results}/{shared} are pipe channels for fork " .
+                "workers; under {mechanism=>'thread'} share a variable and " .
+                "serialise it with pi_lock()/pi_unlock()";
+        }
+    }
+
     # Opt-in channels carrying $body's defined return value back to the parent,
     # both length-framed over an inherited pipe (the background_interrupt model):
     #   results => every value, streamed; parent drains with read()/fh().
@@ -732,6 +751,34 @@ sub worker {
     if ($opts->{shared}) {
         pipe($val_r, $val_w)
             or croak "worker() shared pipe failed: $!";
+    }
+
+    # Opt-in ithread mechanism: run the body in a thread instead of a fork, for
+    # users who specifically want shared-memory ergonomics on a threaded Perl.
+    # A shared stop flag (checked at the top of each pass) gives a clean,
+    # signal-free stop()/join. threads::shared is required only here, on the
+    # opt-in path - the module never loads threads itself.
+    if ($mechanism eq 'thread') {
+        require threads::shared;
+
+        my $once     = $opts->{once};
+        my $interval = $opts->{interval};
+
+        my $stop = 0;
+        threads::shared::share(\$stop);
+
+        my $thr = threads->create(sub {
+            until ($stop) {
+                $body->();
+                last if $once;
+                select(undef, undef, undef, $interval) if $interval;
+            }
+        });
+
+        my $handle = WiringPi::API::WorkerThread->_new($thr, \$stop);
+        push @_bg_children, $handle;
+
+        return $handle;
     }
 
     my $pid = fork;
@@ -1107,11 +1154,21 @@ sub soft_tone_write {
 sub pi_lock {
     shift if @_ == 2;
     my ($key) = @_;
+
+    if (! defined $key || $key !~ /^[0-3]$/) {
+        croak "pi_lock() requires \$key to be 0, 1, 2 or 3";
+    }
+
     piLock($key);
 }
 sub pi_unlock {
     shift if @_ == 2;
     my ($key) = @_;
+
+    if (! defined $key || $key !~ /^[0-3]$/) {
+        croak "pi_unlock() requires \$key to be 0, 1, 2 or 3";
+    }
+
     piUnlock($key);
 }
 
@@ -1776,6 +1833,62 @@ sub value {
     }
 
     return $self->{value};
+}
+
+# Handle returned by worker() under {mechanism => 'thread'}. The thread
+# lifecycle is nothing like a fork's (no pid, no signal/waitpid), so this
+# subclass overrides pid/running/stop/DESTROY: stop() flips the shared flag and
+# joins; running() reflects the thread and joins a self-finished ({once}) one.
+# pid() reports the thread tid so the handle interface stays uniform.
+
+package WiringPi::API::WorkerThread;
+
+our @ISA = ('WiringPi::API::Worker');
+
+sub _new {
+    my ($class, $thread, $stop_ref) = @_;
+
+    return bless {
+        thread   => $thread,
+        stop_ref => $stop_ref,
+        tid      => $thread->tid,
+        running  => 1,
+    }, $class;
+}
+sub pid {
+    # Threads have no pid; report the tid so callers have a stable identifier.
+    return $_[0]->{tid};
+}
+sub running {
+    my ($self) = @_;
+
+    return 0 if ! $self->{running};
+
+    # A {once} thread exits on its own; join it so running() reflects reality.
+    if ($self->{thread} && ! $self->{thread}->is_running) {
+        $self->{thread}->join;
+        $self->{thread}  = undef;
+        $self->{running} = 0;
+        return 0;
+    }
+
+    return 1;
+}
+sub stop {
+    my ($self) = @_;
+
+    return 1 if ! $self->{running};         # idempotent
+
+    ${ $self->{stop_ref} } = 1;             # cooperative stop at next pass
+    $self->{thread}->join if $self->{thread};
+    $self->{thread}  = undef;
+    $self->{running} = 0;
+
+    return 1;
+}
+sub value {
+    # No pipe channel under thread mode - shared-memory ergonomics replace it.
+    return undef;
 }
 
 1;

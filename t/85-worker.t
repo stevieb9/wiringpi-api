@@ -4,7 +4,7 @@ use warnings;
 use Test::More;
 use Time::HiRes qw(usleep);
 
-use WiringPi::API qw(worker);
+use WiringPi::API qw(worker pi_lock pi_unlock);
 
 # worker() runs arbitrary Perl in a forked child - none of these cases touch
 # GPIO, so the whole file runs off-Pi.
@@ -30,6 +30,34 @@ like($@, qr/interval/, 'worker() with zero interval croaks');
 
 eval { worker(sub { 1 }, { interval => -2 }) };
 like($@, qr/interval/, 'worker() with negative interval croaks');
+
+eval { worker(sub { 1 }, { mechanism => 'bogus' }) };
+like($@, qr/'fork' or 'thread'/, 'worker() with unknown mechanism croaks');
+
+# This Perl may or may not be threaded; either way, asking for thread mode
+# without 'use threads' must croak with a clear, actionable message.
+SKIP: {
+    skip "threads is loaded", 1 if $INC{'threads.pm'};
+    eval { worker(sub { 1 }, { mechanism => 'thread' }) };
+    like($@, qr/requires threads to be loaded/,
+        'worker({mechanism=>thread}) croaks when threads not loaded');
+}
+
+# ---------------------------------------------------------------------------
+# pi_lock() / pi_unlock(): validate the lock key (0..3) before the XS call.
+# ---------------------------------------------------------------------------
+
+eval { pi_lock(9) };
+like($@, qr/0, 1, 2 or 3/, 'pi_lock() rejects an out-of-range key');
+
+eval { pi_lock() };
+like($@, qr/0, 1, 2 or 3/, 'pi_lock() rejects a missing key');
+
+eval { pi_unlock(-1) };
+like($@, qr/0, 1, 2 or 3/, 'pi_unlock() rejects an out-of-range key');
+
+eval { pi_unlock("x") };
+like($@, qr/0, 1, 2 or 3/, 'pi_unlock() rejects a non-numeric key');
 
 # ---------------------------------------------------------------------------
 # Construction + lifecycle: pid / running / idempotent stop.
