@@ -1,6 +1,6 @@
 # WiringPi::API — threads & concurrency usage examples
 
-> **⛔ PARKED — back burner.** ISR work comes first; see `interrupt-examples.md` and
+> **⛔ PARKED — back burner.** ISR work comes first; see `isr-examples-final.md` and
 > `isr-migration.md`. This doc collects general background-concurrency examples
 > (Perl ithreads, fork workers, periodic events). It depends on the ithread-safety
 > work in `threads-patch.md`, which is **on hold** until the interrupt migration
