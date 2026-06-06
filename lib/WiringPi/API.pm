@@ -80,6 +80,7 @@ my @wpi_perl_functions = qw(
     stop_interrupts background_interrupt auto_dispatch_interrupts
     last_interrupt  interrupt_buffer    background_interrupts
     run_interrupt_loop                  stop_interrupt_loop
+    worker
     bmp180_setup    bmp180_pressure     bmp180_temp
     shift_reg_setup analog_read     analog_write        pin_mode
     ads1115_setup   spi_setup       spi_data            i2c_setup
@@ -693,6 +694,43 @@ sub _bg_shared_cmd {
     }
 
     return;
+}
+
+sub worker {
+    shift if @_ && blessed($_[0]);   # drop $self on method calls
+    my ($body, $opts) = @_;
+
+    # Validate everything BEFORE forking - never fork into a guaranteed failure.
+    if (! defined $body || ref $body ne 'CODE') {
+        croak "worker() requires \$body to be a CODE reference";
+    }
+
+    if (defined $opts && ref $opts ne 'HASH') {
+        croak "worker() \%opts must be a hash reference";
+    }
+
+    my $pid = fork;
+    croak "worker() fork failed: $!" if ! defined $pid;
+
+    if ($pid == 0) {
+        # CHILD: run the body repeatedly until the parent stops us. TERM flips
+        # the loop guard so the current iteration finishes, then we exit cleanly
+        # for the parent's stop()/END reaper.
+        my $run = 1;
+        $SIG{TERM} = sub { $run = 0; };
+
+        while ($run) {
+            $body->();
+        }
+
+        exit 0;
+    }
+
+    # PARENT: record the child so $w->stop / the END reaper can clean it up.
+    my $handle = WiringPi::API::Worker->_new($pid);
+    push @_bg_children, $handle;
+
+    return $handle;
 }
 
 # Reap any still-running background children at process exit, so a forgotten
@@ -1636,6 +1674,15 @@ sub stop {
 
     return $self->SUPER::stop;
 }
+
+# Handle returned by worker(). Owns one forked child that runs the user body in
+# a loop. The pid/running/stop/DESTROY lifecycle (TERM -> poll -> KILL -> reap)
+# is mechanism-agnostic, so it is inherited wholesale from BackgroundInterrupt;
+# the results-channel read()/fh() are inherited too (used from V2 on).
+
+package WiringPi::API::Worker;
+
+our @ISA = ('WiringPi::API::BackgroundInterrupt');
 
 1;
 __END__

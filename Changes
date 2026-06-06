@@ -190,6 +190,12 @@ Revision history for Perl extension WiringPi::API.
           Out-of-range input now returns the -1 "no such pin" sentinel; the
           Perl wrapper mirrors the guard (and treats undef/non-integer as -1).
           Added t/80-phys_to_wpi_bounds.t
+        - Added worker($body, \%opts): forks a child that runs $body repeatedly
+          in the background (no "use threads", no threaded Perl needed), for
+          hands-off background GPIO work. Returns a WiringPi::API::Worker handle
+          with idempotent stop/pid/running; a DESTROY + END block reap the child
+          so a forgotten stop() can't leak a zombie. $body is validated to be a
+          CODE reference before forking
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

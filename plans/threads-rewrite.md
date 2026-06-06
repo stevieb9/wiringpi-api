@@ -1,8 +1,8 @@
 # Plan: Rewrite the threads/concurrency story around a hands-off `worker()` helper
 
-> **NEXT ACTION:** V1 — implement the fork-based `worker()` core + `WiringPi::API::Worker` handle.
-> **LAST SESSION:** Plan created 2026-06-05. Scope confirmed with the user: **doc + implement helpers**, centered on a **single mechanism-hiding helper** (fork by default, ideally no `use threads`). Un-parks the thread work — its blocker (`isr-migration.md`, V1-V20) is COMPLETE and shipping in 3.18, verified on Pi 5.
-> **ARCHIVE:** See threads-rewrite-archive.md for completed V tasks
+> **NEXT ACTION:** V2 — add the shared (`$w->value`) + results (`$w->read`/`$w->fh`) channels, length-framed over an inherited pipe.
+> **LAST SESSION:** 2026-06-05. V1 done: fork-based `worker($body, \%opts)` + `WiringPi::API::Worker` handle (inherits the BackgroundInterrupt reaper). Validates `$body` is a CODE ref and `\%opts` is a HASH ref before forking; idempotent `stop`/`pid`/`running`; END + DESTROY reap. Exported via `:perl`/`@EXPORT_OK`. Off-Pi checks all PASS (parse, exports, croaks, fork/stop round-trip, END reaping).
+> **ARCHIVE:** See threads-rewrite-archive.md for completed V tasks (V1)
 
 ## Goal
 
@@ -125,7 +125,6 @@ mechanism and are folded in here (V5). Its C-only `piThreadCreate2` backlog
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V1 | **`worker()` core (fork-based) + handle.** Implement `worker(\&body, \%opts)`: validate args before forking; fork a child that runs `body` in a loop; return a `WiringPi::API::Worker` handle with idempotent `stop`/`pid`/`running`. Reuse/generalize the `@_bg_children` END+DESTROY reaper from `background_interrupt`. Add `worker` + the class to `@EXPORT_OK` and the relevant tag. Update Changes. | `perl -c -Ilib lib/WiringPi/API.pm`; grep `worker` exported; croak-on-bad-args sanity (`perl -e` one-liners off-Pi) | parses; `worker` exported; bad `body`/opts croak before any fork | ⏳ |
 | V2 | **Shared + results channels.** Add `{shared => 1}` (`$w->value` = lossy latest return) and `{results => 1}` (`$w->read`/`$w->fh` = stream every defined return), length-framed over an inherited pipe exactly like `background_interrupt`'s results channel. Update Changes. | `perl -c -Ilib ...`; off-Pi `prove` of a framing test (child writes values, parent drains) | `value`/`read`/`fh` work; framing round-trips; no shared-state plumbing required of the user | ⏳ |
 | V3 | **Pacing: periodic + one-shot.** Add `{interval => $secs}` (helper paces the loop) and `{once => 1}` (run `body` once, child exits). The helper owns the loop so the user's `body` carries no `while`. Update Changes. | `perl -c -Ilib ...`; off-Pi `prove` of pacing/once logic (mockable clock or short real intervals) | interval paces; once runs exactly once then `running` is false; defaults unchanged | ⏳ |
 | V4 | **Opt-in ithread mechanism.** `{mechanism => 'thread'}` runs `body` in an ithread instead of a fork (shared-memory ergonomics); croak clearly if `threads` isn't loaded. Surface `pi_lock`/`pi_unlock` (folded from parked `threads-patch.md` V2: snake_case wrappers over the existing XS `piLock`/`piUnlock`, keys `0..3`, bad key croaks) for serializing shared state under this mode. Add exports/tags. Update Changes. | `perl -c -Ilib ...`; grep `pi_lock`/`pi_unlock` exported; non-threaded-Perl croak path checked off-Pi | thread mode behind a clear guard; `pi_lock`/`pi_unlock` exported + validate keys | ⏳ |
