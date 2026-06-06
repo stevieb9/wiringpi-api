@@ -191,6 +191,20 @@ like($@, qr/CODE reference/, 'background_interrupts() rejects a non-coderef in a
 eval { background_interrupts([5, 9, sub {}]) };
 like($@, qr/\$edge/, 'background_interrupts() rejects a bad edge in a spec');
 
+# The shared-child handle has no results channel: the inherited read/fh must
+# reject rather than silently return undef. Build the handle directly (no fork,
+# no GPIO) and clear running so DESTROY can't signal this test process.
+{
+    my $h = WiringPi::API::BackgroundInterrupts->_new($$, undef, [5]);
+    $h->{running} = 0;
+
+    eval { $h->read };
+    like($@, qr/no results channel/, 'background_interrupts() handle read() rejects');
+
+    eval { $h->fh };
+    like($@, qr/no results channel/, 'background_interrupts() handle fh() rejects');
+}
+
 # auto_dispatch_interrupts() validation + signal selection (no pipe required:
 # the fd wiring no-ops with no interrupt armed, so this stays hardware-free).
 eval { auto_dispatch_interrupts() };

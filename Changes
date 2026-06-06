@@ -240,6 +240,12 @@ Revision history for Perl extension WiringPi::API.
           digital_read(), which are not exported and would die as written
         - applied the same write_pin()/read_pin() correction to the function
           reference in docs/interrupt-examples.md
+        - background_interrupts() handle now rejects read()/fh() with a clear
+          message instead of silently returning undef: the shared-child handle
+          has no per-pin results channel (that is the singular
+          background_interrupt({results => 1}) contract). The methods were only
+          inherited from the lifecycle base class, never part of the documented
+          plural surface
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

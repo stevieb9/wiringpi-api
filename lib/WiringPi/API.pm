@@ -1734,6 +1734,9 @@ sub DESTROY {
 
 # Handle for background_interrupts() - one shared child servicing many pins.
 # Inherits pid/running/stop/DESTROY; adds arm/disarm over the control pipe.
+# A shared child has no per-pin results channel (that is the singular
+# background_interrupt({results => 1}) contract), so the inherited read/fh are
+# overridden to reject rather than silently return undef.
 
 package WiringPi::API::BackgroundInterrupts;
 
@@ -1773,6 +1776,14 @@ sub disarm {
 
     syswrite $self->{control_fh}, "disarm $pin\n";
     return 1;
+}
+sub fh {
+    croak "background_interrupts() has no results channel; use a per-pin " .
+        "background_interrupt(\$pin, \$edge, \$cb, { results => 1 }) for results";
+}
+sub read {
+    croak "background_interrupts() has no results channel; use a per-pin " .
+        "background_interrupt(\$pin, \$edge, \$cb, { results => 1 }) for results";
 }
 sub stop {
     my ($self) = @_;
@@ -3172,6 +3183,12 @@ The callbacks are fixed when the child forks - C<fork> cannot carry new code
 across - so C<arm>/C<disarm> only toggle pins that were registered in the
 initial call (arming an unregistered pin croaks). Each callback runs in the
 child and cannot touch your main program's variables.
+
+The shared-child handle has B<no results channel>: calling C<< $h->read >> or
+C<< $h->fh >> on it croaks. Routing per-pin return values back through one
+multiplexed child is out of scope here - use a per-pin
+L</background_interrupt($pin, $edge, $callback, $debounce_us)> with
+C<< { results => 1 } >> when you need values back from the handler.
 
 =head3 Example - single-threaded event loop (any Perl)
 
