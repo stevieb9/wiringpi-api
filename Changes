@@ -231,6 +231,9 @@ Revision history for Perl extension WiringPi::API.
           idempotent stop), child reaping, the {results}/{shared} channels and
           {once}/{interval} pacing off-Pi, plus a PI_BOARD-gated block driving a
           real pin through a worker (self-skips without hardware)
+        - added testing/valgrind_worker.pl, a hardware worker() exerciser
+          (distinct-pin workers, {shared} sampler, {interval}/{once} pacing,
+          stop/reap, forgotten-stop END reaping) for leak-checking under valgrind
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks
