@@ -1,8 +1,8 @@
 # Plan: Rewrite the threads/concurrency story around a hands-off `worker()` helper
 
-> **NEXT ACTION:** V3 — pacing: `{interval => $secs}` (helper paces the loop) and `{once => 1}` (run `body` once, child exits).
-> **LAST SESSION:** 2026-06-05. V2 done: `{results => 1}` streams every defined return (parent `read()`/`fh()`); `{shared => 1}` lossy latest value (non-blocking child write, parent `value()` drains-all-keep-last + caches). Both length-framed over inherited pipes; pipes set up pre-fork. Added `t/85-worker.t` (GPIO-free: croaks, lifecycle, reaping, results/shared framing) — green ×3 off-Pi. `O_NONBLOCK` added to the Fcntl import.
-> **ARCHIVE:** See threads-rewrite-archive.md for completed V tasks (V1-V2)
+> **NEXT ACTION:** V4 — opt-in ithread mechanism (`{mechanism => 'thread'}`) + `pi_lock`/`pi_unlock` wrappers (folded from parked threads-patch.md V2).
+> **LAST SESSION:** 2026-06-05. V3 done: helper now owns the loop. `{once => 1}` runs body exactly once then the child exits (running() goes false); `{interval => $secs}` paces each pass via select() (wakes early on TERM, so stop() stays responsive). interval validated as a positive number before forking. Extended `t/85-worker.t` (interval/once + interval-validation croaks) — green ×3 off-Pi (28 subtests).
+> **ARCHIVE:** See threads-rewrite-archive.md for completed V tasks (V1-V3)
 
 ## Goal
 
@@ -125,7 +125,6 @@ mechanism and are folded in here (V5). Its C-only `piThreadCreate2` backlog
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V3 | **Pacing: periodic + one-shot.** Add `{interval => $secs}` (helper paces the loop) and `{once => 1}` (run `body` once, child exits). The helper owns the loop so the user's `body` carries no `while`. Update Changes. | `perl -c -Ilib ...`; off-Pi `prove` of pacing/once logic (mockable clock or short real intervals) | interval paces; once runs exactly once then `running` is false; defaults unchanged | ⏳ |
 | V4 | **Opt-in ithread mechanism.** `{mechanism => 'thread'}` runs `body` in an ithread instead of a fork (shared-memory ergonomics); croak clearly if `threads` isn't loaded. Surface `pi_lock`/`pi_unlock` (folded from parked `threads-patch.md` V2: snake_case wrappers over the existing XS `piLock`/`piUnlock`, keys `0..3`, bad key croaks) for serializing shared state under this mode. Add exports/tags. Update Changes. | `perl -c -Ilib ...`; grep `pi_lock`/`pi_unlock` exported; non-threaded-Perl croak path checked off-Pi | thread mode behind a clear guard; `pi_lock`/`pi_unlock` exported + validate keys | ⏳ |
 | V5 | **POD.** Add a "Concurrency / background workers" section to `lib/WiringPi/API.pm` POD documenting `worker()`, its options, the handle, `pi_lock`/`pi_unlock`, and the setup-once-in-main contract — with a one-liner hands-off example. State the module needs neither `threads` nor a threaded Perl. | `podchecker lib/WiringPi/API.pm`; `perl -c -Ilib ...` | POD clean; every new symbol documented; contract + minimal example present | ⏳ |
 | V6 | **Rewrite `docs/threads-examples.md`.** Lead with `worker()` (decision guide + minimal-code scenarios: heartbeat, shared sampler, periodic, once, distinct-pin workers). Demote raw `threads->create`/`fork`/`Async::Event::Interval` to an "under the hood" reference section. Remove the PARKED banner (blocker landed). Align voice/structure with `interrupt-examples.md`; cross-link both ways; point the interrupt-thread scenario at `background_interrupt`. | markdown render sanity; internal anchors resolve; cross-refs to `interrupt-examples.md` valid | hands-off helpers lead; boilerplate demoted; un-parked; links resolve | ⏳ |

@@ -712,6 +712,11 @@ sub worker {
 
     $opts ||= {};
 
+    if (defined $opts->{interval}
+        && ($opts->{interval} !~ /^\d*\.?\d+$/ || $opts->{interval} <= 0)) {
+        croak "worker() {interval} must be a positive number of seconds";
+    }
+
     # Opt-in channels carrying $body's defined return value back to the parent,
     # both length-framed over an inherited pipe (the background_interrupt model):
     #   results => every value, streamed; parent drains with read()/fh().
@@ -733,9 +738,11 @@ sub worker {
     croak "worker() fork failed: $!" if ! defined $pid;
 
     if ($pid == 0) {
-        # CHILD: run the body repeatedly until the parent stops us. TERM flips
-        # the loop guard so the current iteration finishes, then we exit cleanly
-        # for the parent's stop()/END reaper.
+        # CHILD: the helper owns the loop AND the lifecycle, so the user body
+        # carries no while/sleep of its own. {once} runs it exactly once;
+        # {interval} paces each pass; otherwise the body sets its own cadence.
+        # TERM flips the loop guard so the current pass finishes, then we exit
+        # cleanly for the parent's stop()/END reaper.
         close $res_r if $res_r;
         close $val_r if $val_r;
 
@@ -746,16 +753,26 @@ sub worker {
             fcntl($val_w, F_SETFL, $flags | O_NONBLOCK) if defined $flags;
         }
 
+        my $once     = $opts->{once};
+        my $interval = $opts->{interval};
+
         my $run = 1;
         $SIG{TERM} = sub { $run = 0; };
 
         while ($run) {
             my $ret = $body->();
-            next if ! defined $ret;
 
-            my $frame = pack("N", length "$ret") . "$ret";
-            syswrite $res_w, $frame if $res_w;
-            syswrite $val_w, $frame if $val_w;
+            if (defined $ret) {
+                my $frame = pack("N", length "$ret") . "$ret";
+                syswrite $res_w, $frame if $res_w;
+                syswrite $val_w, $frame if $val_w;
+            }
+
+            last if $once;
+
+            # select() sleeps the interval but wakes early on TERM (EINTR), so
+            # stop() stays responsive even with a long cadence.
+            select(undef, undef, undef, $interval) if $interval;
         }
 
         exit 0;

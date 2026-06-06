@@ -202,6 +202,11 @@ Revision history for Perl extension WiringPi::API.
           (non-blocking) / fh() (for select); {shared} keeps only the latest
           value (lossy, non-blocking child write) read via the handle's value().
           Default behaviour is unchanged
+        - worker() gained {interval => $secs} (the helper paces the loop, so the
+          body needs no sleep of its own) and {once => 1} (run the body exactly
+          once, then the child exits and running() goes false). interval is
+          validated to be a positive number before forking; stop() stays
+          responsive during an interval sleep
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks
