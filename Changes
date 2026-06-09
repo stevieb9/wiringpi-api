@@ -252,6 +252,9 @@ Revision history for Perl extension WiringPi::API.
         - t/pod-coverage.t whitelists the undocumented C-wrapper subs via
           Pod::Coverage trustme so the author test passes; remove each name as
           its POD is written
+        - Split the background_interrupts()/worker() handle classes
+          (WiringPi::API::BackgroundInterrupts, ::Worker, ::WorkerThread) out
+          of API.pm into their own lib files, each with its own POD
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks
