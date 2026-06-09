@@ -1814,8 +1814,10 @@ GPIO and connected peripherals
 
 =head1 SYNOPSIS
 
-No matter which import option you choose, before you can start making calls,
-you must initialize the software by calling one of the C<setup*()> routines.
+No matter which import option you choose, you must initialize the software
+before making any other calls by running one of the C<setup*()> routines. That
+call also selects the pin-numbering scheme - for example, C<setup_gpio()> uses
+the BCM GPIO numbers printed on the Pi's board.
 
     use WiringPi::API qw(:all)
 
