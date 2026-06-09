@@ -37,3 +37,4 @@ build/
 .base$
 main$
 ^.claude/
+patch/

@@ -1829,6 +1829,68 @@ you must initialize the software by calling one of the C<setup*()> routines.
 
     my $api = WiringPi::API->new;
 
+=head1 EXAMPLES
+
+These examples import the function set with the C<:all> tag (which also brings in
+the constants), and call C<setup_gpio()> so the pin numbers are the B<BCM GPIO>
+numbers printed on the Pi's board.
+
+=head2 Output - blink an LED
+
+    use WiringPi::API qw(:all);
+
+    setup_gpio();                  # GPIO (BCM) pin numbering
+
+    pin_mode(17, OUTPUT);          # an LED wired to GPIO17
+
+    for (1 .. 5) {
+        write_pin(17, HIGH);       # on
+        delay(500);                # wait 500ms
+        write_pin(17, LOW);        # off
+        delay(500);
+    }
+
+=head2 Input - read a button
+
+    use WiringPi::API qw(:all);
+
+    setup_gpio();
+
+    pin_mode(27, INPUT);           # a button wired to GPIO27
+    pull_up_down(27, PUD_UP);      # enable the internal pull-up
+
+    # Pressed pulls the pin LOW
+    print read_pin(27) ? "released\n" : "pressed\n";
+
+=head2 Background interrupt - blink an LED on each button press
+
+A button on GPIO27 arms a handler in its own process; every press blinks an LED
+on GPIO17, while the main program is free to do real work - the handler fires
+even while main is busy or sleeping:
+
+    use WiringPi::API qw(:all);
+
+    setup_gpio();
+    pin_mode(17, OUTPUT);          # LED
+    pin_mode(27, INPUT);           # button
+    pull_up_down(27, PUD_UP);
+
+    my $h = background_interrupt(27, INT_EDGE_FALLING, sub {
+        for (1 .. 3) {             # blink 3 times per press
+            write_pin(17, HIGH);
+            delay(100);
+            write_pin(17, LOW);
+            delay(100);
+        }
+    });
+
+    for my $i (1 .. 10) {          # main does its own work meanwhile
+        print "working ($i) ...\n";
+        delay(1000);
+    }
+
+    $h->stop;                      # tear down and reap the handler
+
 =head1 DESCRIPTION
 
 This is an XS-based module, and requires L<wiringPi|http://wiringpi.com> version
