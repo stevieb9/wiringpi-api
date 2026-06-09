@@ -33,7 +33,8 @@
 #include <sr595.h>
 
 // Used for interrupts (self-pipe: the wiringPi ISR thread write()s a fixed
-// event record to a pipe and never touches Perl; the Perl side reads + dispatches)
+// event record to a pipe and never touches Perl; the Perl side reads
+// + dispatches)
 
 #define MAX_PINS 40
 
@@ -54,7 +55,8 @@ static unsigned long interrupts_dropped = 0;          /* events lost to a full p
 /* Runs in wiringPi's per-pin ISR thread. Async-safe: only a write() and an
  * atomic counter bump - it never enters the Perl interpreter. The caller's pin
  * arrives via userdata (keyed to the user's numbering scheme); wfiStatus.pinBCM
- * is always BCM and would mis-key callbacks under setup() (wiringPi numbering). */
+ * is always BCM and would mis-key callbacks under setup() (wiringPi numbering).
+ */
 
 static void isr2_writer(struct WPIWfiStatus wfiStatus, void *userdata){
     isr_event_t rec;

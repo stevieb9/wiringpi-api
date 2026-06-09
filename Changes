@@ -1,115 +1,115 @@
 Revision history for Perl extension WiringPi::API.
 
 3.1801  UNREL
-        - switched from using die() to croak()
+        - Switched from using die() to croak()
         - Completely rewrote the C pin interrupt routine to fix a bug where
           multiple interrupts did not work correctly
         - Update required version of wiringPi to 3.18
-        - fixed broken camelCase exports that resolved to no XS sub:
+        - Fixed broken camelCase exports that resolved to no XS sub:
           wpiToGpio -> wpiPinToGpio, lcdDefChar -> lcdCharDef,
           lcdPutChar -> lcdPutchar
-        - implemented wiringPiVersion(), which was exported but never defined;
+        - Implemented wiringPiVersion(), which was exported but never defined;
           added wiringpi_version() returning the wiringPi library version (the
           string in scalar context, a (major, minor) pair in list context)
-        - added t/20-board_map_precheck.t validating the phys/wpi/gpio pin maps
+        - Added t/20-board_map_precheck.t validating the phys/wpi/gpio pin maps
           against the installed wiringPi, and t/25-wiringpi_version.t
-        - aligned XS prototypes with the wiringPi 3.18 headers: lcdSendCommand()
+        - Aligned XS prototypes with the wiringPi 3.18 headers: lcdSendCommand()
           second arg char -> unsigned char, and digitalReadByte() return type
           int -> unsigned int
         - Makefile.PL: corrected the stale "version 2.36+" message to report the
           actual minimum required wiringPi version (3.18)
-        - bumped $VERSION 2.3617 -> 3.1801 (note: 2.x -> 3.x scheme change for
+        - Bumped $VERSION 2.3617 -> 3.1801 (note: 2.x -> 3.x scheme change for
           downstream version pins); refreshed POD/README version references from
           2.36 to 3.18 and updated the copyright year
         - BREAKING: removed setup_sys()/setup_phys() and the backing
           wiringPiSetupSys()/wiringPiSetupPhys() XS wraps; only setup() and
           setup_gpio() remain supported
-        - added Perl wrappers + exports + POD for XS subs that previously had no
+        - Added Perl wrappers + exports + POD for XS subs that previously had no
           Perl layer: soft_pwm_create/soft_pwm_write/soft_pwm_stop,
           pi_lock/pi_unlock, and digital_read_byte/digital_read_byte2/
           digital_write_byte/digital_write_byte2 (the byte-bank ops are
           unsupported on the Raspberry Pi 5 - see POD)
-        - wrapped the timing/scheduling core: delay, delayMicroseconds
+        - Wrapped the timing/scheduling core: delay, delayMicroseconds
           (delay_microseconds), millis, micros, piMicros64 (pi_micros64) and
           piHiPri (pi_hi_pri) - XS + Perl + POD
-        - implemented the previously-unimplemented setPadDrive (set_pad_drive),
+        - Implemented the previously-unimplemented setPadDrive (set_pad_drive),
           setPadDrivePin (set_pad_drive_pin), pwmToneWrite (pwm_tone_write) and
           gpioClockSet (gpio_clock_set) - XS + Perl + POD
-        - wrapped board/identity helpers: piBoardId (pi_board_id, returns a list
+        - Wrapped board/identity helpers: piBoardId (pi_board_id, returns a list
           or hashref), piBoard40Pin (pi_board40_pin), piRP1Model (pi_rp1_model),
           getPinModeAlt (get_pin_mode_alt), wiringPiGlobalMemoryAccess
           (wiringpi_global_memory_access) and wiringPiUserLevelAccess
           (wiringpi_user_level_access) - XS + Perl + POD
-        - wrapped the 3.3 setup variants wiringPiSetupPinType
+        - Wrapped the 3.3 setup variants wiringPiSetupPinType
           (wiringpi_setup_pin_type) and wiringPiSetupGpioDevice
           (wiringpi_setup_gpio_device, libgpiod char-device backend) plus
           wiringPiGpioDeviceGetFd (wiringpi_gpio_device_get_fd); added the
           WPI_PIN_BCM / WPI_PIN_WPI constants (new :constants export tag). The
           wrappers croak on anything but BCM/WPI - physical-pin setup stays
           unsupported (WPI_PIN_PHYS is not exported)
-        - wrapped the I2C block/raw additions: i2c_read_block
+        - Wrapped the I2C block/raw additions: i2c_read_block
           (wiringPiI2CReadBlockData), i2c_raw_read (wiringPiI2CRawRead),
           i2c_write_block (wiringPiI2CWriteBlockData) and i2c_raw_write
           (wiringPiI2CRawWrite) - reads return a list of bytes, writes take an
           array reference; up to 255 bytes
-        - implemented i2c_interface() (maps to wiringPiI2CSetupInterface); it
+        - Implemented i2c_interface() (maps to wiringPiI2CSetupInterface); it
           previously croaked "not available"
-        - wrapped the SPI additions: spi_get_fd (wiringPiSPIGetFd),
+        - Wrapped the SPI additions: spi_get_fd (wiringPiSPIGetFd),
           spi_setup_mode (wiringPiSPISetupMode) and spi_close (wiringPiSPIClose)
           - XS + Perl + POD
-        - wrapped softTone: soft_tone_create (softToneCreate), soft_tone_write
+        - Wrapped softTone: soft_tone_create (softToneCreate), soft_tone_write
           (softToneWrite) and soft_tone_stop (softToneStop) - XS + Perl + POD.
           softServo is not built into the wiringPi 3.18 library, so it is not
           wrapped
-        - fixed i2c_read_word() to read a 16-bit register (wiringPiI2CReadReg16)
+        - Fixed i2c_read_word() to read a 16-bit register (wiringPiI2CReadReg16)
           instead of an 8-bit one; it now returns the full word (return value
           changes for callers that relied on the truncated value)
-        - fixed i2c_setup() address validation: it rejected any multi-digit
+        - Fixed i2c_setup() address validation: it rejected any multi-digit
           address (e.g. 72 / 0x48); it now accepts full decimal and 0x-hex
           addresses and croaks on non-numeric input
-        - fixed shift_reg_setup() range guards: the && in the bounds checks
+        - Fixed shift_reg_setup() range guards: the && in the bounds checks
           could never be true, so out-of-range $num_pins (0-32) and pin
           numbers (0-40) were silently passed through; they now croak
         - XS serialGets() and spiDataRW() now croak() on error instead of
           calling exit(), which killed the whole interpreter; the errors are
           now catchable. Replaced the spiDataRW() variable-length stack array
           with a heap buffer (Newx/Safefree)
-        - moved #define PERL_NO_GET_CONTEXT above the perl headers so the
+        - Moved #define PERL_NO_GET_CONTEXT above the perl headers so the
           context optimisation actually applies (it was a no-op after the
           include) - internal build change, no consumer-visible effect
         - lcd_char_def() no longer writes a stray newline to the display
           before defining the character (visible only if a consumer relied on
           that side effect)
-        - removed a duplicate pwm_set_range entry from the export list
+        - Removed a duplicate pwm_set_range entry from the export list
           (internal; pwm_set_range is still exported and unchanged)
-        - removed the dead testChar export: it was listed in @EXPORT_OK /
+        - Removed the dead testChar export: it was listed in @EXPORT_OK /
           :all / :perl but backed by no XS or Perl sub (importing succeeded,
           calling it died). An :all or explicit import of testChar now fails
           at use-time instead
-        - added interrupt edge constants INT_EDGE_SETUP / INT_EDGE_FALLING /
+        - Added interrupt edge constants INT_EDGE_SETUP / INT_EDGE_FALLING /
           INT_EDGE_RISING / INT_EDGE_BOTH (exported via :constants and :all)
         - set_interrupt() now validates its arguments and croaks on bad input:
           $pin must be a positive integer, $edge must be INT_EDGE_FALLING (1),
           INT_EDGE_RISING (2) or INT_EDGE_BOTH (3), and $callback must be a
           CODE reference
-        - wrapped wiringPiISRStop($pin) to stop/remove an armed interrupt
+        - Wrapped wiringPiISRStop($pin) to stop/remove an armed interrupt
           (exported via :wiringPi and :all)
-        - reworked the interrupt subsystem to use wiringPi's wiringPiISR2()
+        - Reworked the interrupt subsystem to use wiringPi's wiringPiISR2()
           with a self-pipe: the wiringPi ISR thread now writes a fixed event
           record to a pipe instead of calling a Perl callback from a foreign
           thread, removing the per-pin trampolines and the dispatcher thread
           (eliminates the cross-thread callback races). Added interrupt_fd()
           returning the readable end of the pipe; the Perl-side dispatch
           helpers (wait_interrupts/dispatch_interrupts) follow
-        - removed the camelCase setInterrupt export (use set_interrupt()) and
+        - Removed the camelCase setInterrupt export (use set_interrupt()) and
           the dead, never-exposed initThread
-        - added the interrupt dispatch helpers: dispatch_interrupts() drains all
+        - Added the interrupt dispatch helpers: dispatch_interrupts() drains all
           pending events from the self-pipe and runs each pin's callback with
           ($edge, $timestamp_us); wait_interrupts($timeout_ms) selects on the
           interrupt fd then dispatches. set_interrupt() callbacks fire again,
           now in whichever interpreter services the fd. Added interrupt_dropped()
           returning the count of events lost to a full pipe
-        - added interrupt teardown: stop_interrupt($pin) stops the wiringPi ISR
+        - Added interrupt teardown: stop_interrupt($pin) stops the wiringPi ISR
           for that pin and forgets its callback; stop_interrupts() stops every
           armed pin, closes the self-pipe and resets state (a later
           set_interrupt() re-creates it). No dispatcher thread to join
@@ -118,7 +118,7 @@ Revision history for Perl extension WiringPi::API.
           for the self-pipe dispatch model (no threaded Perl required) and fixed
           pre-existing POD errors (the ADC FUNCTIONS / digitalReadByte internal
           links and stray whitespace) so podchecker is clean
-        - added t/75-interrupts.t: hardware-free coverage of the constants,
+        - Added t/75-interrupts.t: hardware-free coverage of the constants,
           set_interrupt() validation and dispatch routing on every run, plus
           real-GPIO exercisers (both numbering schemes, re-arm, fork background,
           teardown) gated behind PI_BOARD. Verified the full interrupt chain on
@@ -216,33 +216,15 @@ Revision history for Perl extension WiringPi::API.
           threads itself and stays usable on non-threaded Perl
         - pi_lock()/pi_unlock() now validate the lock key (0..3) and croak on a
           bad key, instead of passing it through to the XS layer unchecked
-        - documented the worker concurrency API in the POD: a new "CONCURRENCY /
+        - Documented the worker concurrency API in the POD: a new "CONCURRENCY /
           BACKGROUND WORKERS" section covering worker(), all its options, the
           handle, the setup-once-in-main contract and a hands-off one-liner, plus
           a cross-link from THREAD/LOCK FUNCTIONS
-        - rewrote docs/threads-examples.md to lead with worker() (heartbeat,
-          periodic sampler, results stream, one-shot, distinct-pin workers,
-          opt-in ithread), demoted the raw fork/threads->create/
-          Async::Event::Interval patterns to an "under the hood" reference, and
-          un-parked it (the ISR blocker landed). Added
-          lib/WiringPi/API/WORKERS.pod (perldoc WiringPi::API::WORKERS) as the
-          perldoc form of that guide; cross-linked both ways with the interrupt
-          docs
-        - added t/85-worker.t covering worker(): argument-validation croaks,
+        - Added t/85-worker.t covering worker(): argument-validation croaks,
           pi_lock/pi_unlock key validation, handle lifecycle (pid/running/
           idempotent stop), child reaping, the {results}/{shared} channels and
           {once}/{interval} pacing off-Pi, plus a PI_BOARD-gated block driving a
           real pin through a worker (self-skips without hardware)
-        - added testing/valgrind_worker.pl, a hardware worker() exerciser
-          (distinct-pin workers, {shared} sampler, {interval}/{once} pacing,
-          stop/reap, forgotten-stop END reaping) for leak-checking under valgrind
-        - fixed the worker() examples in the POD synopsis,
-          lib/WiringPi/API/WORKERS.pod and
-          docs/threads-examples.md to call the real exported pin functions
-          write_pin()/read_pin() - they previously used digital_write()/
-          digital_read(), which are not exported and would die as written
-        - applied the same write_pin()/read_pin() correction to the function
-          reference in docs/interrupt-examples.md
         - background_interrupts() handle now rejects read()/fh() with a clear
           message instead of silently returning undef: the shared-child handle
           has no per-pin results channel (that is the singular
