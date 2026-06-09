@@ -58,5 +58,6 @@ WriteMakefile(
     MIN_PERL_VERSION  => 5.006,
     LICENSE           => 'perl_5',
     PREREQ_PM         => {
+        'RPi::Const' => '1.05',
     },
 );

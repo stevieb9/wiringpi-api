@@ -263,6 +263,9 @@ Revision history for Perl extension WiringPi::API.
         - pin_mode_alt() now accepts ALT6-ALT8 (8-10) on the Pi 5 (RP1), where
           wiringPi supports them; the 0-7 range is unchanged on a Pi 0-4. Added
           POD documenting the RP1 alt-function differences and t/90-pin_mode_alt.t
+        - Source all constants from RPi::Const (now a prerequisite, min 1.05)
+          instead of defining them locally; the :constants/:all tags re-export
+          them, so every existing name (WPI_PIN_*, INT_EDGE_*) is unchanged
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks

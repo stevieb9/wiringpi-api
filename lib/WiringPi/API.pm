@@ -26,25 +26,15 @@ use WiringPi::API::BackgroundInterrupts;
 use WiringPi::API::Worker;
 use WiringPi::API::WorkerThread;
 
-# WPIPinType pin-numbering constants for the wiringpi_setup_pin_type() /
-# wiringpi_setup_gpio_device() variants.
-
-use constant {
-    WPI_PIN_BCM => 1,
-    WPI_PIN_WPI => 2,
-};
-
-# Interrupt edge-trigger constants (mirror wiringPi's INT_EDGE_* #defines).
-# INT_EDGE_SETUP (0) is a setup-only mode, not a real trigger, so
+# All constants live in RPi::Const, the single source of truth for the RPi::
+# suite. Importing :all brings every name (including WPI_PIN_BCM / WPI_PIN_WPI
+# for the setup variants and the INT_EDGE_* edge triggers used by the interrupt
+# functions) into this package, so Exporter can re-export them to our callers
+# below. INT_EDGE_SETUP (0) is a setup-only mode, not a real trigger, so
 # set_interrupt() rejects it - the valid triggers are FALLING (1), RISING (2)
 # and BOTH (3).
 
-use constant {
-    INT_EDGE_SETUP   => 0,
-    INT_EDGE_FALLING => 1,
-    INT_EDGE_RISING  => 2,
-    INT_EDGE_BOTH    => 3,
-};
+use RPi::Const qw(:all);
 
 require XSLoader;
 XSLoader::load('WiringPi::API', $VERSION);
@@ -239,14 +229,11 @@ my @wpi_perl_functions = (
     ),
 );
 
-my @wpi_constants = qw(
-    WPI_PIN_BCM
-    WPI_PIN_WPI
-    INT_EDGE_SETUP
-    INT_EDGE_FALLING
-    INT_EDGE_RISING
-    INT_EDGE_BOTH
-);
+# Re-export every constant RPi::Const provides (imported via :all above) so
+# our :constants / :all tags continue to yield WPI_PIN_* and INT_EDGE_*, plus
+# the rest of the suite's shared GPIO constants. RPi::Const is the single
+# source of truth - nothing is defined here.
+my @wpi_constants = @RPi::Const::EXPORT_OK;
 
 our @EXPORT_OK;
 
@@ -1981,6 +1968,13 @@ Export only Perlish snake_case named version of the functions.
 =head2 :wiringPi
 
 Export only the C based camelCase version of the function names.
+
+=head2 :constants
+
+Export only the constants. These (including C<WPI_PIN_BCM> / C<WPI_PIN_WPI> and
+the C<INT_EDGE_*> edge triggers) are defined in and re-exported from
+L<RPi::Const>, the single source of truth for constants across the C<RPi::>
+suite.
 
 =head1 FUNCTION TABLE OF CONTENTS
 
