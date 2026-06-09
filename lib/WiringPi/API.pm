@@ -6,23 +6,32 @@ use warnings;
 our $VERSION = '3.1801';
 
 use Carp qw(croak);
-use Fcntl qw(F_GETFL F_SETFL F_SETOWN O_ASYNC O_NONBLOCK
-             F_GETPIPE_SZ F_SETPIPE_SZ F_SETSIG);
+use Fcntl qw(
+    F_GETFL
+    F_SETFL
+    F_SETOWN
+    O_ASYNC
+    O_NONBLOCK
+    F_GETPIPE_SZ
+    F_SETPIPE_SZ
+    F_SETSIG
+);
 use POSIX qw(WNOHANG);
 use Scalar::Util qw(blessed);
 
 # WPIPinType pin-numbering constants for the wiringpi_setup_pin_type() /
-# wiringpi_setup_gpio_device() variants. WPI_PIN_PHYS (3) is intentionally NOT
-# exposed - physical-pin setup mode was removed (see Changes); the wrappers
-# croak if anything other than these two is passed.
+# wiringpi_setup_gpio_device() variants.
+
 use constant {
     WPI_PIN_BCM => 1,
     WPI_PIN_WPI => 2,
 };
 
 # Interrupt edge-trigger constants (mirror wiringPi's INT_EDGE_* #defines).
-# INT_EDGE_SETUP (0) is a setup-only mode, not a real trigger, so set_interrupt()
-# rejects it - the valid triggers are FALLING (1), RISING (2) and BOTH (3).
+# INT_EDGE_SETUP (0) is a setup-only mode, not a real trigger, so
+# set_interrupt() rejects it - the valid triggers are FALLING (1), RISING (2)
+# and BOTH (3).
+
 use constant {
     INT_EDGE_SETUP   => 0,
     INT_EDGE_FALLING => 1,
@@ -106,8 +115,12 @@ my @wpi_perl_functions = qw(
 );
 
 my @wpi_constants = qw(
-    WPI_PIN_BCM     WPI_PIN_WPI
-    INT_EDGE_SETUP  INT_EDGE_FALLING    INT_EDGE_RISING     INT_EDGE_BOTH
+    WPI_PIN_BCM
+    WPI_PIN_WPI
+    INT_EDGE_SETUP
+    INT_EDGE_FALLING
+    INT_EDGE_RISING
+    INT_EDGE_BOTH
 );
 
 our @EXPORT_OK;
@@ -122,43 +135,48 @@ $EXPORT_TAGS{all} = [@wpi_c_functions, @wpi_perl_functions, @wpi_constants];
 
 # Interrupt dispatch state (per-interpreter). The callback registry lives here
 # in Perl - the wiringPi ISR thread only writes event records to the self-pipe
-# (see API.xs); dispatch runs callbacks in whichever interpreter services the fd.
+# (see API.xs); dispatch runs callbacks in whichever interpreter services the fd
+
 my %_interrupt_cb;                  # pin => CODE ref
 my $_interrupt_fh;                  # cached read handle (dup of interrupt_fd())
 my $_interrupt_fh_fd;               # the fd $_interrupt_fh was opened on
 my $_last_interrupt;                # hashref of the most recently dispatched event
 
-# background_interrupt() state - handles of forked children, reaped at exit.
+# background_interrupt() state - handles of forked children, reaped at exit
 my @_bg_children;
 
 # auto_dispatch_interrupts() state. When enabled, the interrupt read fd is put
-# into async (SIGIO) mode and $SIG{IO} drains+dispatches at Perl safe points.
+# into async (SIGIO) mode and $SIG{IO} drains+dispatches at Perl safe points
+
 my $_auto_dispatch      = 0;        # is auto-dispatch currently enabled?
 my $_auto_dispatch_prev;            # prior handler for the chosen signal
 my $_auto_dispatch_fd;              # the fd we wired O_ASYNC/F_SETOWN onto
 my $_auto_dispatch_sig  = 'IO';     # delivery signal name (default SIGIO)
 my $_auto_dispatch_signum;          # its number (for F_SETSIG; 0 = default SIGIO)
+
 my %_sig_num;                       # signal name -> number, lazily built
 
 # interrupt_buffer() state. A requested pipe capacity is remembered and applied
-# whenever the self-pipe is (re)created, so it can be set before arming.
+# whenever the self-pipe is (re)created, so it can be set before arming
+
 my $_interrupt_buffer_req;          # requested pipe size in bytes, or undef
 my $_interrupt_buffer_fd;           # the fd we last applied the size to
 
 # run_interrupt_loop() state - cleared by stop_interrupt_loop() to break out.
+
 my $_run_loop = 0;
 
 sub new {
     return bless {}, shift;
 }
 
-# serial functions
+# Serial functions
 
 sub serial_open {
     shift if @_ > 2;
     my ($dev_ptr, $baud) = @_;
     my $fd = serialOpen($dev_ptr, $baud);
-    croak "could not open serial device $dev_ptr\n" if $fd == -1;
+    croak "Could not open serial device $dev_ptr\n" if $fd == -1;
     return $fd;
 }
 sub serial_close {
@@ -203,19 +221,23 @@ sub serial_gets {
               "non-negative integer";
     }
 
-    # Returns the exact bytes read (binary-safe); may be shorter than
-    # $nbytes if the port's read timeout elapsed first.
+    # Returns the exact bytes read (binary-safe); may be shorter than $nbytes if
+    # the port's read timeout elapsed first
+
     return serialGets($fd, $nbytes);
 }
 
-# interrupt functions
+# Interrupt functions
 
 sub set_interrupt {
-    shift if @_ && blessed($_[0]);   # drop $self on method calls
+    shift if @_ && blessed($_[0]);
+
     my ($pin, $edge, $callback, @rest) = @_;
 
     # An optional trailing options hashref may follow the (optional) debounce.
+
     my %opts = (@rest && ref $rest[-1] eq 'HASH') ? %{ pop @rest } : ();
+
     my ($debounce_us) = @rest;
 
     if (! defined $pin || $pin !~ /^\d+$/) {
@@ -224,7 +246,7 @@ sub set_interrupt {
 
     if (! defined $edge || $edge !~ /^[123]$/) {
         croak "set_interrupt() \$edge must be INT_EDGE_FALLING (1), " .
-            "INT_EDGE_RISING (2) or INT_EDGE_BOTH (3)";
+              "INT_EDGE_RISING (2) or INT_EDGE_BOTH (3)";
     }
 
     if (! defined $callback || ref $callback ne 'CODE') {
@@ -240,6 +262,7 @@ sub set_interrupt {
     # The callback stays in Perl, keyed by the user's pin; the ISR thread only
     # writes {pin, edge, ts} records to the self-pipe. dispatch_interrupts()
     # fans them back out to these callbacks in the consuming interpreter.
+
     $_interrupt_cb{$pin} = $callback;
 
     my $rv = _arm_interrupt($pin, $edge, $debounce_us);
@@ -247,6 +270,7 @@ sub set_interrupt {
     # Opt-in: turn on auto-dispatch as part of arming. This enables the
     # process-wide switch (it is not selective per pin); a non-"1" true value
     # (eg 'USR1') picks the delivery signal.
+
     if ($opts{auto_dispatch} && ! $_auto_dispatch) {
         my $v = $opts{auto_dispatch};
         my $sig = ($v =~ /^[A-Za-z]/) ? $v : undef;
@@ -254,7 +278,8 @@ sub set_interrupt {
     }
 
     # Arming lazily creates the self-pipe; apply any pending pipe-size request
-    # and (if auto-dispatch is on) wire the (possibly new) read fd for SIGIO.
+    # and (if auto-dispatch is on) wire the (possibly new) read fd for SIGIO
+
     _apply_interrupt_buffer() if defined $_interrupt_buffer_req;
     _auto_dispatch_apply()    if $_auto_dispatch;
 
@@ -273,20 +298,22 @@ sub dispatch_interrupts {
         my $n = sysread($fh, $buf, 24);
 
         if (! defined $n) {
-            next if $!{EINTR};      # interrupted before any data - retry
+            next if $!{EINTR};      # Interrupted before any data - retry
             last;                   # EAGAIN (drained) or a real error - stop
         }
 
         last if $n == 0;            # EOF: all write ends closed
-        last if $n != 24;           # short read (24-byte writes are atomic)
+        last if $n != 24;           # Short read (24-byte writes are atomic)
 
         # Record layout mirrors isr_event_t in API.xs: caller pin, BCM pin,
-        # edge, statusOK, timestamp. Keep this in sync with that struct.
+        # edge, statusOK, timestamp. Keep this in sync with that struct
+
         my ($pin, $pin_bcm, $edge, $status, $ts_us) = unpack "i I i i q", $buf;
 
         # Publish the full event before running the callback, so the callback
         # may query last_interrupt() for the BCM pin / status it doesn't get
-        # in its ($edge, $ts_us) arguments.
+        # in its ($edge, $ts_us) arguments
+
         $_last_interrupt = {
             pin     => $pin,
             pin_bcm => $pin_bcm,
@@ -304,7 +331,8 @@ sub dispatch_interrupts {
     return $dispatched;
 }
 sub wait_interrupts {
-    shift if @_ && ref $_[0];   # drop $self on method calls
+    shift if @_ && ref $_[0];
+
     my ($timeout_ms) = @_;
 
     my $fh = _interrupt_fh();
@@ -316,12 +344,13 @@ sub wait_interrupts {
     my $timeout = defined $timeout_ms ? $timeout_ms / 1000 : undef;
     my $nfound = select(my $rout = $rin, undef, undef, $timeout);
 
-    return 0 if ! $nfound || $nfound < 0;   # timeout or error
+    return 0 if ! $nfound || $nfound < 0;   # Timeout or error
 
     return dispatch_interrupts();
 }
 sub stop_interrupt {
     shift if @_ == 2;
+
     my ($pin) = @_;
 
     if (! defined $pin || $pin !~ /^\d+$/) {
@@ -340,7 +369,8 @@ sub stop_interrupts {
 
     # Drop our cached read dup, then close the C-side pipe (this discards any
     # records still buffered) and reset the dropped counter. A later
-    # set_interrupt() lazily re-creates the pipe.
+    # set_interrupt() lazily re-creates the pipe
+
     if (defined $_interrupt_fh) {
         close $_interrupt_fh;
         $_interrupt_fh    = undef;
@@ -351,25 +381,29 @@ sub stop_interrupts {
 
     # The fd we wired for SIGIO is gone; a later set_interrupt() re-creates the
     # pipe and (if auto-dispatch is still on) re-wires the new fd. The pipe-size
-    # request persists and is re-applied to the new pipe on the next arm.
+    # request persists and is re-applied to the new pipe on the next arm
+
     $_auto_dispatch_fd     = undef;
     $_interrupt_buffer_fd  = undef;
 
     # Forget the last event - the interrupt subsystem is torn down.
+
     $_last_interrupt = undef;
 
     return 1;
 }
 sub last_interrupt {
-    shift if @_ == 1;   # drop $self on method calls
+    shift if @_ == 1;
 
     return undef if ! defined $_last_interrupt;
 
     # Return a copy so callers can't mutate our internal state.
+
     return { %$_last_interrupt };
 }
 sub interrupt_buffer {
-    shift if @_ && ref $_[0];   # drop $self on method calls
+    shift if @_ && ref $_[0];
+
     my ($bytes) = @_;
 
     my $fh = _interrupt_fh();
@@ -386,12 +420,14 @@ sub interrupt_buffer {
     }
 
     # Remember it so a (re)created pipe gets the same capacity; the kernel
-    # rounds up to a page and caps at /proc/sys/fs/pipe-max-size.
+    # rounds up to a page and caps at /proc/sys/fs/pipe-max-size
+
     $_interrupt_buffer_req = 0 + $bytes;
 
-    return $_interrupt_buffer_req if ! defined $fh;   # applied on the next arm
+    return $_interrupt_buffer_req if ! defined $fh;   # Applied on the next arm
 
     my $set = fcntl($fh, F_SETPIPE_SZ, $_interrupt_buffer_req);
+
     if (! defined $set) {
         croak "interrupt_buffer() could not set the pipe size to " .
             "$_interrupt_buffer_req bytes: $!";
@@ -399,10 +435,11 @@ sub interrupt_buffer {
 
     $_interrupt_buffer_fd = fileno($fh);
 
-    return $set;   # the actual size the kernel granted
+    return $set;   # The actual size the kernel granted
 }
 sub run_interrupt_loop {
-    shift if @_ && ref $_[0];   # drop $self on method calls
+    shift if @_ && ref $_[0];
+
     my ($timeout_ms, $max) = @_;
 
     $timeout_ms = 1000 if ! defined $timeout_ms;
@@ -420,7 +457,8 @@ sub run_interrupt_loop {
 
     while ($_run_loop) {
         # Nothing armed yet: sleep the poll interval rather than busy-spinning,
-        # since wait_interrupts() returns at once when there is no interrupt fd.
+        # since wait_interrupts() returns at once when there is no interrupt fd
+
         if (interrupt_fd() < 0) {
             select undef, undef, undef, $timeout_ms / 1000;
             next;
@@ -435,13 +473,13 @@ sub run_interrupt_loop {
     return $total;
 }
 sub stop_interrupt_loop {
-    shift if @_ == 1;   # drop $self on method calls
+    shift if @_ == 1;
     $_run_loop = 0;
     return 1;
 }
-
 sub auto_dispatch_interrupts {
-    shift if @_ && blessed($_[0]);   # drop $self on method calls
+    shift if @_ && blessed($_[0]);
+
     my ($enable, $signal) = @_;
 
     if (! defined $enable || $enable !~ /^[01]$/) {
@@ -449,22 +487,25 @@ sub auto_dispatch_interrupts {
     }
 
     if ($enable) {
-        return 1 if $_auto_dispatch;            # idempotent
+        return 1 if $_auto_dispatch;
 
         # Choose the delivery signal (default SIGIO). A different named signal
         # (eg 'USR1') is wired via F_SETSIG so it won't clash with other SIGIO
-        # users. 'SIGUSR1' and 'USR1' are both accepted.
+        # users. 'SIGUSR1' and 'USR1' are both accepted
+
         $signal = 'IO' if ! defined $signal;
         $signal =~ s/^SIG//;
 
         my $signum = _signal_number($signal);
+
         if (! defined $signum) {
             croak "auto_dispatch_interrupts() unknown signal '$signal'";
         }
 
         # Safe-signal handler: Perl runs it between ops, so the dispatched
         # callbacks touch your variables with no locking. Save the prior
-        # handler so disable can restore it.
+        # handler so disable can restore it
+
         $_auto_dispatch_sig    = $signal;
         $_auto_dispatch_signum = $signum;
         $_auto_dispatch_prev   = $SIG{$signal};
@@ -472,12 +513,14 @@ sub auto_dispatch_interrupts {
         $_auto_dispatch = 1;
 
         # Wire the read fd now if the pipe already exists; otherwise the next
-        # set_interrupt() (which creates it) will wire it.
+        # set_interrupt() (which creates it) will wire it
+
         _auto_dispatch_apply();
+
         return 1;
     }
 
-    return 1 if ! $_auto_dispatch;              # idempotent
+    return 1 if ! $_auto_dispatch;
 
     _auto_dispatch_clear();
 
@@ -496,14 +539,17 @@ sub auto_dispatch_interrupts {
     return 1;
 }
 sub background_interrupt {
-    shift if @_ && blessed($_[0]);   # drop $self on method calls
+    shift if @_ && blessed($_[0]);
+
     my ($pin, $edge, $callback, @rest) = @_;
 
-    # An optional trailing options hashref may follow the (optional) debounce.
+    # An optional trailing options hashref may follow the (optional) debounce
+
     my %opts = (@rest && ref $rest[-1] eq 'HASH') ? %{ pop @rest } : ();
     my ($debounce_us) = @rest;
 
-    # Validate everything BEFORE forking - never fork into a guaranteed failure.
+    # Validate everything BEFORE forking - never fork into a guaranteed failure
+
     if (! defined $pin || $pin !~ /^\d+$/) {
         croak "background_interrupt() requires \$pin to be a positive integer";
     }
@@ -522,8 +568,10 @@ sub background_interrupt {
     }
 
     # Opt-in results channel: ship the callback's defined return value back to
-    # the parent over a pipe (B5). Set up before forking so both ends inherit.
+    # the parent over a pipe (B5). Set up before forking so both ends inherit
+
     my ($res_r, $res_w);
+
     if ($opts{results}) {
         pipe($res_r, $res_w)
             or croak "background_interrupt() results pipe failed: $!";
@@ -534,7 +582,8 @@ sub background_interrupt {
 
     if ($pid == 0) {
         # CHILD: own the interrupt. wiringPi ISR pthreads don't survive fork, so
-        # arming MUST happen here, post-fork. TERM runs the ISR teardown + exits.
+        # arming MUST happen here, post-fork. TERM runs the ISR teardown + exits
+
         close $res_r if $res_r;
 
         $SIG{TERM} = sub {
@@ -543,8 +592,9 @@ sub background_interrupt {
         };
 
         my $cb = $callback;
+
         if ($res_w) {
-            # Wrap so a defined return value is length-framed up to the parent.
+            # Wrap so a defined return value is length-framed up to the parent
             $cb = sub {
                 my $ret = $callback->(@_);
                 if (defined $ret) {
@@ -557,10 +607,11 @@ sub background_interrupt {
 
         set_interrupt($pin, $edge, $cb, $debounce_us);
         wait_interrupts(1000) while 1;
-        exit 0;                                 # not reached
+        exit 0;
     }
 
-    # PARENT: record the child so $h->stop / the END reaper can clean it up.
+    # PARENT: record the child so $h->stop / the END reaper can clean it up
+
     close $res_w if $res_w;
 
     my $handle = WiringPi::API::BackgroundInterrupt->_new($pid, $res_r);
@@ -569,7 +620,7 @@ sub background_interrupt {
     return $handle;
 }
 sub background_interrupts {
-    shift if @_ && blessed($_[0]);   # drop $self; specs themselves are arrayrefs
+    shift if @_ && blessed($_[0]);
 
     my @specs = @_;
 
@@ -578,7 +629,8 @@ sub background_interrupts {
             "[\$pin, \$edge, \$callback, \$debounce_us] spec";
     }
 
-    # Validate every spec BEFORE forking.
+    # Validate every spec BEFORE forking
+
     for my $spec (@specs) {
         if (ref $spec ne 'ARRAY') {
             croak "background_interrupts() each spec must be an array reference";
@@ -602,7 +654,8 @@ sub background_interrupts {
         }
     }
 
-    # Control pipe: parent -> child arm/disarm commands (one text line each).
+    # Control pipe: parent -> child arm/disarm commands (one text line each)
+
     pipe(my $ctrl_r, my $ctrl_w)
         or croak "background_interrupts() control pipe failed: $!";
 
@@ -612,7 +665,8 @@ sub background_interrupts {
     if ($pid == 0) {
         # CHILD: arm every spec, then service edges + control commands in one
         # select loop. The callback table is fixed here (fork can't carry new
-        # code); the control channel only toggles these known pins.
+        # code); the control channel only toggles these known pins
+
         close $ctrl_w;
 
         $SIG{TERM} = sub {
@@ -621,6 +675,7 @@ sub background_interrupts {
         };
 
         my %table;   # pin => [edge, cb, deb]
+
         for my $spec (@specs) {
             my ($pin, $edge, $cb, $deb) = @$spec;
             $table{$pin} = [$edge, $cb, $deb];
@@ -632,6 +687,7 @@ sub background_interrupts {
     }
 
     # PARENT.
+
     close $ctrl_r;
 
     my @pins = map { $_->[0] } @specs;
