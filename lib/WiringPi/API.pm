@@ -52,73 +52,191 @@ XSLoader::load('WiringPi::API', $VERSION);
 require Exporter;
 our @ISA = qw(Exporter);
 
-my @wpi_c_functions = qw(
-    wiringPiSetup       wiringPiSetupGpio   pinMode
-    pullUpDnControl
-    digitalRead         digitalWrite        digitalWriteByte
-    pwmWrite            getAlt              piGpioLayout
-    wpiPinToGpio        physPinToGpio       pwmSetRange
-    lcdInit             lcdHome             lcdClear
-    lcdDisplay          lcdCursor           lcdCursorBlink
-    lcdSendCommand      lcdPosition         lcdCharDef
-    lcdPutchar          lcdPuts             wiringPiISRStop
-    sr595Setup          bmp180Setup         bmp180Pressure
-    bmp180Temp          analogRead          analogWrite
-    physPinToWpi        wiringPiVersion     ads1115Setup
-    pseudoPinsSetup     wiringPiSPISetup    spiDataRW
-    wiringPiSPIGetFd    wiringPiSPISetupMode wiringPiSPIClose
-    softToneCreate      softToneStop        softToneWrite
-    wiringPiI2CSetup    wiringPiI2CSetupInterface
-    wiringPiI2CRead     wiringPiI2CReadReg8 wiringPiI2CReadReg16
-    wiringPiI2CWrite    wiringPiI2CWriteReg8 wiringPiI2CWriteReg16
-    wiringPiI2CReadBlockData                 wiringPiI2CRawRead
-    wiringPiI2CWriteBlockData                wiringPiI2CRawWrite
-    pinModeAlt          serialOpen          serialFlush
-    serialPutchar       serialPuts          serialDataAvail
-    serialGetchar       pwmSetClock         pwmSetMode
-    delay               delayMicroseconds   millis
-    micros              piMicros64          piHiPri
-    setPadDrive         setPadDrivePin      pwmToneWrite
-    gpioClockSet        piBoardId           piBoard40Pin
-    piRP1Model          getPinModeAlt       wiringPiGlobalMemoryAccess
-    wiringPiUserLevelAccess                 wiringPiSetupPinType
-    wiringPiSetupGpioDevice                 wiringPiGpioDeviceGetFd
+my @wpi_c_functions = (
+    # Setup
+    qw(
+        wiringPiSetup           wiringPiSetupGpio       wiringPiSetupPinType
+        wiringPiSetupGpioDevice wiringPiGpioDeviceGetFd pseudoPinsSetup
+        wiringPiVersion
+    ),
+    # Pin
+    qw(
+        pinMode                 pinModeAlt              getAlt
+        getPinModeAlt           pullUpDnControl         digitalRead
+        digitalWrite            digitalWriteByte
+    ),
+    # ADC (analog to digital)
+    qw(
+        ads1115Setup            analogRead              analogWrite
+    ),
+    # BMP180 barometric pressure sensor
+    qw(
+        bmp180Setup             bmp180Pressure          bmp180Temp
+    ),
+    # Board
+    qw(
+        physPinToGpio           physPinToWpi            piBoard40Pin
+        piBoardId               piGpioLayout            piRP1Model
+        wpiPinToGpio
+    ),
+    # Developer
+    qw(
+        wiringPiGlobalMemoryAccess                      wiringPiUserLevelAccess
+    ),
+    # I2C
+    qw(
+        wiringPiI2CSetup        wiringPiI2CSetupInterface
+        wiringPiI2CRead         wiringPiI2CReadReg8     wiringPiI2CReadReg16
+        wiringPiI2CReadBlockData                        wiringPiI2CRawRead
+        wiringPiI2CWrite        wiringPiI2CWriteReg8    wiringPiI2CWriteReg16
+        wiringPiI2CWriteBlockData                       wiringPiI2CRawWrite
+    ),
+    # Interrupt
+    qw(
+        wiringPiISRStop
+    ),
+    # LCD
+    qw(
+        lcdInit                 lcdCharDef              lcdClear
+        lcdCursor               lcdCursorBlink          lcdDisplay
+        lcdHome                 lcdPosition             lcdPutchar
+        lcdPuts                 lcdSendCommand
+    ),
+    # Pad drive / tone / clock
+    qw(
+        gpioClockSet            pwmToneWrite            setPadDrive
+        setPadDrivePin
+    ),
+    # PWM
+    qw(
+        pwmSetClock             pwmSetMode              pwmSetRange
+        pwmWrite
+    ),
+    # Serial
+    qw(
+        serialOpen              serialDataAvail         serialFlush
+        serialGetchar           serialPutchar           serialPuts
+    ),
+    # Shift register
+    qw(
+        sr595Setup
+    ),
+    # Soft tone
+    qw(
+        softToneCreate          softToneStop            softToneWrite
+    ),
+    # SPI
+    qw(
+        wiringPiSPISetup        wiringPiSPISetupMode    spiDataRW
+        wiringPiSPIGetFd        wiringPiSPIClose
+    ),
+    # Timing
+    qw(
+        delay                   delayMicroseconds       micros
+        millis                  piHiPri                 piMicros64
+    ),
 );
 
-my @wpi_perl_functions = qw(
-    setup           setup_gpio      pull_up_down        read_pin
-    write_pin       pwm_write
-    get_alt         gpio_layout     wpi_to_gpio         phys_to_gpio
-    lcd_init        lcd_home        lcd_clear
-    lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
-    lcd_position    lcd_char_def    lcd_put_char        lcd_puts
-    set_interrupt   interrupt_fd        dispatch_interrupts
-    wait_interrupts interrupt_dropped   stop_interrupt
-    stop_interrupts background_interrupt auto_dispatch_interrupts
-    last_interrupt  interrupt_buffer    background_interrupts
-    run_interrupt_loop                  stop_interrupt_loop
-    worker
-    bmp180_setup    bmp180_pressure     bmp180_temp
-    shift_reg_setup analog_read     analog_write        pin_mode
-    ads1115_setup   spi_setup       spi_data            i2c_setup
-    i2c_interface   i2c_read        i2c_read_byte       i2c_read_word
-    i2c_write       i2c_write_byte  i2c_write_word
-    i2c_read_block  i2c_raw_read    i2c_write_block     i2c_raw_write
-    spi_get_fd      spi_setup_mode  spi_close
-    soft_tone_create                soft_tone_stop      soft_tone_write
-    phys_to_wpi     pin_mode_alt    serial_open         serial_flush
-    serial_put_char serial_puts     serial_data_avail   serial_get_char 
-    serial_close    serial_gets     pwm_set_range       pwm_set_clock
-    pwm_set_mode    wiringpi_version
-    soft_pwm_create soft_pwm_write   soft_pwm_stop       pi_lock
-    pi_unlock       digital_read_byte                    digital_read_byte2
-    digital_write_byte                  digital_write_byte2
-    delay_microseconds                  pi_micros64         pi_hi_pri
-    set_pad_drive   set_pad_drive_pin   pwm_tone_write      gpio_clock_set
-    pi_board_id     pi_board40_pin      pi_rp1_model        get_pin_mode_alt
-    wiringpi_global_memory_access        wiringpi_user_level_access
-    wiringpi_setup_pin_type             wiringpi_setup_gpio_device
-    wiringpi_gpio_device_get_fd
+my @wpi_perl_functions = (
+    # Setup
+    qw(
+        setup                       setup_gpio
+        wiringpi_setup_pin_type     wiringpi_setup_gpio_device
+        wiringpi_gpio_device_get_fd wiringpi_version
+    ),
+    # Pin
+    qw(
+        pin_mode            pin_mode_alt        get_alt
+        get_pin_mode_alt    pull_up_down        read_pin
+        write_pin           digital_read_byte   digital_read_byte2
+        digital_write_byte  digital_write_byte2
+    ),
+    # ADC (analog to digital)
+    qw(
+        ads1115_setup       analog_read         analog_write
+    ),
+    # BMP180 barometric pressure sensor
+    qw(
+        bmp180_setup        bmp180_pressure     bmp180_temp
+    ),
+    # Board
+    qw(
+        gpio_layout         phys_to_gpio        phys_to_wpi
+        pi_board40_pin      pi_board_id         pi_rp1_model
+        wpi_to_gpio
+    ),
+    # Developer
+    qw(
+        wiringpi_global_memory_access           wiringpi_user_level_access
+    ),
+    # I2C
+    qw(
+        i2c_setup           i2c_interface
+        i2c_read            i2c_read_byte       i2c_read_word
+        i2c_read_block      i2c_raw_read
+        i2c_write           i2c_write_byte      i2c_write_word
+        i2c_write_block     i2c_raw_write
+    ),
+    # Interrupt
+    qw(
+        set_interrupt       background_interrupt        background_interrupts
+        auto_dispatch_interrupts                        dispatch_interrupts
+        wait_interrupts     run_interrupt_loop          stop_interrupt
+        stop_interrupts     stop_interrupt_loop         interrupt_fd
+        interrupt_buffer    interrupt_dropped           last_interrupt
+    ),
+    # LCD
+    qw(
+        lcd_init            lcd_char_def        lcd_clear
+        lcd_cursor          lcd_cursor_blink    lcd_display
+        lcd_home            lcd_position        lcd_put_char
+        lcd_puts            lcd_send_cmd
+    ),
+    # Pad drive / tone / clock
+    qw(
+        gpio_clock_set      pwm_tone_write      set_pad_drive
+        set_pad_drive_pin
+    ),
+    # PWM
+    qw(
+        pwm_set_clock       pwm_set_mode        pwm_set_range
+        pwm_write
+    ),
+    # Serial
+    qw(
+        serial_open         serial_close        serial_data_avail
+        serial_flush        serial_get_char     serial_gets
+        serial_put_char     serial_puts
+    ),
+    # Shift register
+    qw(
+        shift_reg_setup
+    ),
+    # Soft PWM
+    qw(
+        soft_pwm_create     soft_pwm_stop       soft_pwm_write
+    ),
+    # Soft tone
+    qw(
+        soft_tone_create    soft_tone_stop      soft_tone_write
+    ),
+    # SPI
+    qw(
+        spi_setup           spi_setup_mode      spi_data
+        spi_get_fd          spi_close
+    ),
+    # Thread / lock
+    qw(
+        pi_lock             pi_unlock
+    ),
+    # Timing
+    qw(
+        delay_microseconds  pi_hi_pri           pi_micros64
+    ),
+    # Worker
+    qw(
+        worker
+    ),
 );
 
 my @wpi_constants = qw(
@@ -1745,20 +1863,109 @@ Exported with the C<:all> tag, or individually.
 
 Perl wrapper functions for the XS functions. Not all of these are direct
 wrappers; several have additional/modified functionality than the wrapped
-versions, but are still 100% compatible.
+versions, but are still 100% compatible. They are grouped below by purpose;
+within each group the names are listed alphabetically, except where a natural
+flow (eg. C<setup> before its variants, or C<lcd_init> before the rest) reads
+better.
 
-    setup           setup_gpio      pull_up_down        read_pin
-    write_pin       pwm_write
-    get_alt         gpio_layout     wpi_to_gpio         phys_to_gpio
-    pwm_set_range   lcd_init        lcd_home            lcd_clear
-    lcd_display     lcd_cursor      lcd_cursor_blink    lcd_send_cmd
-    lcd_position    lcd_char_def    lcd_put_char        lcd_puts
-    set_interrupt   pin_mode        analog_read         analog_write
-    shift_reg_setup bmp180_setup    bmp180_pressure     bmp180_temp
-    ads1115_setup   spi_setup       spi_data            phys_to_wpi
-    serial_open     serial_flush    serial_put_char     serial_puts
-    serial_get_char serial_close    serial_data_avail   pwm_set_clock
-    pwm_set_mode
+  Setup
+
+    setup                       setup_gpio
+    wiringpi_setup_pin_type     wiringpi_setup_gpio_device
+    wiringpi_gpio_device_get_fd wiringpi_version
+
+  Pin
+
+    pin_mode            pin_mode_alt        get_alt
+    get_pin_mode_alt    pull_up_down        read_pin
+    write_pin           digital_read_byte   digital_read_byte2
+    digital_write_byte  digital_write_byte2
+
+  ADC (analog to digital)
+
+    ads1115_setup       analog_read         analog_write
+
+  BMP180 barometric pressure sensor
+
+    bmp180_setup        bmp180_pressure     bmp180_temp
+
+  Board
+
+    gpio_layout         phys_to_gpio        phys_to_wpi
+    pi_board40_pin      pi_board_id         pi_rp1_model
+    wpi_to_gpio
+
+  Developer
+
+    wiringpi_global_memory_access           wiringpi_user_level_access
+
+  I2C
+
+    i2c_setup           i2c_interface
+    i2c_read            i2c_read_byte       i2c_read_word
+    i2c_read_block      i2c_raw_read
+    i2c_write           i2c_write_byte      i2c_write_word
+    i2c_write_block     i2c_raw_write
+
+  Interrupt
+
+    set_interrupt       background_interrupt        background_interrupts
+    auto_dispatch_interrupts                        dispatch_interrupts
+    wait_interrupts     run_interrupt_loop          stop_interrupt
+    stop_interrupts     stop_interrupt_loop         interrupt_fd
+    interrupt_buffer    interrupt_dropped           last_interrupt
+
+  LCD
+
+    lcd_init            lcd_char_def        lcd_clear
+    lcd_cursor          lcd_cursor_blink    lcd_display
+    lcd_home            lcd_position        lcd_put_char
+    lcd_puts            lcd_send_cmd
+
+  Pad drive / tone / clock
+
+    gpio_clock_set      pwm_tone_write      set_pad_drive
+    set_pad_drive_pin
+
+  PWM
+
+    pwm_set_clock       pwm_set_mode        pwm_set_range
+    pwm_write
+
+  Serial
+
+    serial_open         serial_close        serial_data_avail
+    serial_flush        serial_get_char     serial_gets
+    serial_put_char     serial_puts
+
+  Shift register
+
+    shift_reg_setup
+
+  Soft PWM
+
+    soft_pwm_create     soft_pwm_stop       soft_pwm_write
+
+  Soft tone
+
+    soft_tone_create    soft_tone_stop      soft_tone_write
+
+  SPI
+
+    spi_setup           spi_setup_mode      spi_data
+    spi_get_fd          spi_close
+
+  Thread / lock
+
+    pi_lock             pi_unlock
+
+  Timing
+
+    delay_microseconds  pi_hi_pri           pi_micros64
+
+  Worker
+
+    worker
 
 =head1 EXPORT_TAGS
 

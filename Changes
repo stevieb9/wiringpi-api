@@ -256,6 +256,10 @@ Revision history for Perl extension WiringPi::API.
           (WiringPi::API::BackgroundInterrupt, ::BackgroundInterrupts, ::Worker,
           ::WorkerThread) out of API.pm into their own lib files, each with its
           own POD; API.pm now use()s them
+        - Reorganized the @wpi_c_functions and @wpi_perl_functions export lists
+          into labelled groups (setup and pin ops first, then alphabetical),
+          and expanded the EXPORT_OK POD to list every Perl wrapper in the same
+          grouping
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks
