@@ -1,6 +1,6 @@
 =head1 NAME
 
-WiringPi::API::INTERRUPTS - interrupt (ISR) usage examples for WiringPi::API
+WiringPi::API::INTERRUPTS - Interrupt (ISR) usage examples
 
 =head1 DESCRIPTION
 

@@ -1,6 +1,6 @@
 =head1 NAME
 
-WiringPi::API::WORKERS - concurrency & background-worker examples for WiringPi::API
+WiringPi::API::WORKERS - Concurrency & background-worker examples
 
 =head1 DESCRIPTION
 
