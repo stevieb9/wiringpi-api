@@ -39,6 +39,16 @@ use RPi::Const qw(:all);
 require XSLoader;
 XSLoader::load('WiringPi::API', $VERSION);
 
+# The valid interrupt edge triggers. INT_EDGE_SETUP (0) is a setup-only mode,
+# not a real trigger, so it is intentionally excluded. Keyed lookup (rather than
+# numeric comparison) keeps the edge validation warning-free for non-numeric
+# input.
+my %VALID_INT_EDGE = map { $_ => 1 } (
+    INT_EDGE_FALLING,
+    INT_EDGE_RISING,
+    INT_EDGE_BOTH,
+);
+
 require Exporter;
 our @ISA = qw(Exporter);
 
@@ -356,7 +366,7 @@ sub set_interrupt {
         croak "set_interrupt() requires \$pin to be a positive integer";
     }
 
-    if (! defined $edge || $edge !~ /^[123]$/) {
+    if (! defined $edge || ! $VALID_INT_EDGE{$edge}) {
         croak "set_interrupt() \$edge must be INT_EDGE_FALLING (1), " .
               "INT_EDGE_RISING (2) or INT_EDGE_BOTH (3)";
     }
@@ -666,7 +676,7 @@ sub background_interrupt {
         croak "background_interrupt() requires \$pin to be a positive integer";
     }
 
-    if (! defined $edge || $edge !~ /^[123]$/) {
+    if (! defined $edge || ! $VALID_INT_EDGE{$edge}) {
         croak "background_interrupt() \$edge must be INT_EDGE_FALLING (1), " .
             "INT_EDGE_RISING (2) or INT_EDGE_BOTH (3)";
     }
@@ -753,7 +763,7 @@ sub background_interrupts {
         if (! defined $pin || $pin !~ /^\d+$/) {
             croak "background_interrupts() each \$pin must be a positive integer";
         }
-        if (! defined $edge || $edge !~ /^[123]$/) {
+        if (! defined $edge || ! $VALID_INT_EDGE{$edge}) {
             croak "background_interrupts() each \$edge must be INT_EDGE_FALLING " .
                 "(1), INT_EDGE_RISING (2) or INT_EDGE_BOTH (3)";
         }
