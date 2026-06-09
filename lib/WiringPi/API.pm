@@ -17,37 +17,20 @@ use Fcntl qw(
     F_SETSIG
 );
 use POSIX qw(WNOHANG);
+use RPi::Const qw(:all);
 use Scalar::Util qw(blessed);
 
-# The background_interrupt()/background_interrupts()/worker() handle classes.
-# Each is a standalone module; loading the leaves pulls in their base classes.
 use WiringPi::API::BackgroundInterrupt;
 use WiringPi::API::BackgroundInterrupts;
 use WiringPi::API::Worker;
 use WiringPi::API::WorkerThread;
 
-# All constants live in RPi::Const, the single source of truth for the RPi::
-# suite. Importing :all brings every name (including WPI_PIN_BCM / WPI_PIN_WPI
-# for the setup variants and the INT_EDGE_* edge triggers used by the interrupt
-# functions) into this package, so Exporter can re-export them to our callers
-# below. INT_EDGE_SETUP (0) is a setup-only mode, not a real trigger, so
-# set_interrupt() rejects it - the valid triggers are FALLING (1), RISING (2)
-# and BOTH (3).
-
-use RPi::Const qw(:all);
-
 require XSLoader;
 XSLoader::load('WiringPi::API', $VERSION);
 
-# The valid interrupt edge triggers. INT_EDGE_SETUP (0) is a setup-only mode,
-# not a real trigger, so it is intentionally excluded. Keyed lookup (rather than
-# numeric comparison) keeps the edge validation warning-free for non-numeric
-# input.
-my %VALID_INT_EDGE = map { $_ => 1 } (
-    INT_EDGE_FALLING,
-    INT_EDGE_RISING,
-    INT_EDGE_BOTH,
-);
+use constant {
+    INTERRUPT_LOOP_TIMEOUT => 1000,
+};
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -81,7 +64,7 @@ my @wpi_c_functions = (
     ),
     # Developer
     qw(
-        wiringPiGlobalMemoryAccess                      wiringPiUserLevelAccess
+        wiringPiGlobalMemoryAccess  wiringPiUserLevelAccess
     ),
     # I2C
     qw(
@@ -136,7 +119,6 @@ my @wpi_c_functions = (
         millis                  piHiPri                 piMicros64
     ),
 );
-
 my @wpi_perl_functions = (
     # Setup
     qw(
@@ -238,11 +220,6 @@ my @wpi_perl_functions = (
         worker
     ),
 );
-
-# Re-export every constant RPi::Const provides (imported via :all above) so
-# our :constants / :all tags continue to yield WPI_PIN_* and INT_EDGE_*, plus
-# the rest of the suite's shared GPIO constants. RPi::Const is the single
-# source of truth - nothing is defined here.
 my @wpi_constants = @RPi::Const::EXPORT_OK;
 
 our @EXPORT_OK;
@@ -255,36 +232,45 @@ $EXPORT_TAGS{perl} = [@wpi_perl_functions];
 $EXPORT_TAGS{constants} = [@wpi_constants];
 $EXPORT_TAGS{all} = [@wpi_c_functions, @wpi_perl_functions, @wpi_constants];
 
+# Valid interrupt edge types
+
+my %VALID_INT_EDGE = map { $_ => 1 } (
+    INT_EDGE_FALLING,
+    INT_EDGE_RISING,
+    INT_EDGE_BOTH,
+);
+
 # Interrupt dispatch state (per-interpreter). The callback registry lives here
 # in Perl - the wiringPi ISR thread only writes event records to the self-pipe
 # (see API.xs); dispatch runs callbacks in whichever interpreter services the fd
 
-my %_interrupt_cb;                  # pin => CODE ref
-my $_interrupt_fh;                  # cached read handle (dup of interrupt_fd())
-my $_interrupt_fh_fd;               # the fd $_interrupt_fh was opened on
-my $_last_interrupt;                # hashref of the most recently dispatched event
+my %_interrupt_cb;      # Pin => CODE ref
+my $_interrupt_fh;      # Cached read handle (dup of interrupt_fd())
+my $_interrupt_fh_fd;   # The fd $_interrupt_fh was opened on
+my $_last_interrupt;    # Hashref of the most recently dispatched event
 
 # background_interrupt() state - handles of forked children, reaped at exit
+
 my @_bg_children;
 
 # auto_dispatch_interrupts() state. When enabled, the interrupt read fd is put
 # into async (SIGIO) mode and $SIG{IO} drains+dispatches at Perl safe points
 
-my $_auto_dispatch      = 0;        # is auto-dispatch currently enabled?
-my $_auto_dispatch_prev;            # prior handler for the chosen signal
-my $_auto_dispatch_fd;              # the fd we wired O_ASYNC/F_SETOWN onto
-my $_auto_dispatch_sig  = 'IO';     # delivery signal name (default SIGIO)
-my $_auto_dispatch_signum;          # its number (for F_SETSIG; 0 = default SIGIO)
+my $_auto_dispatch      = 0;    # Is auto-dispatch currently enabled?
+my $_auto_dispatch_prev;        # Prior handler for the chosen signal
+my $_auto_dispatch_fd;          # The fd we wired O_ASYNC/F_SETOWN onto
+my $_auto_dispatch_sig  = 'IO'; # Delivery signal name (default SIGIO)
+my $_auto_dispatch_signum;      # Its number (for F_SETSIG; 0 = default SIGIO)
 
-my %_sig_num;                       # signal name -> number, lazily built
+my %_sig_num;                   # Signal name -> number, lazily built
 
 # interrupt_buffer() state. A requested pipe capacity is remembered and applied
 # whenever the self-pipe is (re)created, so it can be set before arming
 
-my $_interrupt_buffer_req;          # requested pipe size in bytes, or undef
-my $_interrupt_buffer_fd;           # the fd we last applied the size to
+my $_interrupt_buffer_req;      # Requested pipe size in bytes, or undef
+my $_interrupt_buffer_fd;       # The fd we last applied the size to
 
-# run_interrupt_loop() state - cleared by stop_interrupt_loop() to break out.
+# run_interrupt_loop() state - cleared by stop_interrupt_loop() to break out
 
 my $_run_loop = 0;
 
@@ -383,7 +369,7 @@ sub set_interrupt {
 
     # The callback stays in Perl, keyed by the user's pin; the ISR thread only
     # writes {pin, edge, ts} records to the self-pipe. dispatch_interrupts()
-    # fans them back out to these callbacks in the consuming interpreter.
+    # fans them back out to these callbacks in the consuming interpreter
 
     $_interrupt_cb{$pin} = $callback;
 
@@ -508,7 +494,7 @@ sub stop_interrupts {
     $_auto_dispatch_fd     = undef;
     $_interrupt_buffer_fd  = undef;
 
-    # Forget the last event - the interrupt subsystem is torn down.
+    # Forget the last event - the interrupt subsystem is torn down
 
     $_last_interrupt = undef;
 
@@ -519,7 +505,7 @@ sub last_interrupt {
 
     return undef if ! defined $_last_interrupt;
 
-    # Return a copy so callers can't mutate our internal state.
+    # Return a copy so callers can't mutate our internal state
 
     return { %$_last_interrupt };
 }
@@ -531,12 +517,13 @@ sub interrupt_buffer {
     my $fh = _interrupt_fh();
 
     if (! defined $bytes) {
-        # Getter: the live pipe capacity, or the pending request if not armed.
+        # Getter: the live pipe capacity, or the pending request if not armed
         return $_interrupt_buffer_req if ! defined $fh;
         return fcntl($fh, F_GETPIPE_SZ, 0);
     }
 
-    # Setter.
+    # Setter
+
     if ($bytes !~ /^\d+$/ || $bytes == 0) {
         croak "interrupt_buffer() requires a positive integer size in bytes";
     }
@@ -564,7 +551,7 @@ sub run_interrupt_loop {
 
     my ($timeout_ms, $max) = @_;
 
-    $timeout_ms = 1000 if ! defined $timeout_ms;
+    $timeout_ms = INTERRUPT_LOOP_TIMEOUT if ! defined $timeout_ms;
 
     if ($timeout_ms !~ /^\d+$/ || $timeout_ms == 0) {
         croak "run_interrupt_loop() \$timeout_ms must be a positive integer";
@@ -592,6 +579,7 @@ sub run_interrupt_loop {
     }
 
     $_run_loop = 0;
+
     return $total;
 }
 sub stop_interrupt_loop {
@@ -804,7 +792,7 @@ sub background_interrupts {
             set_interrupt($pin, $edge, $cb, $deb);
         }
 
-        _bg_shared_loop($ctrl_r, \%table);
+        _background_interrupt_shared_loop($ctrl_r, \%table);
         exit 0;
     }
 
@@ -820,10 +808,86 @@ sub background_interrupts {
     return $handle;
 }
 
-# Child dispatch loop for background_interrupts(): select over the interrupt fd
-# and the control pipe; dispatch edges, and apply arm/disarm commands. Returns
-# (and the caller exits) when the parent closes the control pipe.
-sub _bg_shared_loop {
+sub _apply_interrupt_buffer {
+    # Apply a pending pipe-size request to the (possibly newly created) pipe.
+    # Best-effort: the explicit interrupt_buffer() setter reports errors; here
+    # we only re-apply the remembered size, and skip if already applied.
+    my $fh = _interrupt_fh();
+    return if ! defined $fh;
+
+    my $fd = fileno($fh);
+    return if defined $_interrupt_buffer_fd && $_interrupt_buffer_fd == $fd;
+
+    fcntl($fh, F_SETPIPE_SZ, $_interrupt_buffer_req);
+    $_interrupt_buffer_fd = $fd;
+
+    return;
+}
+sub _auto_dispatch_apply {
+    # Put the interrupt read fd into async (SIGIO) mode. No-op until the pipe
+    # exists, or if we've already wired this exact fd.
+    my $fh = _interrupt_fh();
+    return 0 if ! defined $fh;
+
+    my $fd = fileno($fh);
+    return 1 if defined $_auto_dispatch_fd && $_auto_dispatch_fd == $fd;
+
+    # Force a purely-numeric owner pid: if $$ has ever been stringified, Perl's
+    # fcntl would pass it as a pointer and the kernel reads garbage (ESRCH).
+    my $owner = 0 + $$;
+
+    defined fcntl($fh, F_SETOWN, $owner)
+        or croak "auto_dispatch_interrupts() F_SETOWN failed: $!";
+
+    # Choose the delivery signal: 0 = the default (SIGIO), otherwise the chosen
+    # signal's number so O_ASYNC raises that instead. Force numeric - a string
+    # would be passed to fcntl as a pointer (EINVAL).
+    my $setsig = ($_auto_dispatch_sig ne 'IO') ? 0 + $_auto_dispatch_signum : 0;
+    defined fcntl($fh, F_SETSIG, $setsig)
+        or croak "auto_dispatch_interrupts() F_SETSIG failed: $!";
+
+    my $flags = fcntl($fh, F_GETFL, 0);
+    defined $flags
+        or croak "auto_dispatch_interrupts() F_GETFL failed: $!";
+
+    defined fcntl($fh, F_SETFL, $flags | O_ASYNC)
+        or croak "auto_dispatch_interrupts() F_SETFL O_ASYNC failed: $!";
+
+    $_auto_dispatch_fd = $fd;
+
+    # Drain anything that arrived before async delivery was armed.
+    dispatch_interrupts();
+
+    return 1;
+}
+sub _auto_dispatch_clear {
+    # Remove async mode from the interrupt read fd, if we wired it.
+    return 0 if ! defined $_interrupt_fh;
+
+    my $flags = fcntl($_interrupt_fh, F_GETFL, 0);
+    if (defined $flags) {
+        fcntl($_interrupt_fh, F_SETFL, $flags & ~O_ASYNC);
+    }
+    fcntl($_interrupt_fh, F_SETSIG, 0);   # back to the default signal
+
+    $_auto_dispatch_fd = undef;
+
+    return 1;
+}
+sub _background_interrupt_shared_cmd {
+    my ($line, $table) = @_;
+
+    if ($line =~ /^arm (\d+)$/) {
+        my $spec = $table->{$1} or return;
+        set_interrupt($1, @$spec);
+    }
+    elsif ($line =~ /^disarm (\d+)$/) {
+        stop_interrupt($1);
+    }
+
+    return;
+}
+sub _background_interrupt_shared_loop {
     my ($ctrl, $table) = @_;
 
     my $cmd_buf = "";
@@ -849,7 +913,7 @@ sub _bg_shared_loop {
 
             $cmd_buf .= $chunk;
             while ($cmd_buf =~ s/^([^\n]*)\n//) {
-                _bg_shared_cmd($1, $table);
+                _background_interrupt_shared_cmd($1, $table);
             }
         }
 
@@ -861,19 +925,38 @@ sub _bg_shared_loop {
     stop_interrupts();
     return;
 }
-sub _bg_shared_cmd {
-    my ($line, $table) = @_;
+sub _interrupt_fh {
+    my $fd = interrupt_fd();
+    return undef if $fd < 0;
 
-    if ($line =~ /^arm (\d+)$/) {
-        my $spec = $table->{$1} or return;
-        set_interrupt($1, @$spec);
-    }
-    elsif ($line =~ /^disarm (\d+)$/) {
-        stop_interrupt($1);
+    # Re-open if the pipe was torn down and re-armed onto a different fd. A dup
+    # ("<&") gives us our own fd sharing the pipe's non-blocking description, so
+    # closing this handle never closes the C-side interrupt_fd().
+    if (! defined $_interrupt_fh || ! defined $_interrupt_fh_fd
+        || $_interrupt_fh_fd != $fd) {
+        close $_interrupt_fh if defined $_interrupt_fh;
+        open($_interrupt_fh, "<&", $fd)
+            or croak "could not access the interrupt fd ($fd): $!";
+        $_interrupt_fh_fd = $fd;
     }
 
-    return;
+    return $_interrupt_fh;
 }
+sub _signal_number {
+    my ($name) = @_;
+
+    if (! %_sig_num) {
+        require Config;
+        my @names = split ' ', $Config::Config{sig_name};
+        my @nums  = split ' ', $Config::Config{sig_num};
+        @_sig_num{@names} = @nums;
+    }
+
+    my $num = $_sig_num{$name};
+    return defined $num ? 0 + $num : undef;
+}
+
+# Thread / async worker
 
 sub worker {
     shift if @_ && blessed($_[0]);   # drop $self on method calls
@@ -1011,111 +1094,6 @@ sub worker {
     push @_bg_children, $handle;
 
     return $handle;
-}
-
-# Reap any still-running background children at process exit, so a forgotten
-# stop() can't leak a zombie or orphan a handler.
-END {
-    for my $handle (@_bg_children) {
-        $handle->stop if $handle && $handle->running;
-    }
-}
-
-sub _auto_dispatch_apply {
-    # Put the interrupt read fd into async (SIGIO) mode. No-op until the pipe
-    # exists, or if we've already wired this exact fd.
-    my $fh = _interrupt_fh();
-    return 0 if ! defined $fh;
-
-    my $fd = fileno($fh);
-    return 1 if defined $_auto_dispatch_fd && $_auto_dispatch_fd == $fd;
-
-    # Force a purely-numeric owner pid: if $$ has ever been stringified, Perl's
-    # fcntl would pass it as a pointer and the kernel reads garbage (ESRCH).
-    my $owner = 0 + $$;
-
-    defined fcntl($fh, F_SETOWN, $owner)
-        or croak "auto_dispatch_interrupts() F_SETOWN failed: $!";
-
-    # Choose the delivery signal: 0 = the default (SIGIO), otherwise the chosen
-    # signal's number so O_ASYNC raises that instead. Force numeric - a string
-    # would be passed to fcntl as a pointer (EINVAL).
-    my $setsig = ($_auto_dispatch_sig ne 'IO') ? 0 + $_auto_dispatch_signum : 0;
-    defined fcntl($fh, F_SETSIG, $setsig)
-        or croak "auto_dispatch_interrupts() F_SETSIG failed: $!";
-
-    my $flags = fcntl($fh, F_GETFL, 0);
-    defined $flags
-        or croak "auto_dispatch_interrupts() F_GETFL failed: $!";
-
-    defined fcntl($fh, F_SETFL, $flags | O_ASYNC)
-        or croak "auto_dispatch_interrupts() F_SETFL O_ASYNC failed: $!";
-
-    $_auto_dispatch_fd = $fd;
-
-    # Drain anything that arrived before async delivery was armed.
-    dispatch_interrupts();
-
-    return 1;
-}
-sub _apply_interrupt_buffer {
-    # Apply a pending pipe-size request to the (possibly newly created) pipe.
-    # Best-effort: the explicit interrupt_buffer() setter reports errors; here
-    # we only re-apply the remembered size, and skip if already applied.
-    my $fh = _interrupt_fh();
-    return if ! defined $fh;
-
-    my $fd = fileno($fh);
-    return if defined $_interrupt_buffer_fd && $_interrupt_buffer_fd == $fd;
-
-    fcntl($fh, F_SETPIPE_SZ, $_interrupt_buffer_req);
-    $_interrupt_buffer_fd = $fd;
-
-    return;
-}
-sub _auto_dispatch_clear {
-    # Remove async mode from the interrupt read fd, if we wired it.
-    return 0 if ! defined $_interrupt_fh;
-
-    my $flags = fcntl($_interrupt_fh, F_GETFL, 0);
-    if (defined $flags) {
-        fcntl($_interrupt_fh, F_SETFL, $flags & ~O_ASYNC);
-    }
-    fcntl($_interrupt_fh, F_SETSIG, 0);   # back to the default signal
-
-    $_auto_dispatch_fd = undef;
-
-    return 1;
-}
-sub _signal_number {
-    my ($name) = @_;
-
-    if (! %_sig_num) {
-        require Config;
-        my @names = split ' ', $Config::Config{sig_name};
-        my @nums  = split ' ', $Config::Config{sig_num};
-        @_sig_num{@names} = @nums;
-    }
-
-    my $num = $_sig_num{$name};
-    return defined $num ? 0 + $num : undef;
-}
-sub _interrupt_fh {
-    my $fd = interrupt_fd();
-    return undef if $fd < 0;
-
-    # Re-open if the pipe was torn down and re-armed onto a different fd. A dup
-    # ("<&") gives us our own fd sharing the pipe's non-blocking description, so
-    # closing this handle never closes the C-side interrupt_fd().
-    if (! defined $_interrupt_fh || ! defined $_interrupt_fh_fd
-        || $_interrupt_fh_fd != $fd) {
-        close $_interrupt_fh if defined $_interrupt_fh;
-        open($_interrupt_fh, "<&", $fd)
-            or croak "could not access the interrupt fd ($fd): $!";
-        $_interrupt_fh_fd = $fd;
-    }
-
-    return $_interrupt_fh;
 }
 
 # system functions
@@ -1814,6 +1792,16 @@ sub bmp180_pressure {
     # return kPa
     return bmp180Pressure($pin) / 100;
 }
+
+END {
+    # Reap any still-running background children at process exit, so a forgotten
+    # stop() can't leak a zombie or orphan a handler.
+
+    for my $handle (@_bg_children) {
+        $handle->stop if $handle && $handle->running;
+    }
+}
+
 sub _vim{1;};
 
 1;
@@ -1965,7 +1953,7 @@ better.
 
 =head1 EXPORT_TAGS
 
-See L<EXPORT_OK>
+See L</EXPORT_OK>
 
 =head2 :all
 
