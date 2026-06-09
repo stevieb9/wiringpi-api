@@ -249,6 +249,9 @@ Revision history for Perl extension WiringPi::API.
           background_interrupt({results => 1}) contract). The methods were only
           inherited from the lifecycle base class, never part of the documented
           plural surface
+        - t/pod-coverage.t whitelists the undocumented C-wrapper subs via
+          Pod::Coverage trustme so the author test passes; remove each name as
+          its POD is written
 
 2.3616  2018-03-27
         - merged PR#34; Ensure that one test always runs if PI_BOARD (Thanks
