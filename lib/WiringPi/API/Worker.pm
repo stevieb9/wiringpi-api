@@ -3,6 +3,8 @@ package WiringPi::API::Worker;
 use strict;
 use warnings;
 
+use WiringPi::API::BackgroundInterrupt;
+
 # Handle returned by worker(). Owns one forked child that runs the user body in
 # a loop. The pid/running/stop/DESTROY lifecycle (TERM -> poll -> KILL -> reap)
 # is mechanism-agnostic, so it is inherited wholesale from BackgroundInterrupt,

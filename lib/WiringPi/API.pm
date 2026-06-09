@@ -19,6 +19,13 @@ use Fcntl qw(
 use POSIX qw(WNOHANG);
 use Scalar::Util qw(blessed);
 
+# The background_interrupt()/background_interrupts()/worker() handle classes.
+# Each is a standalone module; loading the leaves pulls in their base classes.
+use WiringPi::API::BackgroundInterrupt;
+use WiringPi::API::BackgroundInterrupts;
+use WiringPi::API::Worker;
+use WiringPi::API::WorkerThread;
+
 # WPIPinType pin-numbering constants for the wiringpi_setup_pin_type() /
 # wiringpi_setup_gpio_device() variants.
 
@@ -1694,106 +1701,6 @@ sub bmp180_pressure {
     return bmp180Pressure($pin) / 100;
 }
 sub _vim{1;};
-
-# Handle returned by background_interrupt(). Owns one forked child that arms the
-# interrupt and runs the callback on each edge; stop() reaps it.
-
-package WiringPi::API::BackgroundInterrupt;
-
-use POSIX qw(WNOHANG);
-
-sub _new {
-    my ($class, $pid, $results_fh) = @_;
-    return bless { pid => $pid, running => 1, results_fh => $results_fh }, $class;
-}
-sub pid {
-    return $_[0]->{pid};
-}
-sub fh {
-    # The results read handle (for select/IO::Select), or undef if not enabled.
-    return $_[0]->{results_fh};
-}
-sub read {
-    # Non-blocking drain of the results channel: returns the next value the
-    # handler reported, or undef if none is ready (or the channel is closed).
-    my ($self) = @_;
-
-    my $fh = $self->{results_fh};
-    return undef if ! defined $fh;
-
-    my $rin = "";
-    vec($rin, fileno($fh), 1) = 1;
-    my $nfound = select(my $rout = $rin, undef, undef, 0);
-    return undef if ! $nfound || $nfound < 0;
-
-    # One length-framed record is present and was written atomically by the
-    # single child, so reading it through won't block.
-    my $len_buf = _read_exact($fh, 4);
-    return undef if ! defined $len_buf;
-
-    return _read_exact($fh, unpack("N", $len_buf));
-}
-sub _read_exact {
-    my ($fh, $n) = @_;
-
-    my $buf = "";
-    while (length($buf) < $n) {
-        my $got = sysread($fh, my $chunk, $n - length($buf));
-        return undef if ! defined $got || $got == 0;
-        $buf .= $chunk;
-    }
-
-    return $buf;
-}
-sub running {
-    my ($self) = @_;
-
-    return 0 if ! $self->{running};
-
-    # reap-if-exited so running() reflects reality without blocking
-    my $reaped = waitpid($self->{pid}, WNOHANG);
-    if ($reaped == $self->{pid} || $reaped == -1) {
-        $self->{running} = 0;
-        return 0;
-    }
-
-    return 1;
-}
-sub stop {
-    my ($self) = @_;
-
-    return 1 if ! $self->{running};         # idempotent
-
-    my $pid = $self->{pid};
-    kill 'TERM', $pid;
-
-    # poll briefly for a clean exit, then escalate
-    for (1 .. 50) {
-        my $reaped = waitpid($pid, WNOHANG);
-        if ($reaped == $pid || $reaped == -1) {
-            $self->{running} = 0;
-            return 1;
-        }
-        select(undef, undef, undef, 0.01);  # 10ms
-    }
-
-    kill 'KILL', $pid;
-    waitpid($pid, 0);
-    $self->{running} = 0;
-
-    return 1;
-}
-sub DESTROY {
-    my ($self) = @_;
-    $self->stop if $self->{running};
-}
-
-# The handle classes returned by background_interrupts() and worker()
-# live in their own files; load them so their @ISA resolves to the
-# WiringPi::API::BackgroundInterrupt base class defined above.
-require WiringPi::API::BackgroundInterrupts;
-require WiringPi::API::Worker;
-require WiringPi::API::WorkerThread;
 
 1;
 __END__

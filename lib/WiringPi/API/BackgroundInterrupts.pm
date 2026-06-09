@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Carp qw(croak);
+use WiringPi::API::BackgroundInterrupt;
 
 # Handle for background_interrupts() - one shared child servicing many pins.
 # Inherits pid/running/stop/DESTROY; adds arm/disarm over the control pipe.

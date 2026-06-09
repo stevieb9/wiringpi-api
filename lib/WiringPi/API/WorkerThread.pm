@@ -3,6 +3,8 @@ package WiringPi::API::WorkerThread;
 use strict;
 use warnings;
 
+use WiringPi::API::Worker;
+
 # Handle returned by worker() under {mechanism => 'thread'}. The thread
 # lifecycle is nothing like a fork's (no pid, no signal/waitpid), so this
 # subclass overrides pid/running/stop/DESTROY: stop() flips the shared flag and
