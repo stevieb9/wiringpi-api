@@ -1183,18 +1183,17 @@ sub pin_mode_alt {
     shift if @_ == 3;
     my ($pin, $alt) = @_;
 
-    if (! grep {$alt == $_} 0..7){
-        croak "pin_mode_alt() requires 0-7 as a param";
+    # The Broadcom SoC (Pi 0-4) takes a 3-bit function select (0-7). The RP1
+    # chip on the Pi 5 adds ALT6-ALT8 (8-10), so widen the range there. See the
+    # POD for the per-SoC differences in what each value actually selects.
+    my $max = pi_rp1_model() ? 10 : 7;
+
+    if (! grep {$alt == $_} 0 .. $max){
+        croak "pin_mode_alt() requires 0-$max as a param";
     }
 
-    # 0     INPUT
-    # 1     OUTPUT
-    # 4     ALT0
-    # 5     ALT1
-    # 6     ALT2
-    # 7     ALT3
-    # 3     ALT4
-    # 2     ALT5
+    # Legacy (Broadcom) value -> mode:
+    # 0 INPUT, 1 OUTPUT, 4 ALT0, 5 ALT1, 6 ALT2, 7 ALT3, 3 ALT4, 2 ALT5
 
     pinModeAlt($pin, $alt);
 }
@@ -2150,6 +2149,35 @@ C<setup*()> routine you used.
 
 Mandatory, Integer: The mode you want to put the pin into. See the list above
 for the relevant values for this parameter.
+
+=head3 Raspberry Pi 5 (RP1) differences
+
+On the Pi 5 the GPIO is driven by the RP1 chip rather than the Broadcom SoC, and
+its alternate-function map is B<completely different> from earlier Pis. The
+C<$alt> B<values> above are unchanged - wiringPi remaps them internally - but
+what each mode B<selects> is not: C<ALT0>..C<ALT5> route entirely different
+peripherals on the Pi 5 than they do on a Pi 0-4. Consult the RP1 datasheet (or
+the C<pinctrl> tool) for your Pi 5, B<not> the BCM2835 ALT tables, to know which
+function a given value actually enables.
+
+Two further specifics on the Pi 5:
+
+=over 4
+
+=item *
+
+C<INPUT> (C<0>) and C<OUTPUT> (C<1>) both select the RP1 GPIO (C<SYS_RIO>)
+function; the in/out direction itself is set separately (eg. via C<pin_mode()>),
+not by the alt value.
+
+=item *
+
+RP1 adds three more alternate functions - C<ALT6>, C<ALT7> and C<ALT8> (values
+C<8>, C<9> and C<10>). These are accepted B<only> on a Pi 5; on a Pi 0-4 the
+valid range stays C<0-7> and passing C<8>-C<10> croaks. The Pi 5 is detected via
+C<pi_rp1_model()>, so a C<setup*()> routine must have run first.
+
+=back
 
 =head2 read_pin($pin);
 
@@ -4062,6 +4090,10 @@ ADC pin C<A3> would be C<503>.
 =head2 pinModeAlt(int pin, int mode)
 
 Undocumented function that allows any pin to be set to any mode.
+
+The alternate-function map differs between the Broadcom SoC (Pi 0-4) and the RP1
+chip on the Pi 5; see L</pin_mode_alt($pin, $alt)> for the mode values and the
+per-SoC differences in what each one selects.
 
 Parameters:
 
