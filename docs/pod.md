@@ -1,3 +1,173 @@
+# TABLE OF CONTENTS
+
+- [NAME](#name)
+- [SYNOPSIS](#synopsis)
+- [EXAMPLES](#examples)
+  - [Output - blink an LED](#output---blink-an-led)
+  - [Input - read a button](#input---read-a-button)
+  - [Background interrupt - blink an LED on each button press](#background-interrupt---blink-an-led-on-each-button-press)
+- [DESCRIPTION](#description)
+- [EXPORT_OK](#export_ok)
+- [EXPORT_TAGS](#export_tags)
+  - [:all](#all)
+  - [:perl](#perl)
+  - [:wiringPi](#wiringpi)
+  - [:constants](#constants)
+- [FUNCTION TABLE OF CONTENTS](#function-table-of-contents)
+  - [CORE](#core)
+  - [BOARD](#board)
+  - [LCD](#lcd)
+  - [INTERRUPT](#interrupt)
+  - [CONCURRENCY / BACKGROUND WORKERS](#concurrency--background-workers)
+  - [ANALOG TO DIGITAL CONVERTER](#analog-to-digital-converter)
+  - [SHIFT REGISTER](#shift-register)
+  - [SERIAL](#serial)
+  - [I2C](#i2c)
+  - [SPI](#spi)
+  - [BAROMETRIC SENSOR](#barometric-sensor)
+- [CORE FUNCTIONS](#core-functions)
+  - [new()](#new)
+  - [setup()](#setup)
+  - [setup_gpio()](#setup_gpio)
+  - [wiringpi_setup_pin_type($pin_type)](#wiringpi_setup_pin_typepin_type)
+  - [wiringpi_setup_gpio_device($pin_type)](#wiringpi_setup_gpio_devicepin_type)
+  - [wiringpi_gpio_device_get_fd()](#wiringpi_gpio_device_get_fd)
+  - [wiringpi_version()](#wiringpi_version)
+  - [pin_mode($pin, $mode)](#pin_modepin-mode)
+  - [pin_mode_alt($pin, $alt)](#pin_mode_altpin-alt)
+    - [Raspberry Pi 5 (RP1) differences](#raspberry-pi-5-rp1-differences)
+  - [read_pin($pin);](#read_pinpin)
+  - [write_pin($pin, $state)](#write_pinpin-state)
+  - [analog_read($pin);](#analog_readpin)
+  - [analog_write($pin, $value)](#analog_writepin-value)
+  - [pull_up_down($pin, $direction)](#pull_up_downpin-direction)
+  - [pwm_write($pin, $value)](#pwm_writepin-value)
+  - [get_alt($pin)](#get_altpin)
+  - [digital_read_byte()](#digital_read_byte)
+  - [digital_read_byte2()](#digital_read_byte2)
+  - [digital_write_byte($value)](#digital_write_bytevalue)
+  - [digital_write_byte2($value)](#digital_write_byte2value)
+- [BOARD FUNCTIONS](#board-functions)
+  - [gpio_layout()](#gpio_layout)
+  - [wpi_to_gpio($pin_num)](#wpi_to_gpiopin_num)
+  - [phys_to_gpio($pin_num)](#phys_to_gpiopin_num)
+  - [phys_to_wpi($pin_num)](#phys_to_wpipin_num)
+  - [pwm_set_range($range)](#pwm_set_rangerange)
+  - [pwm_set_clock($divisor)](#pwm_set_clockdivisor)
+  - [pwm_set_mode($mode)](#pwm_set_modemode)
+- [SOFT PWM FUNCTIONS](#soft-pwm-functions)
+  - [soft_pwm_create($pin, $value, $range)](#soft_pwm_createpin-value-range)
+  - [soft_pwm_write($pin, $value)](#soft_pwm_writepin-value)
+  - [soft_pwm_stop($pin)](#soft_pwm_stoppin)
+- [SOFT TONE FUNCTIONS](#soft-tone-functions)
+  - [soft_tone_create($pin)](#soft_tone_createpin)
+  - [soft_tone_write($pin, $freq)](#soft_tone_writepin-freq)
+  - [soft_tone_stop($pin)](#soft_tone_stoppin)
+- [THREAD/LOCK FUNCTIONS](#threadlock-functions)
+  - [pi_lock($key)](#pi_lockkey)
+  - [pi_unlock($key)](#pi_unlockkey)
+- [TIMING FUNCTIONS](#timing-functions)
+  - [delay($ms)](#delayms)
+  - [delay_microseconds($us)](#delay_microsecondsus)
+  - [millis()](#millis)
+  - [micros()](#micros)
+  - [pi_micros64()](#pi_micros64)
+  - [pi_hi_pri($priority)](#pi_hi_pripriority)
+- [PAD DRIVE / TONE / CLOCK FUNCTIONS](#pad-drive--tone--clock-functions)
+  - [set_pad_drive($group, $value)](#set_pad_drivegroup-value)
+  - [set_pad_drive_pin($pin, $value)](#set_pad_drive_pinpin-value)
+  - [pwm_tone_write($pin, $freq)](#pwm_tone_writepin-freq)
+  - [gpio_clock_set($pin, $freq)](#gpio_clock_setpin-freq)
+- [BOARD IDENTITY FUNCTIONS](#board-identity-functions)
+  - [pi_board_id()](#pi_board_id)
+  - [pi_board40_pin()](#pi_board40_pin)
+  - [pi_rp1_model()](#pi_rp1_model)
+  - [get_pin_mode_alt($pin)](#get_pin_mode_altpin)
+  - [wiringpi_global_memory_access()](#wiringpi_global_memory_access)
+  - [wiringpi_user_level_access()](#wiringpi_user_level_access)
+- [LCD FUNCTIONS](#lcd-functions)
+  - [lcd_init(%args)](#lcd_initargs)
+  - [lcd_home($fd)](#lcd_homefd)
+  - [lcd_clear($fd)](#lcd_clearfd)
+  - [lcd_display($fd, $state)](#lcd_displayfd-state)
+  - [lcd_cursor($fd, $state)](#lcd_cursorfd-state)
+  - [lcd_cursor_blink($fd, $state)](#lcd_cursor_blinkfd-state)
+  - [lcd_send_cmd($fd, $command)](#lcd_send_cmdfd-command)
+  - [lcd_position($fd, $x, $y)](#lcd_positionfd-x-y)
+  - [lcd_char_def($fd, $index, $data)](#lcd_char_deffd-index-data)
+  - [lcd_put_char($fd, $char)](#lcd_put_charfd-char)
+  - [lcd_puts($fd, $string)](#lcd_putsfd-string)
+- [INTERRUPT FUNCTIONS](#interrupt-functions)
+  - [set_interrupt($pin, $edge, $callback, $debounce_us)](#set_interruptpin-edge-callback-debounce_us)
+  - [dispatch_interrupts()](#dispatch_interrupts)
+  - [wait_interrupts($timeout_ms)](#wait_interruptstimeout_ms)
+  - [interrupt_fd()](#interrupt_fd)
+  - [interrupt_dropped()](#interrupt_dropped)
+  - [interrupt_buffer($bytes)](#interrupt_bufferbytes)
+  - [run_interrupt_loop($timeout_ms, $max)](#run_interrupt_looptimeout_ms-max)
+  - [stop_interrupt_loop()](#stop_interrupt_loop)
+  - [last_interrupt()](#last_interrupt)
+  - [stop_interrupt($pin)](#stop_interruptpin)
+  - [stop_interrupts()](#stop_interrupts)
+  - [auto_dispatch_interrupts($bool, $signal)](#auto_dispatch_interruptsbool-signal)
+  - [background_interrupt($pin, $edge, $callback, $debounce_us)](#background_interruptpin-edge-callback-debounce_us)
+  - [background_interrupts([$pin, $edge, $callback, $debounce_us], ...)](#background_interruptspin-edge-callback-debounce_us-)
+    - [Example - single-threaded event loop (any Perl)](#example---single-threaded-event-loop-any-perl)
+    - [Example - background handling via fork](#example---background-handling-via-fork)
+    - [Example - hands-off in-process handling (auto_dispatch_interrupts)](#example---hands-off-in-process-handling-auto_dispatch_interrupts)
+    - [Example - background process (background_interrupt)](#example---background-process-background_interrupt)
+- [CONCURRENCY / BACKGROUND WORKERS](#concurrency--background-workers-1)
+  - [worker(\&body, \%opts)](#workerbody-opts)
+  - [The worker handle](#the-worker-handle)
+  - [Periodic sampler handing data back to main](#periodic-sampler-handing-data-back-to-main)
+  - [Shared-memory mechanism (opt-in ithread)](#shared-memory-mechanism-opt-in-ithread)
+- [ADC FUNCTIONS](#adc-functions)
+  - [ADS1115 MODEL](#ads1115-model)
+    - [ads1115_setup($pin_base, $addr)](#ads1115_setuppin_base-addr)
+- [SHIFT REGISTER FUNCTIONS](#shift-register-functions)
+  - [shift_reg_setup](#shift_reg_setup)
+- [SERIAL FUNCTIONS](#serial-functions)
+  - [serial_open($device, $baud)](#serial_opendevice-baud)
+  - [serial_close($fd)](#serial_closefd)
+  - [serial_flush($fd)](#serial_flushfd)
+  - [serial_data_avail($fd)](#serial_data_availfd)
+  - [serial_get_char($fd)](#serial_get_charfd)
+  - [serial_put_char($fd, $char)](#serial_put_charfd-char)
+  - [serial_puts($fd, $string)](#serial_putsfd-string)
+  - [serial_gets($fd, $nbytes)](#serial_getsfd-nbytes)
+- [I2C FUNCTIONS](#i2c-functions)
+  - [i2c_setup($addr)](#i2c_setupaddr)
+  - [i2c_interface($device, $addr)](#i2c_interfacedevice-addr)
+  - [i2c_read($fd)](#i2c_readfd)
+  - [i2c_read_byte($fd, $reg)](#i2c_read_bytefd-reg)
+  - [i2c_read_word($fd, $reg)](#i2c_read_wordfd-reg)
+  - [i2c_write($fd, $data)](#i2c_writefd-data)
+  - [i2c_write_byte($fd, $reg, $data)](#i2c_write_bytefd-reg-data)
+  - [i2c_write_word($fd, $reg, $data)](#i2c_write_wordfd-reg-data)
+  - [i2c_read_block($fd, $reg, $size)](#i2c_read_blockfd-reg-size)
+  - [i2c_raw_read($fd, $size)](#i2c_raw_readfd-size)
+  - [i2c_write_block($fd, $reg, \@bytes)](#i2c_write_blockfd-reg-bytes)
+  - [i2c_raw_write($fd, \@bytes)](#i2c_raw_writefd-bytes)
+- [SPI FUNCTIONS](#spi-functions)
+  - [spi_setup](#spi_setup)
+  - [spi_data](#spi_data)
+  - [spi_get_fd($channel)](#spi_get_fdchannel)
+  - [spi_setup_mode($channel, $speed, $mode)](#spi_setup_modechannel-speed-mode)
+  - [spi_close($channel)](#spi_closechannel)
+- [BMP180 PRESSURE SENSOR FUNCTIONS](#bmp180-pressure-sensor-functions)
+  - [bmp180_setup($pin_base)](#bmp180_setuppin_base)
+  - [bmp180_temp($pin, $want)](#bmp180_temppin-want)
+  - [bmp180_pressure($pin)](#bmp180_pressurepin)
+- [DEVELOPER FUNCTIONS](#developer-functions)
+  - [pseudoPinsSetup(int pinBase)](#pseudopinssetupint-pinbase)
+  - [pinModeAlt(int pin, int mode)](#pinmodealtint-pin-int-mode)
+  - [digitalWriteByte(const int value)](#digitalwritebyteconst-int-value)
+  - [digitalWriteByte2(const int value)](#digitalwritebyte2const-int-value)
+  - [digitalReadByte()](#digitalreadbyte)
+  - [digitalReadByte2()](#digitalreadbyte2)
+- [AUTHOR](#author)
+- [COPYRIGHT AND LICENSE](#copyright-and-license)
+
 # NAME
 
 WiringPi::API - API for wiringPi, providing access to the Raspberry Pi's board,
@@ -24,9 +194,9 @@ the BCM GPIO numbers printed on the Pi's board.
 
 # EXAMPLES
 
-These examples import the function set with the `:all` tag (which also brings in
-the constants), and call `setup_gpio()` so the pin numbers are the **BCM GPIO**
-numbers printed on the Pi's board.
+These examples import the function set with the `:all` tag (which also brings
+in the constants), and call `setup_gpio()` so the pin numbers are the
+**BCM GPIO** numbers printed on the Pi's board.
 
 ## Output - blink an LED
 
@@ -34,12 +204,12 @@ numbers printed on the Pi's board.
 
     setup_gpio();                  # GPIO (BCM) pin numbering
 
-    pin_mode(17, OUTPUT);          # an LED wired to GPIO17
+    pin_mode(17, OUTPUT);          # An LED wired to GPIO17
 
-    for (1 .. 5) {
-        write_pin(17, HIGH);       # on
-        delay(500);                # wait 500ms
-        write_pin(17, LOW);        # off
+    for (1..5) {
+        write_pin(17, HIGH);       # On
+        delay(500);                # Wait 500ms
+        write_pin(17, LOW);        # Off
         delay(500);
     }
 
@@ -49,11 +219,12 @@ numbers printed on the Pi's board.
 
     setup_gpio();
 
-    pin_mode(27, INPUT);           # a button wired to GPIO27
-    pull_up_down(27, PUD_UP);      # enable the internal pull-up
+    pin_mode(27, INPUT);           # A button wired to GPIO27
+    pull_up_down(27, PUD_UP);      # Enable the internal pull-up
 
     # Pressed pulls the pin LOW
-    print read_pin(27) ? "released\n" : "pressed\n";
+
+    print read_pin(27) ? "Released\n" : "Pressed\n";
 
 ## Background interrupt - blink an LED on each button press
 
@@ -65,24 +236,28 @@ even while main is busy or sleeping:
 
     setup_gpio();
     pin_mode(17, OUTPUT);          # LED
-    pin_mode(27, INPUT);           # button
+    pin_mode(27, INPUT);           # Button
     pull_up_down(27, PUD_UP);
 
-    my $h = background_interrupt(27, INT_EDGE_FALLING, sub {
-        for (1 .. 3) {             # blink 3 times per press
-            write_pin(17, HIGH);
-            delay(100);
-            write_pin(17, LOW);
-            delay(100);
+    my $h = background_interrupt(
+        27,
+        INT_EDGE_FALLING,
+        sub {
+            for (1 .. 3) {             # blink 3 times per press
+                write_pin(17, HIGH);
+                delay(100);
+                write_pin(17, LOW);
+                delay(100);
+            }
         }
-    });
+    );
 
-    for my $i (1 .. 10) {          # main does its own work meanwhile
-        print "working ($i) ...\n";
+    for my $i (1..10) {          # Main does its own work meanwhile
+        print "Working ($i) ...\n";
         delay(1000);
     }
 
-    $h->stop;                      # tear down and reap the handler
+    $h->stop;                     # Tear down and reap the handler
 
 # DESCRIPTION
 
@@ -663,7 +838,7 @@ Parameters:
 
 Mandatory, Integer: `0` for Mark-Space mode, or `1` for Balanced mode.
 
-Note: If using [RPi::WiringPi::Constant](https://metacpan.org/pod/RPi%3A%3AWiringPi%3A%3AConstant), you can use `PWM_MODE_MS` or
+Note: If using [RPi::WiringPi::Const](https://metacpan.org/pod/RPi%3A%3AWiringPi%3A%3AConst), you can use `PWM_MODE_MS` or
 `PWM_MODE_BAL`.
 
 # SOFT PWM FUNCTIONS
@@ -1299,8 +1474,8 @@ if no interrupt has been armed yet). With `$bytes`, requests that capacity
 (`F_SETPIPE_SZ`) and returns the size the kernel actually granted - it rounds up
 to a page and caps at `/proc/sys/fs/pipe-max-size`:
 
-    interrupt_buffer(1 << 20);    # ask for ~1 MiB of queue
-    my $size = interrupt_buffer;  # what we actually got
+    interrupt_buffer(1 << 20);    # Ask for ~1 MiB of queue
+    my $size = interrupt_buffer;  # What we actually got
 
 The request is remembered, so you may set it **before** arming (it is applied when
 the pipe is created) and it persists across `stop_interrupts()` - the new pipe
@@ -1324,9 +1499,10 @@ the loop sleeps the interval rather than spinning.
 
     set_interrupt(0, INT_EDGE_RISING, sub {
         my ($edge, $ts) = @_;
-        stop_interrupt_loop() if done_enough();   # break out from the callback
+        stop_interrupt_loop() if done_enough();   # Break out from the callback
     });
-    my $count = run_interrupt_loop(1000);          # blocks, dispatching, until stopped
+
+    my $count = run_interrupt_loop(1000);          # Blocks, dispatching, until stopped
 
 ## stop\_interrupt\_loop()
 
@@ -1339,11 +1515,11 @@ Returns a hash reference describing the most recently **dispatched** interrupt
 event, or `undef` if none has been dispatched yet (or since the last
 `stop_interrupts()`). The keys are:
 
-    pin       the pin you armed (your numbering scheme - the dispatch key)
-    pin_bcm   the BCM gpio that fired
+    pin       The pin you armed (your numbering scheme - the dispatch key)
+    pin_bcm   The BCM gpio that fired
     edge      INT_EDGE_FALLING (1) or INT_EDGE_RISING (2)
     status    wiringPi's statusOK (1 for a real edge on this path)
-    ts_us     edge timestamp, in microseconds
+    ts_us     Edge timestamp, in microseconds
 
 The event is published **before** the callback runs, so a callback - which only
 receives `($edge, $ts_us)` - can call `last_interrupt()` to obtain the BCM pin
@@ -1351,8 +1527,12 @@ or status as well. Handy when one shared callback is armed on several pins:
 
     set_interrupt($pin, INT_EDGE_BOTH, sub {
         my $i = last_interrupt();
-        printf "BCM %d went %s\n", $i->{pin_bcm},
-            $i->{edge} == INT_EDGE_RISING ? "high" : "low";
+
+        printf(
+            "BCM %d went %s\n",
+            $i->{pin_bcm},
+            $i->{edge} == INT_EDGE_RISING ? "high" : "low"
+        );
     });
 
 Returns a fresh copy each call, so mutating it won't affect later reads.
@@ -1403,10 +1583,11 @@ Because the callback runs in a separate process it **cannot** see or change your
 main program's variables (use it for independent handlers - drive a pin, log,
 notify). Returns a handle:
 
-    my $h = background_interrupt(0, INT_EDGE_RISING, sub { ... });
-    $h->stop;        # signal the child, run its ISR teardown, reap it
-    $h->pid;         # the child PID
-    $h->running;     # true while the child is alive
+    my $h = background_interrupt(18, INT_EDGE_RISING, sub { ... });
+
+    $h->stop;        # Signal the child, run its ISR teardown, reap it
+    $h->pid;         # The child PID
+    $h->running;     # True while the child is alive
 
 `stop` is idempotent (safe to call repeatedly, and after the child has already
 exited). A handle going out of scope stops its child, and an `END` block reaps
@@ -1417,14 +1598,21 @@ A trailing options hash reference may follow the arguments. The only option is
 `results`: when true, a defined value **returned** by `$callback` is shipped
 back to the parent, which drains it from the handle:
 
-    my $h = background_interrupt(0, INT_EDGE_RISING, sub {
-        my ($edge, $ts_us) = @_;
-        return "$edge\@$ts_us";          # reported to the parent
-    }, { results => 1 });
+    my $h = background_interrupt(
+        18,
+        INT_EDGE_RISING,
+        sub {
+            my ($edge, $ts_us) = @_;
+            return "$edge\@$ts_us"; # Reported to the parent
+        },
+        { results => 1 }
+    );
 
-    while (defined(my $msg = $h->read)) {  # non-blocking drain
+    while (defined(my $msg = $h->read)) {
+        # Non-blocking drain
         print "handler said: $msg\n";
     }
+
     # $h->fh gives the read filehandle, for select / IO::Select
 
 Without `results` (the default) the handler is fire-and-forget and the common
@@ -1438,14 +1626,16 @@ all are validated before forking, and the child arms them all and dispatches
 every edge from one loop. Returns a handle with the same `stop`/`pid`/
 `running`, plus `arm($pin)` and `disarm($pin)`:
 
+    setup_gpio();
+
     my $h = background_interrupts(
         [17, INT_EDGE_RISING, \&on_button],
-        [27, INT_EDGE_BOTH,   \&on_sensor, 5000],   # with debounce
+        [27, INT_EDGE_BOTH,   \&on_sensor, 5000],   # With debounce
     );
 
-    $h->disarm(27);   # stop servicing pin 27 (without killing the child)
-    $h->arm(27);      # resume it
-    $h->stop;         # tear down + reap the one child
+    $h->disarm(27);   # Stop servicing pin 27 (without killing the child)
+    $h->arm(27);      # Resume it
+    $h->stop;         # Tear down + reap the one child
 
 The callbacks are fixed when the child forks - `fork` cannot carry new code
 across - so `arm`/`disarm` only toggle pins that were registered in the
@@ -1460,55 +1650,71 @@ multiplexed child is out of scope here - use a per-pin
 
 ### Example - single-threaded event loop (any Perl)
 
-    use WiringPi::API qw(setup pin_mode set_interrupt wait_interrupts
+    use WiringPi::API qw(setup_gpio pin_mode set_interrupt wait_interrupts
                          INT_EDGE_RISING);
 
-    setup();
-    pin_mode(0, 0);
-    set_interrupt(0, INT_EDGE_RISING, sub {
-        my ($edge, $ts_us) = @_;
-        print "edge $edge at $ts_us us\n";
-    });
+    setup_gpio();
+    pin_mode(18, 0);
 
-    wait_interrupts(1000) while 1;   # dispatches in THIS process
+    set_interrupt(
+        18,
+        INT_EDGE_RISING,
+        sub {
+            my ($edge, $ts_us) = @_;
+            print "edge $edge at $ts_us us\n";
+        }
+    );
+
+    wait_interrupts(1000) while 1;   # Dispatches in THIS process
 
 ### Example - background handling via fork
 
-    use WiringPi::API qw(setup pin_mode set_interrupt wait_interrupts
+    use WiringPi::API qw(setup_gpio pin_mode set_interrupt wait_interrupts
                          INT_EDGE_RISING);
 
-    setup();                          # once, in the parent, before forking
-    pin_mode(0, 0);
+    setup_gpio();
+    pin_mode(18, 0);
 
     my $pid = fork // die "fork: $!";
-    if ($pid == 0) {                  # child owns + dispatches the interrupt
-        set_interrupt(0, INT_EDGE_RISING, sub {
-            my ($edge, $ts_us) = @_;
-            # ... handle the edge ...
-        });
+
+    if ($pid == 0) {
+        # Child owns + dispatches the interrupt
+
+        set_interrupt(
+            18,
+            INT_EDGE_RISING,
+            sub {
+                my ($edge, $ts_us) = @_;
+                # ... handle the edge ...
+            }
+        );
+
         wait_interrupts(1000) while 1;
+
         exit 0;
     }
 
-    # parent is free to do other work; reap $pid at exit
+    # Parent is free to do other work; reap $pid at exit
 
 ### Example - hands-off in-process handling (auto\_dispatch\_interrupts)
 
 Fire callbacks automatically in your own process, with no dispatch loop. The
 callback updates your program's own state (no locking needed):
 
-    use WiringPi::API qw(setup pin_mode set_interrupt auto_dispatch_interrupts
+    use WiringPi::API qw(setup_gpio pin_mode set_interrupt auto_dispatch_interrupts
                          INT_EDGE_RISING);
 
-    setup();
-    pin_mode(0, 0);
-    auto_dispatch_interrupts(1);      # callbacks now fire on their own
+    setup_gpio();
+    pin_mode(18, 0);
+
+    auto_dispatch_interrupts(1);      # Callbacks now fire on their own
 
     my $count = 0;
-    set_interrupt(0, INT_EDGE_RISING, sub { $count++ });
+    set_interrupt(18, INT_EDGE_RISING, sub { $count++ });
 
     while (1) {
-        do_main_work();               # the callback fires between ops & in sleep
+        # The callback fires between ops & in sleep
+        do_main_work();
         print "edges so far: $count\n";
         sleep 1;
     }
@@ -1518,10 +1724,10 @@ callback updates your program's own state (no locking needed):
 Run an independent handler in its own process - it fires even while main is
 blocked in long work. The library owns the fork, the loop and the cleanup:
 
-    use WiringPi::API qw(setup pin_mode background_interrupt INT_EDGE_RISING);
+    use WiringPi::API qw(setup_gpio pin_mode background_interrupt INT_EDGE_RISING);
 
-    setup();
-    pin_mode(0, 0);
+    setup_gpio();
+    pin_mode(18, 0);
 
     my $h = background_interrupt(0, INT_EDGE_RISING, sub {
         my ($edge, $ts_us) = @_;
@@ -1554,17 +1760,23 @@ fork-based worker inherits that state; you drive the pins from inside the body.
 
 The hands-off heartbeat LED - the helper owns the loop and the lifecycle:
 
-    use WiringPi::API qw(setup pin_mode write_pin worker);
+    use WiringPi::API qw(setup_gpio pin_mode write_pin worker);
 
-    setup();
-    pin_mode(2, 1);                   # OUTPUT, once in main
+    setup_gpio();
+    pin_mode(18, OUTPUT);
 
-    my $w = worker(sub { write_pin(2, 1); sleep 1;
-                         write_pin(2, 0); sleep 1 });
+    my $w = worker(
+        sub {
+            write_pin(18, OUTPUT);
+            sleep 1;
+            write_pin(18, INPUT);
+            sleep 1
+        }
+    );
 
     # ... main does its own work ...
 
-    $w->stop;                         # idempotent; END reaps if forgotten
+    $w->stop;   # Idempotent; END reaps if forgotten
 
 ## worker(\\&body, \\%opts)
 
@@ -1644,16 +1856,17 @@ must be a hash reference. The options are:
 
 ## Periodic sampler handing data back to main
 
-    use WiringPi::API qw(setup pin_mode analog_read worker);
+    use WiringPi::API qw(setup_gpio pin_mode analog_read worker);
 
-    setup();
-    pin_mode(0, 0);                   # INPUT, once in main
+    setup_gpio();
+    pin_mode(18, INPUT);
 
     # Sample once a second; main only ever wants the latest reading.
+
     my $w = worker(sub { analog_read(0) }, { interval => 1, shared => 1 });
 
     while (1) {
-        my $latest = $w->value;       # most recent sample, or undef yet
+        my $latest = $w->value;       # Most recent sample, or undef yet
         # ... act on $latest ...
         sleep 5;
     }
@@ -1668,22 +1881,25 @@ locks (see ["THREAD/LOCK FUNCTIONS"](#thread-lock-functions)):
 
     use threads;                      # required for mechanism => 'thread'
     use threads::shared;
-    use WiringPi::API qw(setup worker pi_lock pi_unlock);
+    use WiringPi::API qw(setup_gpio worker pi_lock pi_unlock);
 
     setup();
 
     my $count :shared = 0;
 
-    my $w = worker(sub {
-        pi_lock(0);
-        $count++;
-        pi_unlock(0);
-        select(undef, undef, undef, 0.1);
-    }, { mechanism => 'thread' });
+    my $w = worker(
+        sub {
+            pi_lock(0);
+            $count++;
+            pi_unlock(0);
+            select(undef, undef, undef, 0.1);
+        },
+        { mechanism => 'thread' }
+    );
 
     # ... main reads $count under the same lock ...
 
-    $w->stop;                         # sets the stop flag and joins the thread
+    $w->stop;   # Sets the stop flag and joins the thread
 
 # ADC FUNCTIONS
 
