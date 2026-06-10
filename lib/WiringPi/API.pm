@@ -3,7 +3,7 @@ package WiringPi::API;
 use strict;
 use warnings;
 
-our $VERSION = '3.1801_01';
+our $VERSION = '3.1802';
 
 use Carp qw(croak);
 use Fcntl qw(
@@ -1833,9 +1833,9 @@ the BCM GPIO numbers printed on the Pi's board.
 
 =head1 EXAMPLES
 
-These examples import the function set with the C<:all> tag (which also brings in
-the constants), and call C<setup_gpio()> so the pin numbers are the B<BCM GPIO>
-numbers printed on the Pi's board.
+These examples import the function set with the C<:all> tag (which also brings
+in the constants), and call C<setup_gpio()> so the pin numbers are the
+B<BCM GPIO> numbers printed on the Pi's board.
 
 =head2 Output - blink an LED
 
@@ -1843,12 +1843,12 @@ numbers printed on the Pi's board.
 
     setup_gpio();                  # GPIO (BCM) pin numbering
 
-    pin_mode(17, OUTPUT);          # an LED wired to GPIO17
+    pin_mode(17, OUTPUT);          # An LED wired to GPIO17
 
-    for (1 .. 5) {
-        write_pin(17, HIGH);       # on
-        delay(500);                # wait 500ms
-        write_pin(17, LOW);        # off
+    for (1..5) {
+        write_pin(17, HIGH);       # On
+        delay(500);                # Wait 500ms
+        write_pin(17, LOW);        # Off
         delay(500);
     }
 
@@ -1858,11 +1858,12 @@ numbers printed on the Pi's board.
 
     setup_gpio();
 
-    pin_mode(27, INPUT);           # a button wired to GPIO27
-    pull_up_down(27, PUD_UP);      # enable the internal pull-up
+    pin_mode(27, INPUT);           # A button wired to GPIO27
+    pull_up_down(27, PUD_UP);      # Enable the internal pull-up
 
     # Pressed pulls the pin LOW
-    print read_pin(27) ? "released\n" : "pressed\n";
+
+    print read_pin(27) ? "Released\n" : "Pressed\n";
 
 =head2 Background interrupt - blink an LED on each button press
 
@@ -1874,24 +1875,28 @@ even while main is busy or sleeping:
 
     setup_gpio();
     pin_mode(17, OUTPUT);          # LED
-    pin_mode(27, INPUT);           # button
+    pin_mode(27, INPUT);           # Button
     pull_up_down(27, PUD_UP);
 
-    my $h = background_interrupt(27, INT_EDGE_FALLING, sub {
-        for (1 .. 3) {             # blink 3 times per press
-            write_pin(17, HIGH);
-            delay(100);
-            write_pin(17, LOW);
-            delay(100);
+    my $h = background_interrupt(
+        27,
+        INT_EDGE_FALLING,
+        sub {
+            for (1 .. 3) {             # blink 3 times per press
+                write_pin(17, HIGH);
+                delay(100);
+                write_pin(17, LOW);
+                delay(100);
+            }
         }
-    });
+    );
 
-    for my $i (1 .. 10) {          # main does its own work meanwhile
-        print "working ($i) ...\n";
+    for my $i (1..10) {          # Main does its own work meanwhile
+        print "Working ($i) ...\n";
         delay(1000);
     }
 
-    $h->stop;                      # tear down and reap the handler
+    $h->stop;                     # Tear down and reap the handler
 
 =head1 DESCRIPTION
 
@@ -2481,7 +2486,7 @@ Parameters:
 
 Mandatory, Integer: C<0> for Mark-Space mode, or C<1> for Balanced mode.
 
-Note: If using L<RPi::WiringPi::Constant>, you can use C<PWM_MODE_MS> or
+Note: If using L<RPi::WiringPi::Const>, you can use C<PWM_MODE_MS> or
 C<PWM_MODE_BAL>.
 
 =head1 SOFT PWM FUNCTIONS
@@ -3117,8 +3122,8 @@ if no interrupt has been armed yet). With C<$bytes>, requests that capacity
 (C<F_SETPIPE_SZ>) and returns the size the kernel actually granted - it rounds up
 to a page and caps at F</proc/sys/fs/pipe-max-size>:
 
-    interrupt_buffer(1 << 20);    # ask for ~1 MiB of queue
-    my $size = interrupt_buffer;  # what we actually got
+    interrupt_buffer(1 << 20);    # Ask for ~1 MiB of queue
+    my $size = interrupt_buffer;  # What we actually got
 
 The request is remembered, so you may set it B<before> arming (it is applied when
 the pipe is created) and it persists across C<stop_interrupts()> - the new pipe
@@ -3147,9 +3152,10 @@ the loop sleeps the interval rather than spinning.
 
     set_interrupt(0, INT_EDGE_RISING, sub {
         my ($edge, $ts) = @_;
-        stop_interrupt_loop() if done_enough();   # break out from the callback
+        stop_interrupt_loop() if done_enough();   # Break out from the callback
     });
-    my $count = run_interrupt_loop(1000);          # blocks, dispatching, until stopped
+
+    my $count = run_interrupt_loop(1000);          # Blocks, dispatching, until stopped
 
 =head2 stop_interrupt_loop()
 
@@ -3162,11 +3168,11 @@ Returns a hash reference describing the most recently B<dispatched> interrupt
 event, or C<undef> if none has been dispatched yet (or since the last
 C<stop_interrupts()>). The keys are:
 
-    pin       the pin you armed (your numbering scheme - the dispatch key)
-    pin_bcm   the BCM gpio that fired
+    pin       The pin you armed (your numbering scheme - the dispatch key)
+    pin_bcm   The BCM gpio that fired
     edge      INT_EDGE_FALLING (1) or INT_EDGE_RISING (2)
     status    wiringPi's statusOK (1 for a real edge on this path)
-    ts_us     edge timestamp, in microseconds
+    ts_us     Edge timestamp, in microseconds
 
 The event is published B<before> the callback runs, so a callback - which only
 receives C<($edge, $ts_us)> - can call C<last_interrupt()> to obtain the BCM pin
@@ -3174,8 +3180,12 @@ or status as well. Handy when one shared callback is armed on several pins:
 
     set_interrupt($pin, INT_EDGE_BOTH, sub {
         my $i = last_interrupt();
-        printf "BCM %d went %s\n", $i->{pin_bcm},
-            $i->{edge} == INT_EDGE_RISING ? "high" : "low";
+
+        printf(
+            "BCM %d went %s\n",
+            $i->{pin_bcm},
+            $i->{edge} == INT_EDGE_RISING ? "high" : "low"
+        );
     });
 
 Returns a fresh copy each call, so mutating it won't affect later reads.
@@ -3226,10 +3236,11 @@ Because the callback runs in a separate process it B<cannot> see or change your
 main program's variables (use it for independent handlers - drive a pin, log,
 notify). Returns a handle:
 
-    my $h = background_interrupt(0, INT_EDGE_RISING, sub { ... });
-    $h->stop;        # signal the child, run its ISR teardown, reap it
-    $h->pid;         # the child PID
-    $h->running;     # true while the child is alive
+    my $h = background_interrupt(18, INT_EDGE_RISING, sub { ... });
+
+    $h->stop;        # Signal the child, run its ISR teardown, reap it
+    $h->pid;         # The child PID
+    $h->running;     # True while the child is alive
 
 C<stop> is idempotent (safe to call repeatedly, and after the child has already
 exited). A handle going out of scope stops its child, and an C<END> block reaps
@@ -3240,14 +3251,21 @@ A trailing options hash reference may follow the arguments. The only option is
 C<results>: when true, a defined value B<returned> by C<$callback> is shipped
 back to the parent, which drains it from the handle:
 
-    my $h = background_interrupt(0, INT_EDGE_RISING, sub {
-        my ($edge, $ts_us) = @_;
-        return "$edge\@$ts_us";          # reported to the parent
-    }, { results => 1 });
+    my $h = background_interrupt(
+        18,
+        INT_EDGE_RISING,
+        sub {
+            my ($edge, $ts_us) = @_;
+            return "$edge\@$ts_us"; # Reported to the parent
+        },
+        { results => 1 }
+    );
 
-    while (defined(my $msg = $h->read)) {  # non-blocking drain
+    while (defined(my $msg = $h->read)) {
+        # Non-blocking drain
         print "handler said: $msg\n";
     }
+
     # $h->fh gives the read filehandle, for select / IO::Select
 
 Without C<results> (the default) the handler is fire-and-forget and the common
@@ -3261,14 +3279,16 @@ all are validated before forking, and the child arms them all and dispatches
 every edge from one loop. Returns a handle with the same C<stop>/C<pid>/
 C<running>, plus C<arm($pin)> and C<disarm($pin)>:
 
+    setup_gpio();
+
     my $h = background_interrupts(
         [17, INT_EDGE_RISING, \&on_button],
-        [27, INT_EDGE_BOTH,   \&on_sensor, 5000],   # with debounce
+        [27, INT_EDGE_BOTH,   \&on_sensor, 5000],   # With debounce
     );
 
-    $h->disarm(27);   # stop servicing pin 27 (without killing the child)
-    $h->arm(27);      # resume it
-    $h->stop;         # tear down + reap the one child
+    $h->disarm(27);   # Stop servicing pin 27 (without killing the child)
+    $h->arm(27);      # Resume it
+    $h->stop;         # Tear down + reap the one child
 
 The callbacks are fixed when the child forks - C<fork> cannot carry new code
 across - so C<arm>/C<disarm> only toggle pins that were registered in the
@@ -3283,55 +3303,71 @@ C<< { results => 1 } >> when you need values back from the handler.
 
 =head3 Example - single-threaded event loop (any Perl)
 
-    use WiringPi::API qw(setup pin_mode set_interrupt wait_interrupts
+    use WiringPi::API qw(setup_gpio pin_mode set_interrupt wait_interrupts
                          INT_EDGE_RISING);
 
-    setup();
-    pin_mode(0, 0);
-    set_interrupt(0, INT_EDGE_RISING, sub {
-        my ($edge, $ts_us) = @_;
-        print "edge $edge at $ts_us us\n";
-    });
+    setup_gpio();
+    pin_mode(18, 0);
 
-    wait_interrupts(1000) while 1;   # dispatches in THIS process
+    set_interrupt(
+        18,
+        INT_EDGE_RISING,
+        sub {
+            my ($edge, $ts_us) = @_;
+            print "edge $edge at $ts_us us\n";
+        }
+    );
+
+    wait_interrupts(1000) while 1;   # Dispatches in THIS process
 
 =head3 Example - background handling via fork
 
-    use WiringPi::API qw(setup pin_mode set_interrupt wait_interrupts
+    use WiringPi::API qw(setup_gpio pin_mode set_interrupt wait_interrupts
                          INT_EDGE_RISING);
 
-    setup();                          # once, in the parent, before forking
-    pin_mode(0, 0);
+    setup_gpio();
+    pin_mode(18, 0);
 
     my $pid = fork // die "fork: $!";
-    if ($pid == 0) {                  # child owns + dispatches the interrupt
-        set_interrupt(0, INT_EDGE_RISING, sub {
-            my ($edge, $ts_us) = @_;
-            # ... handle the edge ...
-        });
+
+    if ($pid == 0) {
+        # Child owns + dispatches the interrupt
+
+        set_interrupt(
+            18,
+            INT_EDGE_RISING,
+            sub {
+                my ($edge, $ts_us) = @_;
+                # ... handle the edge ...
+            }
+        );
+
         wait_interrupts(1000) while 1;
+
         exit 0;
     }
 
-    # parent is free to do other work; reap $pid at exit
+    # Parent is free to do other work; reap $pid at exit
 
 =head3 Example - hands-off in-process handling (auto_dispatch_interrupts)
 
 Fire callbacks automatically in your own process, with no dispatch loop. The
 callback updates your program's own state (no locking needed):
 
-    use WiringPi::API qw(setup pin_mode set_interrupt auto_dispatch_interrupts
+    use WiringPi::API qw(setup_gpio pin_mode set_interrupt auto_dispatch_interrupts
                          INT_EDGE_RISING);
 
-    setup();
-    pin_mode(0, 0);
-    auto_dispatch_interrupts(1);      # callbacks now fire on their own
+    setup_gpio();
+    pin_mode(18, 0);
+
+    auto_dispatch_interrupts(1);      # Callbacks now fire on their own
 
     my $count = 0;
-    set_interrupt(0, INT_EDGE_RISING, sub { $count++ });
+    set_interrupt(18, INT_EDGE_RISING, sub { $count++ });
 
     while (1) {
-        do_main_work();               # the callback fires between ops & in sleep
+        # The callback fires between ops & in sleep
+        do_main_work();
         print "edges so far: $count\n";
         sleep 1;
     }
@@ -3341,10 +3377,10 @@ callback updates your program's own state (no locking needed):
 Run an independent handler in its own process - it fires even while main is
 blocked in long work. The library owns the fork, the loop and the cleanup:
 
-    use WiringPi::API qw(setup pin_mode background_interrupt INT_EDGE_RISING);
+    use WiringPi::API qw(setup_gpio pin_mode background_interrupt INT_EDGE_RISING);
 
-    setup();
-    pin_mode(0, 0);
+    setup_gpio();
+    pin_mode(18, 0);
 
     my $h = background_interrupt(0, INT_EDGE_RISING, sub {
         my ($edge, $ts_us) = @_;
@@ -3377,17 +3413,23 @@ fork-based worker inherits that state; you drive the pins from inside the body.
 
 The hands-off heartbeat LED - the helper owns the loop and the lifecycle:
 
-    use WiringPi::API qw(setup pin_mode write_pin worker);
+    use WiringPi::API qw(setup_gpio pin_mode write_pin worker);
 
-    setup();
-    pin_mode(2, 1);                   # OUTPUT, once in main
+    setup_gpio();
+    pin_mode(18, OUTPUT);
 
-    my $w = worker(sub { write_pin(2, 1); sleep 1;
-                         write_pin(2, 0); sleep 1 });
+    my $w = worker(
+        sub {
+            write_pin(18, OUTPUT);
+            sleep 1;
+            write_pin(18, INPUT);
+            sleep 1
+        }
+    );
 
     # ... main does its own work ...
 
-    $w->stop;                         # idempotent; END reaps if forgotten
+    $w->stop;   # Idempotent; END reaps if forgotten
 
 =head2 worker(\&body, \%opts)
 
@@ -3475,16 +3517,17 @@ The latest published value, when the worker was started with C<< shared => 1 >>
 
 =head2 Periodic sampler handing data back to main
 
-    use WiringPi::API qw(setup pin_mode analog_read worker);
+    use WiringPi::API qw(setup_gpio pin_mode analog_read worker);
 
-    setup();
-    pin_mode(0, 0);                   # INPUT, once in main
+    setup_gpio();
+    pin_mode(18, INPUT);
 
     # Sample once a second; main only ever wants the latest reading.
+
     my $w = worker(sub { analog_read(0) }, { interval => 1, shared => 1 });
 
     while (1) {
-        my $latest = $w->value;       # most recent sample, or undef yet
+        my $latest = $w->value;       # Most recent sample, or undef yet
         # ... act on $latest ...
         sleep 5;
     }
@@ -3499,22 +3542,25 @@ locks (see L</THREAD/LOCK FUNCTIONS>):
 
     use threads;                      # required for mechanism => 'thread'
     use threads::shared;
-    use WiringPi::API qw(setup worker pi_lock pi_unlock);
+    use WiringPi::API qw(setup_gpio worker pi_lock pi_unlock);
 
     setup();
 
     my $count :shared = 0;
 
-    my $w = worker(sub {
-        pi_lock(0);
-        $count++;
-        pi_unlock(0);
-        select(undef, undef, undef, 0.1);
-    }, { mechanism => 'thread' });
+    my $w = worker(
+        sub {
+            pi_lock(0);
+            $count++;
+            pi_unlock(0);
+            select(undef, undef, undef, 0.1);
+        },
+        { mechanism => 'thread' }
+    );
 
     # ... main reads $count under the same lock ...
 
-    $w->stop;                         # sets the stop flag and joins the thread
+    $w->stop;   # Sets the stop flag and joins the thread
 
 =head1 ADC FUNCTIONS
 
