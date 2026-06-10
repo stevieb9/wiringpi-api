@@ -1,6 +1,6 @@
 Revision history for Perl extension WiringPi::API.
 
-3.1801  UNREL
+3.1802  UNREL
         - Switched from using die() to croak()
         - Completely rewrote the C pin interrupt routine to fix a bug where
           multiple interrupts did not work correctly

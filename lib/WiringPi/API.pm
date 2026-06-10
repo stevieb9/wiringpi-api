@@ -812,6 +812,7 @@ sub _apply_interrupt_buffer {
     # Apply a pending pipe-size request to the (possibly newly created) pipe.
     # Best-effort: the explicit interrupt_buffer() setter reports errors; here
     # we only re-apply the remembered size, and skip if already applied.
+
     my $fh = _interrupt_fh();
     return if ! defined $fh;
 
@@ -826,6 +827,7 @@ sub _apply_interrupt_buffer {
 sub _auto_dispatch_apply {
     # Put the interrupt read fd into async (SIGIO) mode. No-op until the pipe
     # exists, or if we've already wired this exact fd.
+
     my $fh = _interrupt_fh();
     return 0 if ! defined $fh;
 
