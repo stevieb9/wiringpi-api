@@ -22,5 +22,6 @@ META.yml
 pm_to_blib
 .metadata/
 .idea/
+.vscode/
 *.debug
 *.iml
