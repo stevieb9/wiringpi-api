@@ -58,6 +58,15 @@ static unsigned long interrupts_dropped = 0;          /* events lost to a full p
  * atomic counter bump - it never enters the Perl interpreter. The caller's pin
  * arrives via userdata (keyed to the user's numbering scheme); wfiStatus.pinBCM
  * is always BCM and would mis-key callbacks under setup() (wiringPi numbering).
+ *
+ * interrupt_pipe[1] is read here without synchronization, and that is safe by
+ * lifecycle invariant, not by luck: the Perl side always stops the wiringPi ISR
+ * threads (wiringPiISRStop, which joins them) BEFORE _close_interrupt_pipe()
+ * touches the fds, so no instance of this function is in flight during a close.
+ * Do NOT "harden" this with an atomic load of the fd: an atomic read does not
+ * close the check->write() window (the fd could still be closed and reused
+ * between them), so it would imply a thread-safety this code does not need and
+ * does not have. The real guarantee is the stop-before-close ordering.
  */
 
 static void isr2_writer(struct WPIWfiStatus wfiStatus, void *userdata){

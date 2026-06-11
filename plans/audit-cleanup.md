@@ -14,6 +14,7 @@
 ## Execution rules
 
 - **One task per turn**: when told to proceed or continue (or "next", "go", etc.), perform only the next ⏳ V task listed, then stop and wait for further instruction. Do NOT batch multiple V tasks per turn unless the user explicitly authorizes a batch (e.g., "do V1-V3", "do all the style fixes").
+- **Backlog (B#) confirmation gate**: when told to proceed on a B# item, do NOT implement in the same turn. First reply with a *very brief* note — (a) the problem and (b) its impact — then stop and wait for the user's go-ahead before making any change. (A B# promoted to a V# via the next-free-number rule then follows the normal V-task flow.)
 
 ## Maintenance rules
 
@@ -69,7 +70,7 @@ Audit ledger from the 2026-06-10 read-only review (3 agents). Each `F#` is marke
 
 ## Backlog
 
-B1: `API.xs` `isr2_writer` reads `interrupt_pipe[1]` with no synchronization vs `_close_interrupt_pipe()` (TOCTOU). Mitigated today by caller discipline (Perl stops ISR threads before close). Consider an atomic load or documenting the hard invariant. (API.xs:70-76, 139-142)
+B1: ✅ RESOLVED (doc-only, 2026-06-10): `API.xs` `isr2_writer` reads `interrupt_pipe[1]` with no synchronization vs `_close_interrupt_pipe()` (TOCTOU). Mitigated today by caller discipline (Perl stops ISR threads before close). **Resolution:** documented the stop-before-close lifecycle invariant in the `isr2_writer` comment block, and explicitly warned off an atomic-load "fix" (it does not close the check→write window, so it would imply a thread-safety the code neither needs nor has). No behaviour change; XS recompiles clean. (API.xs:57-71, 151-154)
 
 B2: `interrupts_dropped` is bumped atomically (`__sync_fetch_and_add`) but reset/read non-atomically — a data race only if an ISR thread is live at reset. Use `__atomic_store_n`/`__atomic_load_n`, or document the "no active writer at close" invariant. (API.xs:75,127,143)
 
