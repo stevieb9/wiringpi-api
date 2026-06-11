@@ -243,17 +243,15 @@ analogWrite(pin, value)
     int pin
     int value
 
-char *
+void
 wiringPiVersion()
-    CODE:
+    PREINIT:
         int major;
         int minor;
-        char ver[16];
+    PPCODE:
         wiringPiVersion(&major, &minor);
-        snprintf(ver, sizeof(ver), "%d.%d", major, minor);
-        RETVAL = ver;
-    OUTPUT:
-        RETVAL
+        ST(0) = sv_2mortal(newSVpvf("%d.%d", major, minor));
+        XSRETURN(1);
 
 #
 # board
