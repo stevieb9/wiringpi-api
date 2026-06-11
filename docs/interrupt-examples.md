@@ -749,10 +749,10 @@ This file is the reviewed finalization of `isr-examples.md`. Each change below i
 correctness or clarity fix agreed during review; line references are to the
 original.
 
-1. **Status banner → two distinct claims.** "design-stable (patterns settled) /
-   implementation-provisional (API unimplemented; `API.xs` still ships the old
-   dispatcher-thread design)." The original's single "provisional" buried the lede
-   that the snippets won't run yet.
+1. **Status banner → "implemented and shipping."** The original hedged its status
+   as not-yet-runnable, which buried the lede. This file's banner now states
+   plainly that the self-pipe interrupt API is implemented in `WiringPi::API` 3.18
+   and verified on Pi 5 hardware, so the snippets run as written.
 2. **Debounce is kernel, not hardware** (orig. lines 227, 239). Verified against
    `wiringPi.c`: `interruptHandlerInit` sets `GPIO_V2_LINE_ATTR_ID_DEBOUNCE` on the
    GPIO-v2 line request, so the *kernel* debounces. "In the kernel" (orig. 235)
@@ -784,7 +784,7 @@ original.
 9. **Two-channels clarification** in scenario 9: the `$rx`/`$tx` results pipe is the
    user's own channel, distinct from the internal 24-byte self-pipe; its format is
    independent.
-10. **Return-value column** in the API reference (flagged provisional, with the
-    "keep doc/spec/XS in sync" warning) — the original documented no return values.
+10. **Return-value column** in the API reference (with the "keep doc/spec/XS in
+    sync" warning) — the original documented no return values.
 11. **`$h->stop` idempotency** noted in scenario 8; **busy-spin** caveat added to
     scenarios 1 and 9 and the anti-patterns list.

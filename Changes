@@ -22,6 +22,9 @@ Revision history for Perl extension WiringPi::API.
           the lower-5-bits backtick example, corrected lcdPutChar ->
           lcdPutchar in README, and reworded pwm_set_range's $range (it
           sets the range register, not a 0-1023 duty bound)
+        - Reworded the stale "What changed vs isr-examples.md" appendix in
+          docs/interrupt-examples.md so it no longer claims the interrupt
+          API is unimplemented/provisional (it ships and is implemented)
 
 3.1802     2026-06-10
         - Switched from using die() to croak()
