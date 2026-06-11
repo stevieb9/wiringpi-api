@@ -3465,12 +3465,21 @@ Stream B<every> defined value the body returns back to the parent, length-framed
 over an inherited pipe. Drain it with C<< $w->read >> (non-blocking) or select on
 C<< $w->fh >> - identical to C<background_interrupt>'s results channel.
 
+B<Size limit:> the drain stays non-blocking only while each record fits one
+atomic pipe write - keep returned values under C<PIPE_BUF> (4096 bytes, which
+includes a 4-byte length frame). A larger value can be split across writes, and
+C<< $w->read >> will then block until the remainder of that record arrives.
+
 =item C<< shared => 1 >>
 
 Publish the body's return value as a B<lossy latest value>: the parent reads the
 most recent value with C<< $w->value >>. The child never blocks on a slow or
 absent reader (a full pipe simply drops the update), so this suits a sampler
 whose intermediate readings don't matter.
+
+The same C<PIPE_BUF> (4096-byte) size limit as C<results> applies to
+C<< $w->value >>: a published value larger than that can make the read block
+while the remainder of the record arrives.
 
 =item C<< mechanism => 'fork' | 'thread' >>
 

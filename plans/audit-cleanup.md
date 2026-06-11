@@ -1,6 +1,7 @@
 # Plan: Code & documentation audit — correctness, efficiency, doc accuracy
 
-> **NEXT ACTION:** None — all Validation-Table V tasks complete (V1, V3–V7). Only the `## Backlog` (B1–B9) and `## Review Findings` ledger remain; promote a B# to the next free V# to resume active work.
+> **NEXT ACTION:** None — all Validation-Table V tasks complete (V1, V3–V7). Working through `## Backlog` (B1–B3 done, B4 documented+deferred). Promote a B# to the next free V# to resume active work.
+> **REVISIT AT END:** B4 — the real non-blocking + partial-buffering drain (option (b)) was deferred; for now only the `PIPE_BUF` limit is documented. Revisit and implement the proper drain (with tests) once the other backlog items are cleared.
 > **LAST SESSION:** 2026-06-10 — V7 ✅ (author chose pod2markdown regen; replaced stale plain-text README with markdown README.md from current POD, restoring the missing interrupt/worker/soft_pwm/soft_tone/timing/pi_lock/board sections and dropping the retired pthread caveat; renamed via git mv + MANIFEST updated; F10 resolved; empty-diff gate passes).
 > **ARCHIVE:** See audit-cleanup-archive.md for completed V tasks (V1, V3, V4, V5, V6, V7)
 
@@ -76,7 +77,7 @@ B2: ✅ RESOLVED (2026-06-10): `interrupts_dropped` is bumped atomically (`__syn
 
 B3: ✅ RESOLVED (2026-06-10): `physPinToWpi(int wpi_pin)` parameter is misnamed — it is semantically a *physical* pin index. Table and bounds check are correct (verified against wiringPi's composed maps). **Resolution:** renamed `wpi_pin` → `phys_pin` in the C function body + XSUB (`API.xs:167-174,513-514`) and the prototype (`API.h:34`). Perl side already used neutral `$pin`/`pin`, so no change there. Cosmetic only; XS recompiles clean, `t/80-phys_to_wpi_bounds.t` passes (t/05 needs a Pi board). No Changes entry — internal name, not user-facing.
 
-B4: `BackgroundInterrupt`/`Worker` `read()`/`value()` assume the whole length-framed record is buffered once `select()` reports readable, then do a blocking `_read_exact`. True only while the payload stays under `PIPE_BUF` (4096B); a larger user return value can block the "non-blocking" drain. Document the limit or switch to non-blocking + partial buffering.
+B4: ⏸ DOCUMENTED + DEFERRED (2026-06-10) — REVISIT AT END: `BackgroundInterrupt`/`Worker` `read()`/`value()` assume the whole length-framed record is buffered once `select()` reports readable, then do a blocking `_read_exact`. True only while the payload stays under `PIPE_BUF` (4096B); a larger user return value can block the "non-blocking" drain. **Author chose option (a) for now:** documented the `PIPE_BUF` limit — corrected the misleading "won't block" inline comments in `BackgroundInterrupt::read()` and `Worker::value()` (now note the ~4KB limit + a TODO marker, tagged `(B4)`), and added a "Size limit" caveat to the `results`/`shared` POD in `API.pm`, regenerated `README.md` (pod2markdown, empty-diff gate green) and hand-synced `docs/pod.md`. **Still TODO (the real fix, option (b), deferred to revisit at end):** make the results/value fhs `O_NONBLOCK` and accumulate partial records in `$self` across calls so a >`PIPE_BUF` return value can't block the drain — WITH proper tests (a >4KB framed return value must not block `read()`/`value()`). `Changes` entry added for the doc note; add another when the real fix lands.
 
 B5: `WorkerThread` inherits `read()`/`fh()` that silently return `undef` (no pipe channel under thread mode), whereas the sibling `BackgroundInterrupts` croaks with a clear message. Override to croak for a consistent contract.
 

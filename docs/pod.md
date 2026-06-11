@@ -1808,12 +1808,21 @@ must be a hash reference. The options are:
     over an inherited pipe. Drain it with `$w->read` (non-blocking) or select on
     `$w->fh` - identical to `background_interrupt`'s results channel.
 
+    **Size limit:** the drain stays non-blocking only while each record fits one
+    atomic pipe write - keep returned values under `PIPE_BUF` (4096 bytes, which
+    includes a 4-byte length frame). A larger value can be split across writes, and
+    `$w->read` will then block until the remainder of that record arrives.
+
 - `shared => 1`
 
     Publish the body's return value as a **lossy latest value**: the parent reads the
     most recent value with `$w->value`. The child never blocks on a slow or
     absent reader (a full pipe simply drops the update), so this suits a sampler
     whose intermediate readings don't matter.
+
+    The same `PIPE_BUF` (4096-byte) size limit as `results` applies to
+    `$w->value`: a published value larger than that can make the read block
+    while the remainder of the record arrives.
 
 - `mechanism => 'fork' | 'thread'`
 

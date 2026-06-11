@@ -32,8 +32,13 @@ sub read {
     my $nfound = select(my $rout = $rin, undef, undef, 0);
     return undef if ! $nfound || $nfound < 0;
 
-    # One length-framed record is present and was written atomically by the
-    # single child, so reading it through won't block.
+    # One length-framed record is present. The single child writes each record
+    # with one syswrite, so while the payload stays under PIPE_BUF (4096B, incl.
+    # the 4-byte length frame) the write is atomic and the whole record is
+    # buffered once the pipe is readable - _read_exact won't block. NOTE (B4): a
+    # larger return value can be split across writes, and _read_exact would then
+    # block waiting for the tail. Keep returned values under ~4KB for the
+    # non-blocking guarantee (a non-blocking partial-buffer drain is a TODO).
     my $len_buf = _read_exact($fh, 4);
     return undef if ! defined $len_buf;
 
