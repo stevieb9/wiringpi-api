@@ -1,8 +1,8 @@
 # Plan: Code & documentation audit — correctness, efficiency, doc accuracy
 
-> **NEXT ACTION:** V6 — regenerate/correct docs/missing-functions.md against current API.xs (F7)
-> **LAST SESSION:** 2026-06-10 — V5 ✅ (reworded the stale "What changed vs isr-examples.md" appendix in docs/interrupt-examples.md; no more unimplemented/provisional/dispatcher-thread claims; F6 resolved; grep gate clean).
-> **ARCHIVE:** See audit-cleanup-archive.md for completed V tasks (V1, V3, V4, V5)
+> **NEXT ACTION:** V7 — README regen decision (pod2text vs hand-edit) WITH THE AUTHOR, then bring README in line with the current exported API + drop the retired pthread caveat (F10)
+> **LAST SESSION:** 2026-06-10 — V6 ✅ (regenerated docs/missing-functions.md vs current API.xs: dropped bogus setInterrupt/initThread, moved 32 now-wrapped fns out of missing, added genuinely-unwrapped wiringPiISR/piThreadCreate, counts → 92 wrapped/91 missing across 35 headers; F7 resolved; grep gate clean).
+> **ARCHIVE:** See audit-cleanup-archive.md for completed V tasks (V1, V3, V4, V5, V6)
 
 ## Scope & ground rules
 
@@ -38,7 +38,6 @@
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V6 | `docs/missing-functions.md`: regenerate (or annotate as stale + correct) against current `API.xs`. Drop the false "wrapped under different XS names" entries `setInterrupt`/`initThread` (neither exists); remove now-wrapped functions wrongly listed as missing (`wiringPiVersion`, `wiringPiISR2`, `wiringPiISRStop`, the I2C raw/block + SPI + RP1 calls); refresh the 62/121 counts and the "Generated:" date. Resolves F7. | `grep -n 'setInterrupt\|initThread' docs/missing-functions.md` | No references to non-existent wrappers; counts match current `API.xs` | ⏳ |
 | V7 | `README`: regenerate from the current POD so it stops omitting ~half the API (background_interrupt(s), auto_dispatch_interrupts, worker, soft_pwm_*, soft_tone_*, timing, pi_lock, pad/tone/clock, board identity, I2C block helpers) and stops carrying the retired pthread-segfault caveat (README:580-581). **Edge values are NOT wrong:** README:596 "1 (lowering), 2 (raising)" matches code `INT_EDGE_FALLING=1`/`INT_EDGE_RISING=2` (`use constant` block API.pm:31ff; "lowering"=falling, "raising"=rising) — non-idiomatic wording only, no inversion; a POD-regen would replace the wording incidentally, but it is not a correctness fix. First decide WITH THE AUTHOR whether README becomes `pod2text lib/WiringPi/API.pm > README`; the Expected below depends on that choice. Resolves F10. | If author chooses pod2text regen: `diff <(pod2text lib/WiringPi/API.pm) README` is empty. If author chooses hand-edit: visual check that the interrupt/worker/soft_pwm/pi_lock sections now appear and the pthread caveat (580-581) is gone. | README reflects the current exported API; the retired pthread caveat is gone. (Do NOT use a raw `diff` as the gate unless the pod2text-regen decision was made — otherwise the diff is large by design and Expected is undecidable.) | ⏳ |
 
 ## Discovery Tracking
@@ -64,7 +63,7 @@ Audit ledger from the 2026-06-10 read-only review (3 agents). Each `F#` is marke
 
 - **F5** ✅ RESOLVED (V4): POD formatting glitches replicated across API.pm POD / `docs/pod.md` / `README`: `lcd_char_def` dangling sentence; unbalanced backticks; `README` says `lcdPutChar` vs actual `lcdPutchar`.
 - **F6** ✅ RESOLVED (V5): `docs/interrupt-examples.md` appendix self-contradicts the shipped implementation ("API unimplemented", "provisional") while the file's banner says "implemented and shipping".
-- **F7** (→V6): `docs/missing-functions.md` lists many already-wrapped functions as "missing" and references non-existent wrappers `setInterrupt`/`initThread`; the 62/121 summary is untrustworthy.
+- **F7** ✅ RESOLVED (V6): `docs/missing-functions.md` lists many already-wrapped functions as "missing" and references non-existent wrappers `setInterrupt`/`initThread`; the 62/121 summary is untrustworthy.
 - **F9** ✅ RESOLVED (V4): `pwm_set_range` docs cite "0 and 1023" — that bound is the duty value, not the range register; the XS takes `unsigned int range` uncapped.
 - **F10** (→V7): `README` is a stale render: omits ~half the exported API and keeps the retired "pthreads/segfault" interrupt caveat (README:580-581). **Correction:** the earlier "inverts the edge constants" claim was **false** — README:596 "1 (lowering), 2 (raising)" *matches* `INT_EDGE_FALLING=1`/`INT_EDGE_RISING=2` (lowering=falling, raising=rising; `use constant` block API.pm:31ff). Non-idiomatic wording only; no inversion. V7 stands on the omissions + retired caveat.
 

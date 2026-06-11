@@ -25,6 +25,12 @@ Revision history for Perl extension WiringPi::API.
         - Reworded the stale "What changed vs isr-examples.md" appendix in
           docs/interrupt-examples.md so it no longer claims the interrupt
           API is unimplemented/provisional (it ships and is implemented)
+        - Regenerated docs/missing-functions.md against the current API.xs:
+          dropped the bogus setInterrupt/initThread aliases, moved the 32
+          now-wrapped functions (version, ISR2/ISRStop, I2C raw/block, SPI,
+          RP1, soft tone, timing, pad/clock, board) out of the missing
+          list, listed the genuinely-unwrapped wiringPiISR/piThreadCreate,
+          and refreshed the counts to 92 wrapped / 91 missing
 
 3.1802     2026-06-10
         - Switched from using die() to croak()
