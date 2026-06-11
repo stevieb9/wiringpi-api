@@ -164,13 +164,13 @@ void _close_interrupt_pipe(void){
     __atomic_store_n(&interrupts_dropped, 0, __ATOMIC_RELAXED);
 }
 
-int physPinToWpi(int wpi_pin){
+int physPinToWpi(int phys_pin){
     /* phys_wpi_map has 64 entries (physical header positions); -1 means
        "no such pin". Guard out-of-range input to avoid an OOB read. */
-    if (wpi_pin < 0 || wpi_pin >= (int)(sizeof(phys_wpi_map) / sizeof(phys_wpi_map[0]))){
+    if (phys_pin < 0 || phys_pin >= (int)(sizeof(phys_wpi_map) / sizeof(phys_wpi_map[0]))){
         return -1;
     }
-    return phys_wpi_map[wpi_pin];
+    return phys_wpi_map[phys_pin];
 }
 
 int bmp180Pressure(int pin){
@@ -510,8 +510,8 @@ void
 _close_interrupt_pipe()
 
 int
-physPinToWpi(wpi_pin)
-    int wpi_pin
+physPinToWpi(phys_pin)
+    int phys_pin
 
 int
 ads1115Setup(pin_base, addr)
