@@ -43,6 +43,7 @@ t/80-phys_to_wpi_bounds.t
 t/85-worker.t
 t/86-worker_thread.t
 t/87-running_waitpid.t
+t/88-shared_channel_framing.t
 t/90-pin_mode_alt.t
 t/manifest.t
 t/pod-coverage.t

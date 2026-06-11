@@ -1650,9 +1650,10 @@ must be a hash reference. The options are:
     absent reader (a full pipe simply drops the update), so this suits a sampler
     whose intermediate readings don't matter.
 
-    The same `PIPE_BUF` (4096-byte) size limit as `results` applies to
-    `$w->value`: a published value larger than that can make the read block
-    while the remainder of the record arrives.
+    Values larger than `PIPE_BUF` (4096 bytes, including a 4-byte length frame) are
+    **dropped** on this channel: a non-blocking write of an oversized frame could be
+    truncated and desync the reader, so the writer skips it. This fits the lossy
+    contract - if you need every large value intact, use `results` instead.
 
 - `mechanism => 'fork' | 'thread'`
 

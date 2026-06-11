@@ -16,7 +16,7 @@ use Fcntl qw(
     F_SETPIPE_SZ
     F_SETSIG
 );
-use POSIX qw(WNOHANG);
+use POSIX qw(WNOHANG PIPE_BUF);
 use RPi::Const qw(:all);
 use Scalar::Util qw(blessed);
 
@@ -1075,7 +1075,17 @@ sub worker {
             if (defined $ret) {
                 my $frame = pack("N", length "$ret") . "$ret";
                 syswrite $res_w, $frame if $res_w;
-                syswrite $val_w, $frame if $val_w;
+
+                # The shared channel is non-blocking, so a frame larger than
+                # PIPE_BUF could be written only partially - desyncing value()'s
+                # length-framing into garbage on the next read. Skip oversized
+                # frames entirely: the channel is already lossy (latest value
+                # only), so dropping one too-big update is consistent and keeps
+                # the stream aligned. (The results channel above is a blocking
+                # write, so it always emits whole records.)
+                if ($val_w && length($frame) <= PIPE_BUF) {
+                    syswrite $val_w, $frame;
+                }
             }
 
             last if $once;
@@ -3477,9 +3487,10 @@ most recent value with C<< $w->value >>. The child never blocks on a slow or
 absent reader (a full pipe simply drops the update), so this suits a sampler
 whose intermediate readings don't matter.
 
-The same C<PIPE_BUF> (4096-byte) size limit as C<results> applies to
-C<< $w->value >>: a published value larger than that can make the read block
-while the remainder of the record arrives.
+Values larger than C<PIPE_BUF> (4096 bytes, including a 4-byte length frame) are
+B<dropped> on this channel: a non-blocking write of an oversized frame could be
+truncated and desync the reader, so the writer skips it. This fits the lossy
+contract - if you need every large value intact, use C<results> instead.
 
 =item C<< mechanism => 'fork' | 'thread' >>
 

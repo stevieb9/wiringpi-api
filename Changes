@@ -62,6 +62,12 @@ Revision history for Perl extension WiringPi::API.
           when is_joinable and under eval, and detach instead of join during
           global destruction, so a forgotten stop() (reaped by DESTROY) or a
           double/self join can no longer die or warn at interpreter teardown
+        - Fixed a framing-desync risk on the worker {shared} channel: the
+          non-blocking writer now skips any value whose framed record exceeds
+          PIPE_BUF (4KB) rather than risk a partial write that would corrupt
+          value()'s length-framing. Oversized shared values are dropped (the
+          channel is lossy); {results} still delivers large values intact.
+          Added t/88-shared_channel_framing.t
 
 3.1802     2026-06-10
         - Switched from using die() to croak()
