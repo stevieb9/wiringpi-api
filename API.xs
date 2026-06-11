@@ -142,7 +142,10 @@ int interrupt_fd(void){
 /* Count of interrupt events dropped because the pipe was full (F24). */
 
 unsigned long interrupt_dropped(void){
-    return interrupts_dropped;
+    /* Atomic load: the ISR thread may be bumping this concurrently (line uses
+       __sync_fetch_and_add). __ATOMIC_RELAXED is sufficient - it is a standalone
+       counter with no ordering dependency on other state. */
+    return __atomic_load_n(&interrupts_dropped, __ATOMIC_RELAXED);
 }
 
 /* Close both ends of the self-pipe and reset interrupt state. The Perl side
@@ -158,7 +161,7 @@ void _close_interrupt_pipe(void){
         close(interrupt_pipe[1]);
         interrupt_pipe[1] = -1;
     }
-    interrupts_dropped = 0;
+    __atomic_store_n(&interrupts_dropped, 0, __ATOMIC_RELAXED);
 }
 
 int physPinToWpi(int wpi_pin){

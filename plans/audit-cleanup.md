@@ -72,7 +72,7 @@ Audit ledger from the 2026-06-10 read-only review (3 agents). Each `F#` is marke
 
 B1: ✅ RESOLVED (doc-only, 2026-06-10): `API.xs` `isr2_writer` reads `interrupt_pipe[1]` with no synchronization vs `_close_interrupt_pipe()` (TOCTOU). Mitigated today by caller discipline (Perl stops ISR threads before close). **Resolution:** documented the stop-before-close lifecycle invariant in the `isr2_writer` comment block, and explicitly warned off an atomic-load "fix" (it does not close the check→write window, so it would imply a thread-safety the code neither needs nor has). No behaviour change; XS recompiles clean. (API.xs:57-71, 151-154)
 
-B2: `interrupts_dropped` is bumped atomically (`__sync_fetch_and_add`) but reset/read non-atomically — a data race only if an ISR thread is live at reset. Use `__atomic_store_n`/`__atomic_load_n`, or document the "no active writer at close" invariant. (API.xs:75,127,143)
+B2: ✅ RESOLVED (2026-06-10): `interrupts_dropped` is bumped atomically (`__sync_fetch_and_add`) but reset/read non-atomically — a data race only if an ISR thread is live at reset. **Resolution:** chose the genuine fix (not just the invariant doc) since here it is clean — `interrupt_dropped()` now reads via `__atomic_load_n` and `_close_interrupt_pipe()` resets via `__atomic_store_n`, both `__ATOMIC_RELAXED` (standalone counter, no ordering dependency), pairing with the existing atomic increment. Behaviour-equivalent; XS recompiles clean, full suite green (121 tests). (API.xs:86,144-149,161)
 
 B3: `physPinToWpi(int wpi_pin)` parameter is misnamed — it is semantically a *physical* pin index. Table and bounds check are correct (verified against wiringPi's composed maps). Rename to `phys_pin` across `API.h`/`API.xs`/Perl for clarity. (API.xs:146)
 

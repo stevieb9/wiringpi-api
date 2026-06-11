@@ -36,6 +36,10 @@ Revision history for Perl extension WiringPi::API.
           interrupt/worker, soft_pwm, soft_tone, timing, pi_lock and board
           identity sections that were missing, drops the retired "interrupts
           need a threaded Perl or they segfault" caveat, and updates MANIFEST
+        - Made the interrupts_dropped counter fully race-free: its read
+          (interrupt_dropped()) and reset now use __atomic_load_n/store_n to
+          pair with the ISR thread's atomic increment (previously plain
+          read/write concurrent with the atomic bump)
 
 3.1802     2026-06-10
         - Switched from using die() to croak()
