@@ -52,6 +52,12 @@ Revision history for Perl extension WiringPi::API.
           a clean exit: only a positive reap or -1/ECHILD marks the child
           gone, so a stray EINTR can't latch a live handle stopped (and leak
           the child). Added t/87-running_waitpid.t
+        - Reconciled the byte-bank ops: the snake_case wrappers
+          (digital_read_byte(2)/digital_write_byte(2)) are the sole public
+          interface. Removed their duplicate C-name entries from the
+          DEVELOPER FUNCTIONS POD (which states it holds only wrapper-less
+          calls) and dropped the lone digitalWriteByte from the :wiringPi
+          export tag; clarified the DEVELOPER FUNCTIONS intro
 
 3.1802     2026-06-10
         - Switched from using die() to croak()

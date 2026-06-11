@@ -161,10 +161,6 @@
 - [DEVELOPER FUNCTIONS](#developer-functions)
   - [pseudoPinsSetup(int pinBase)](#pseudopinssetupint-pinbase)
   - [pinModeAlt(int pin, int mode)](#pinmodealtint-pin-int-mode)
-  - [digitalWriteByte(const int value)](#digitalwritebyteconst-int-value)
-  - [digitalWriteByte2(const int value)](#digitalwritebyte2const-int-value)
-  - [digitalReadByte()](#digitalreadbyte)
-  - [digitalReadByte2()](#digitalreadbyte2)
 - [AUTHOR](#author)
 - [COPYRIGHT AND LICENSE](#copyright-and-license)
 
@@ -2526,7 +2522,9 @@ NOTE: To get the raw sensor pressure, call the C function
 These functions are under testing, or don't potentially have a use to the end
 user. They may be risky to use, so use at your own risk.
 
-The functions in this section do not have a Perl wrapper equivalent.
+Most are called directly by their C name. Where a snake_case Perl wrapper does
+exist (e.g. `pin_mode_alt()` for `pinModeAlt`), that wrapper is the
+recommended interface.
 
 ## pseudoPinsSetup(int pinBase)
 
@@ -2559,33 +2557,6 @@ Mandatory: Signed integer, any valid GPIO pin number.
     mode
 
 Mandatory: Signed integer, any valid wiringPi pin mode.
-
-## digitalWriteByte(const int value)
-
-Writes an 8-bit byte to the first eight GPIO pins.
-
-Parameters:
-
-    value
-
-Mandatory: Unsigned int, the byte value you want to send in.
-
-Return: void
-
-## digitalWriteByte2(const int value)
-
-Same as ["digitalWriteByte(const int value)"](#digitalwritebyte-const-int-value), but writes to the second group
-of eight GPIO pins.
-
-## digitalReadByte()
-
-Reads an 8-bit byte from the first eight GPIO pins on the Pi.
-
-Takes no parameters, returns the byte value as an unsigned int.
-
-## digitalReadByte2()
-
-Same as ["digitalReadByte()"](#digitalreadbyte), but reads from the second group of eight GPIO pins.
 
 # AUTHOR
 

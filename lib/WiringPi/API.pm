@@ -46,7 +46,7 @@ my @wpi_c_functions = (
     qw(
         pinMode                 pinModeAlt              getAlt
         getPinModeAlt           pullUpDnControl         digitalRead
-        digitalWrite            digitalWriteByte
+        digitalWrite
     ),
     # ADC (analog to digital)
     qw(
@@ -4189,7 +4189,9 @@ C<bmp180Pressure($pin)> directly.
 These functions are under testing, or don't potentially have a use to the end
 user. They may be risky to use, so use at your own risk.
 
-The functions in this section do not have a Perl wrapper equivalent.
+Most are called directly by their C name. Where a snake_case Perl wrapper does
+exist (e.g. C<pin_mode_alt()> for C<pinModeAlt>), that wrapper is the
+recommended interface.
 
 =head2 pseudoPinsSetup(int pinBase)
 
@@ -4222,33 +4224,6 @@ Mandatory: Signed integer, any valid GPIO pin number.
     mode
 
 Mandatory: Signed integer, any valid wiringPi pin mode.
-
-=head2 digitalWriteByte(const int value)
-
-Writes an 8-bit byte to the first eight GPIO pins.
-
-Parameters:
-
-    value
-
-Mandatory: Unsigned int, the byte value you want to send in.
-
-Return: void
-
-=head2 digitalWriteByte2(const int value)
-
-Same as L</digitalWriteByte(const int value)>, but writes to the second group
-of eight GPIO pins.
-
-=head2 digitalReadByte()
-
-Reads an 8-bit byte from the first eight GPIO pins on the Pi.
-
-Takes no parameters, returns the byte value as an unsigned int.
-
-=head2 digitalReadByte2()
-
-Same as L</digitalReadByte()>, but reads from the second group of eight GPIO pins.
 
 =head1 AUTHOR
 
