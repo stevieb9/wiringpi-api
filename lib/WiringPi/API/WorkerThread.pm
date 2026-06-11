@@ -86,13 +86,15 @@ sub value {
 # Thread mode has no pipe channels (results/shared are rejected at construction),
 # so the channel accessors croak with a guiding message instead of silently
 # returning undef - a consistent contract with the BackgroundInterrupts sibling,
-# which croaks the same way for its absent results channel.
+# which croaks the same way for its absent results channel
+
 sub _no_channel {
     croak "worker({mechanism=>'thread'}) has no pipe channels; share a " .
         "variable and serialise it with pi_lock()/pi_unlock() instead";
 }
 
 1;
+
 __END__
 
 =head1 NAME

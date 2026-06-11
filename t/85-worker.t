@@ -10,7 +10,7 @@ use WiringPi::API qw(
 );
 
 # worker() runs arbitrary Perl in a forked child. Every case above the final
-# block touches no hardware and runs off-Pi; the PI_BOARD-gated block at the end
+# block touches no hardware and runs off-Pi; the RPI_BOARD-gated block at the end
 # drives a real pin through a worker.
 
 # ---------------------------------------------------------------------------
@@ -243,15 +243,15 @@ like($@, qr/0, 1, 2 or 3/, 'pi_unlock() rejects a non-numeric key');
 }
 
 # ---------------------------------------------------------------------------
-# Real hardware (opt-in via PI_BOARD). Uses BCM17 as an OUTPUT and proves the
+# Real hardware (opt-in via RPI_BOARD). Uses BCM17 as an OUTPUT and proves the
 # hands-off contract across the fork boundary: the parent does setup once, the
 # forked worker inherits the mapped GPIO and drives/reads the pin. Driving an
 # unwired output pin is electrically safe, so nothing need be connected.
 # ---------------------------------------------------------------------------
 
 SKIP: {
-    skip "set PI_BOARD=1 (and wire nothing to BCM17) to run the GPIO worker tests", 5
-        unless $ENV{PI_BOARD};
+    skip "set RPI_BOARD=1 (and wire nothing to BCM17) to run the GPIO worker tests", 5
+        unless $ENV{RPI_BOARD};
 
     setup_gpio();           # BCM numbering, once in the parent
     pin_mode(17, 1);        # OUTPUT - inherited by the forked worker

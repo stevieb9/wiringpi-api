@@ -68,6 +68,12 @@ Revision history for Perl extension WiringPi::API.
           value()'s length-framing. Oversized shared values are dropped (the
           channel is lossy); {results} still delivers large values intact.
           Added t/88-shared_channel_framing.t
+        - The test suite board gate is now RPI_BOARD (ecosystem-wide rename
+          from PI_BOARD); the old name is no longer honored
+        - Makefile.PL's wiringPi presence/version checks can now be bypassed
+          with RPI_DIST_RELEASE=1 so release tarballs can be cut on non-Pi
+          machines; without it the checks still exit before WriteMakefile
+          (CPAN testers report NA, not FAIL)
 
 3.1802     2026-06-10
         - Switched from using die() to croak()
