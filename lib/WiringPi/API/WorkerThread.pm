@@ -34,9 +34,13 @@ sub running {
 
     return 0 if ! $self->{running};
 
-    # A {once} thread exits on its own; join it so running() reflects reality.
-    if ($self->{thread} && ! $self->{thread}->is_running) {
-        $self->{thread}->join;
+    # A {once} thread exits on its own; reap it so running() reflects reality.
+    # Join only when joinable and under eval, so a thread that finished between
+    # the is_running check and the join (or was already reaped) can't make
+    # running() die.
+    my $thr = $self->{thread};
+    if ($thr && ! $thr->is_running) {
+        eval { $thr->join } if $thr->is_joinable;
         $self->{thread}  = undef;
         $self->{running} = 0;
         return 0;
@@ -49,8 +53,21 @@ sub stop {
 
     return 1 if ! $self->{running};         # idempotent
 
-    ${ $self->{stop_ref} } = 1;             # cooperative stop at next pass
-    $self->{thread}->join if $self->{thread};
+    ${ $self->{stop_ref} } = 1 if $self->{stop_ref};   # cooperative stop next pass
+
+    # Reap the thread, but guard the join: never propagate a die from a double-
+    # or self-join, and during global destruction detach instead of join -
+    # joining an ithread while the interpreter is tearing down is unsafe and
+    # noisy (and DESTROY reaches here for a worker the caller forgot to stop).
+    my $thr = $self->{thread};
+    if ($thr && $thr->is_joinable) {
+        if (${^GLOBAL_PHASE} eq 'DESTRUCT') {
+            eval { $thr->detach };
+        }
+        else {
+            eval { $thr->join };
+        }
+    }
     $self->{thread}  = undef;
     $self->{running} = 0;
 

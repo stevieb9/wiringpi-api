@@ -58,6 +58,10 @@ Revision history for Perl extension WiringPi::API.
           DEVELOPER FUNCTIONS POD (which states it holds only wrapper-less
           calls) and dropped the lone digitalWriteByte from the :wiringPi
           export tag; clarified the DEVELOPER FUNCTIONS intro
+        - Guarded WorkerThread's thread join in stop()/running(): join only
+          when is_joinable and under eval, and detach instead of join during
+          global destruction, so a forgotten stop() (reaped by DESTROY) or a
+          double/self join can no longer die or warn at interpreter teardown
 
 3.1802     2026-06-10
         - Switched from using die() to croak()
