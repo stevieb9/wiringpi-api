@@ -2453,7 +2453,9 @@ Parameters:
 
     $range
 
-Mandatory: An integer between C<0> and C<1023>.
+Mandatory: An unsigned integer specifying the PWM range register. The duty
+cycle then spans C<0> to one less than this value (the default C<1024> gives
+C<0-1023>).
 
 =head2 pwm_set_clock($divisor)
 
@@ -2955,7 +2957,7 @@ Mandatory: Row position. C<0> is the top row.
 
 =head2 lcd_char_def($fd, $index, $data)
 
-Maps to C<void lcdCharDef(int fd, unsigned char data [8])>. This function is
+Maps to C<void lcdCharDef(int fd, unsigned char data [8])>.
 
 This allows you to re-define one of the 8 user-definable characters in the
 display.
@@ -2979,7 +2981,7 @@ unsigned char byte. These bytes represent the character from the top-line to
 the bottom line. 
 
 Note that the characters are actually 5 x 8, so only the lower 5 bits are of
-each element are used (ie. `0b11111` or 0b00011111`). The index is from 0 to 7
+each element are used (ie. C<0b11111> or C<0b00011111>). The index is from 0 to 7
 and you can subsequently print the character defined using the lcdPutchar()
 call using the same index sent in to this function.
 
