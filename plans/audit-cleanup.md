@@ -1,8 +1,8 @@
 # Plan: Code & documentation audit — correctness, efficiency, doc accuracy
 
-> **NEXT ACTION:** V1 — `ensure_interrupt_pipe()` fcntl error handling + explicit `errno`/`string` includes in `API.xs`; `serialGets` needs includes only (its F_GETFL −1 guard already exists)
-> **LAST SESSION:** 2026-06-10 — plan-correction pass (2-AI debate, RESOLVED; see proposal/audit-cleanup-plan-corrections.md). Corrected F3/F10 findings, demoted V2→B9, reworded V1, fixed V1/V3/V7 validation. No code changed.
-> **ARCHIVE:** See audit-cleanup-archive.md for completed V tasks
+> **NEXT ACTION:** V4 — POD/markdown fixes in all three copies (lcd_char_def dangling sentence, unbalanced backticks, lcdPutChar name, pwm_set_range wording; F5, F9)
+> **LAST SESSION:** 2026-06-10 — V1 ✅ + t/76 follow-up (fcntl/pipe failure paths tested); V3 ✅ (arm()/disarm() syswrite hardening via _send(), F4 resolved, t/77 added incl. pre-fix SIGPIPE repro).
+> **ARCHIVE:** See audit-cleanup-archive.md for completed V tasks (V1, V3)
 
 ## Scope & ground rules
 
@@ -38,8 +38,6 @@
 
 | ID | What | Command | Expected | Actual |
 |----|------|---------|----------|--------|
-| V1 | `API.xs`: in `ensure_interrupt_pipe()` (lines ~92-95) check `fcntl(F_GETFL)` for -1 before OR-ing in `O_NONBLOCK` (`flags \| O_NONBLOCK`), and check the `F_SETFL` return; on fcntl failure close both pipe fds, reset to -1, return -1 (F1, F2). Add explicit `#include <errno.h>` and `#include <string.h>` for `serialGets`' `errno`/`strerror` (F8). **`serialGets` fcntl note (do NOT re-add a guard):** the `F_GETFL` -1 guard already exists (API.xs:748: `if (flags != -1 && ...)`); serialGets *clears* O_NONBLOCK (`flags & ~O_NONBLOCK`, 749), it does not OR it in; only the `F_SETFL` return (749) is unchecked — lowest severity, effectively unreachable (clearing O_NONBLOCK on an fd that just passed `F_GETFL` has no realistic failure mode) — harden in one line or waive explicitly. Resolves F1, F2, F8. | `perl Makefile.PL && make 2>&1 \| grep -i 'error\|warning'`; `prove -lb t/75-interrupts.t` | Compiles clean. **Validation reaches the happy path only:** t/75 runs 47 hardware-free tests but mocks the changed XS entry points (`local *…::_arm_interrupt`/`…::wiringPiISRStop`, t/75:65-67,149-151), so the passing tests never execute the C `ensure_interrupt_pipe`/fcntl path; only the 7-test hardware block (t/75:232-234, `PI_BOARD`-gated) reaches it, and no test drives F1's fcntl-failure path. Bar = compile-clean + no regression, gap noted. | ⏳ |
-| V3 | `BackgroundInterrupts.pm`: `arm()`/`disarm()` ignore `syswrite` failure — a dead child raises `SIGPIPE` (process death) or silent loss. Localize `$SIG{PIPE}='IGNORE'`, check the `syswrite` return, refresh liveness via `running()` before writing. Resolves F4. | `perl -c -Ilib lib/WiringPi/API/BackgroundInterrupts.pm`; `prove -lb t/75-interrupts.t` | Compiles; suite stays green. **No existing test drives F4's dead-child path** (t/75's hardware-free blocks mock the XS interrupt entry points; the dead-child write is not exercised). Bar = compile-clean + no regression; the SIGPIPE/dead-child behaviour is unvalidated by the suite — verify by hand or add a targeted test. | ⏳ |
 | V4 | POD/markdown fixes in all three copies (`lib/WiringPi/API.pm` POD, `docs/pod.md`, `README`): (a) `lcd_char_def` dangling sentence "...This function is" (API.pm:2958, pod.md:1308); (b) unbalanced backticks `` `0b11111` or 0b00011111` `` (API.pm:2982, pod.md:1332, README:534); (c) `lcdPutChar`→`lcdPutchar` name (README:541); (d) `pwm_set_range` "0 and 1023" wording (range vs duty). Resolves F5, F9. | `podchecker lib/WiringPi/API.pm`; `RELEASE_TESTING=1 prove -lb t/pod.t t/pod-coverage.t` | podchecker clean; pod tests pass. **Note:** `t/pod.t`/`t/pod-coverage.t` are author tests gated on `RELEASE_TESTING` (t/pod.t:6-8) — without `RELEASE_TESTING=1` they `skip_all` and verify nothing; the command sets it. | ⏳ |
 | V5 | `docs/interrupt-examples.md`: remove/rewrite the stale "What changed vs isr-examples.md" appendix (lines ~745-790) that still claims "API unimplemented; API.xs still ships the old dispatcher-thread design" and flags items "provisional" — contradicts the shipped self-pipe implementation and the file's own "implemented and shipping" banner. Resolves F6. | `grep -n 'provisional\|unimplemented\|dispatcher-thread' docs/interrupt-examples.md` | No stale "unimplemented/provisional" claims remain | ⏳ |
 | V6 | `docs/missing-functions.md`: regenerate (or annotate as stale + correct) against current `API.xs`. Drop the false "wrapped under different XS names" entries `setInterrupt`/`initThread` (neither exists); remove now-wrapped functions wrongly listed as missing (`wiringPiVersion`, `wiringPiISR2`, `wiringPiISRStop`, the I2C raw/block + SPI + RP1 calls); refresh the 62/121 counts and the "Generated:" date. Resolves F7. | `grep -n 'setInterrupt\|initThread' docs/missing-functions.md` | No references to non-existent wrappers; counts match current `API.xs` | ⏳ |
@@ -55,14 +53,14 @@ Audit ledger from the 2026-06-10 read-only review (3 agents). Each `F#` is marke
 
 **Correctness — C/XS (`API.xs`, `API.h`)**
 
-- **F1** (→V1): `ensure_interrupt_pipe()` does not check `fcntl(F_GETFL)` for -1 before `flags | O_NONBLOCK`, nor the `F_SETFL` return. A silent failure leaves the self-pipe write end blocking, so the wiringPi ISR thread can block in `write()` — the exact failure the non-blocking design avoids. (API.xs:92-95)
-- **F2** (→V1): No error path after `pipe()` succeeds in `ensure_interrupt_pipe()`; if the fcntl step is treated as failure (per F1) both fds must be closed and reset to -1 to avoid an fd leak. (API.xs:88-97)
+- **F1** ✅ RESOLVED (V1): `ensure_interrupt_pipe()` does not check `fcntl(F_GETFL)` for -1 before `flags | O_NONBLOCK`, nor the `F_SETFL` return. A silent failure leaves the self-pipe write end blocking, so the wiringPi ISR thread can block in `write()` — the exact failure the non-blocking design avoids. (API.xs:92-95)
+- **F2** ✅ RESOLVED (V1): No error path after `pipe()` succeeds in `ensure_interrupt_pipe()`; if the fcntl step is treated as failure (per F1) both fds must be closed and reset to -1 to avoid an fd leak. (API.xs:88-97)
 - **F3** ⏸ DEFERRED → B9: `wiringPiVersion` assigns `RETVAL` the address of local `char ver[16]` (API.xs:225-235). **Corrected: NOT a defect.** The ExtUtils `T_PV` typemap OUTPUT contract copies the string via `sv_setpv` *before* the XSUB returns (corroborated in the generated `API.c`, but cite the typemap contract — `API.c` regenerates on `make`), so the local's address never reaches Perl. No UB, no dangling read. Fragile *pattern* only (taking the address of a stack local for a `char *` RETVAL); cosmetic, so demoted from the Validation Table to B9 per the non-defect→Backlog rule.
-- **F8** (→V1): `errno`/`strerror` (serialGets) used without a direct `#include <errno.h>`/`<string.h>` — compiles only via transitive `perl.h`. Add explicit includes. (API.xs:759-762)
+- **F8** ✅ RESOLVED (V1): `errno`/`strerror` (serialGets) used without a direct `#include <errno.h>`/`<string.h>` — compiles only via transitive `perl.h`. Add explicit includes. (API.xs:759-762)
 
 **Correctness — Perl (`lib/WiringPi/API/*.pm`)**
 
-- **F4** (→V3): `BackgroundInterrupts::arm()/disarm()` ignore `syswrite` return; the `running` guard reads the raw field without reaping, so a write to a just-dead child can raise SIGPIPE or silently lose the command. (BackgroundInterrupts.pm:35,47)
+- **F4** ✅ RESOLVED (V3): `BackgroundInterrupts::arm()/disarm()` ignore `syswrite` return; the `running` guard reads the raw field without reaping, so a write to a just-dead child can raise SIGPIPE or silently lose the command. (BackgroundInterrupts.pm:35,47)
 
 **Documentation accuracy**
 
@@ -97,3 +95,5 @@ B9 (demoted from V2; resolves the cosmetic side of F3): rewrite `wiringPiVersion
 - Editing `API.c`/`API.o`/`API.bs` — generated build artifacts, not source.
 - `serialGets` permanently clearing `O_NONBLOCK` on the fd (API.xs:747-749) — the inline comment documents this as a deliberate choice so VMIN/VTIME timeouts work. Leave as-is unless the author wants save/restore (then promote from here).
 - Changing the `$VERSION` / release-versioning scheme — out of scope for a correctness/doc audit.
+
+- `serialGets`' unchecked `F_SETFL` return (API.xs:751) — waived during V1: clearing O_NONBLOCK on an fd that just passed `F_GETFL` has no realistic failure mode, and a failure surfaces anyway (read returns EAGAIN → existing croak path). Not worth a guard.

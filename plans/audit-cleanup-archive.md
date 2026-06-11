@@ -1,0 +1,14 @@
+# Archive: Code & documentation audit — correctness, efficiency, doc accuracy
+
+Completed tasks split out of audit-cleanup.md to keep the active plan lean. See
+that file for the live Validation Table, rules and tracking.
+
+## Archived V Tasks
+
+- V1: `ensure_interrupt_pipe()` fcntl error handling + explicit `errno.h`/`string.h` includes — ✅ 2026-06-10 attempt 1: PASS. `ensure_interrupt_pipe()` (API.xs:94-104) now checks `fcntl(F_GETFL)` for -1 and the `F_SETFL` return; on either failure it closes both pipe fds, resets them to -1 and returns -1, so `_arm_interrupt` croaks "could not create interrupt pipe" instead of arming with a possibly-blocking self-pipe (F1, F2). Added explicit `#include <errno.h>` and `#include <string.h>` for `serialGets`' `errno`/`strerror` use (F8). `serialGets`' unchecked `F_SETFL` return waived explicitly (→ Explicitly NOT doing): clearing O_NONBLOCK on an fd that just passed `F_GETFL` has no realistic failure mode, and a failure surfaces anyway as the read's EAGAIN croak. Build clean (no errors/warnings); `prove -lb t/75-interrupts.t` 47 tests pass. Per the plan's validation note, the suite reaches the happy path only — no test drives the fcntl-failure branch (gap noted, bar = compile-clean + no regression). Changes entries added. **Follow-up (same day):** gap closed — added `t/76-interrupt_pipe_failure.t` (7 tests, no hardware): drives pipe() EMFILE via fd exhaustion (`bash ulimit -n` child) and both fcntl-failure branches via an LD_PRELOAD shim (`WPI_FAIL_FCNTL=G/S`), asserting the croak, no fd leak (`/proc/self/fd` counts stable), and reset-to--1 (second attempt croaks identically rather than arming on half-open state). Added to MANIFEST; also added `^proposal/` to MANIFEST.SKIP (pre-existing `t/manifest.t` author-test failure, unrelated to the new test).
+
+- V3: `BackgroundInterrupts.pm` `arm()`/`disarm()` syswrite hardening — ✅ 2026-06-10 attempt 1: PASS. Factored the shared write into a private `_send()`: refreshes liveness via `running()` (WNOHANG reap) instead of reading the raw `{running}` field, localizes `$SIG{PIPE}='IGNORE'`, checks the `syswrite` return (defined + full length) and returns 0 on failure instead of dying or silently losing the command (F4). POD for `arm`/`disarm` updated to document the failure return. `perl -c` OK; podchecker OK; full suite green (121 tests). Beyond the plan's bar (which noted the dead-child path was unvalidated), added `t/77-background_interrupts_control.t` (17 tests, no hardware): live-child command delivery, croak-on-unregistered-pin, EPIPE with a live child (returns 0, no SIGPIPE death, `$SIG{PIPE}` restored, child not falsely marked dead), and dead-child refusal (`running()` reaps, both methods return 0). Verified the test catches the original bug: against the stashed pre-fix module, t/77 dies with `Wstat: 13 (Signal: PIPE)`. Added to MANIFEST; Changes entries added.
+
+## Archived Fixes
+
+_None yet._

@@ -1,7 +1,22 @@
 Revision history for Perl extension WiringPi::API.
 
 3.1803  UNREL
-        -
+        - Check both fcntl() return values in ensure_interrupt_pipe(); on
+          failure close the pipe fds, reset them and fail arming cleanly
+          instead of silently leaving the self-pipe blocking
+        - Add explicit errno.h/string.h includes to API.xs (previously
+          relied on transitive includes via perl.h)
+        - Added t/76-interrupt_pipe_failure.t covering the
+          ensure_interrupt_pipe() failure paths: pipe() EMFILE via fd
+          exhaustion, and fcntl() failures via an LD_PRELOAD shim (croak,
+          no fd leak, state reset)
+        - Added ^proposal/ to MANIFEST.SKIP (planning docs, like ^plans/)
+        - BackgroundInterrupts arm()/disarm() no longer die of SIGPIPE (or
+          silently lose the command) when the child has died: liveness is
+          refreshed before writing, the syswrite return is checked with
+          SIGPIPE ignored, and 0 is returned on failure
+        - Added t/77-background_interrupts_control.t covering arm()/disarm()
+          delivery, the EPIPE/dead-child paths and pin validation
 
 3.1802     2026-06-10
         - Switched from using die() to croak()

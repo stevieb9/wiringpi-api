@@ -14,6 +14,8 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
+#include <string.h>
 
 #define PERL_NO_GET_CONTEXT
 
@@ -91,7 +93,14 @@ static int ensure_interrupt_pipe(void){
 
     for (i = 0; i < 2; i++){
         int flags = fcntl(interrupt_pipe[i], F_GETFL, 0);
-        fcntl(interrupt_pipe[i], F_SETFL, flags | O_NONBLOCK);
+        if (flags == -1
+            || fcntl(interrupt_pipe[i], F_SETFL, flags | O_NONBLOCK) == -1){
+            close(interrupt_pipe[0]);
+            close(interrupt_pipe[1]);
+            interrupt_pipe[0] = -1;
+            interrupt_pipe[1] = -1;
+            return -1;
+        }
     }
 
     return 0;
