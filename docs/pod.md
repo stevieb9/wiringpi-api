@@ -1858,12 +1858,15 @@ must be a hash reference. The options are:
 - `$w->read` / `$w->fh`
 
     Drain the next streamed value / get the readable filehandle, when the worker was
-    started with `results => 1` (otherwise `undef`).
+    started with `results => 1` (otherwise `undef`). On a **thread** worker these
+    croak instead - thread mode has no pipe channels (use shared memory with
+    [pi_lock($key)](#pi_lockkey) / [pi_unlock($key)](#pi_unlockkey)).
 
 - `$w->value`
 
     The latest published value, when the worker was started with `shared => 1`
-    (otherwise `undef`).
+    (otherwise `undef`). On a **thread** worker this croaks for the same reason as
+    `$w->read`.
 
 ## Periodic sampler handing data back to main
 

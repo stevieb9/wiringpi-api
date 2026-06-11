@@ -43,6 +43,11 @@ Revision history for Perl extension WiringPi::API.
         - Documented the PIPE_BUF (4KB) size limit on the results/shared
           channels: a returned value larger than that can block the otherwise
           non-blocking read()/value() drain (full non-blocking drain pending)
+        - WorkerThread read()/fh()/value() now croak with a guiding message
+          (thread mode has no pipe channels; use shared memory + pi_lock())
+          instead of silently returning undef - a consistent contract with
+          the BackgroundInterrupts sibling. Added t/86-worker_thread.t and
+          direct WorkerThread contract assertions to t/85-worker.t
 
 3.1802     2026-06-10
         - Switched from using die() to croak()

@@ -3519,12 +3519,15 @@ worker.
 =item C<< $w->read >> / C<< $w->fh >>
 
 Drain the next streamed value / get the readable filehandle, when the worker was
-started with C<< results => 1 >> (otherwise C<undef>).
+started with C<< results => 1 >> (otherwise C<undef>). On a B<thread> worker these
+croak instead - thread mode has no pipe channels (use shared memory with
+L</pi_lock($key)> / L</pi_unlock($key)>).
 
 =item C<< $w->value >>
 
 The latest published value, when the worker was started with C<< shared => 1 >>
-(otherwise C<undef>).
+(otherwise C<undef>). On a B<thread> worker this croaks for the same reason as
+C<< $w->read >>.
 
 =back
 

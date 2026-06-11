@@ -156,6 +156,33 @@ like($@, qr/0, 1, 2 or 3/, 'pi_unlock() rejects a non-numeric key');
 }
 
 # ---------------------------------------------------------------------------
+# WorkerThread contract: thread mode has no pipe channels, so read()/fh()/value()
+# croak (consistent with BackgroundInterrupts) instead of silently returning
+# undef like a fork worker does. The croak is unconditional, so it is asserted
+# here directly on the handle class - no ithread Perl required. The end-to-end
+# thread-construction path is covered in t/86-worker_thread.t.
+# ---------------------------------------------------------------------------
+
+{
+    require WiringPi::API::WorkerThread;
+    my $wt = bless {}, 'WiringPi::API::WorkerThread';
+    my $re = qr/no pipe channels.*pi_lock/;
+
+    eval { $wt->read };
+    like($@, $re, 'WorkerThread read() croaks (no pipe channel under thread mode)');
+
+    eval { $wt->fh };
+    like($@, $re, 'WorkerThread fh() croaks (no pipe channel under thread mode)');
+
+    eval { $wt->value };
+    like($@, $re, 'WorkerThread value() croaks (no pipe channel under thread mode)');
+
+    # croak must blame the caller's line (this file), not WorkerThread.pm.
+    eval { $wt->read };
+    like($@, qr/\bat \Q$0\E line \d+/, 'WorkerThread croak is reported from the caller');
+}
+
+# ---------------------------------------------------------------------------
 # {once => 1}: body runs exactly once, then the child exits on its own.
 # ---------------------------------------------------------------------------
 
