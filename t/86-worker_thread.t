@@ -4,9 +4,6 @@ use warnings;
 use Config;
 use Test::More;
 
-# Thread mode needs an ithread-enabled Perl. Decide before 'use threads' is
-# compiled: plan skip_all exits the BEGIN, so the 'use threads' below never runs
-# on a non-threaded build (where it would fail to compile).
 BEGIN {
     plan skip_all => 'this Perl is not built with ithreads'
         unless $Config{useithreads};
