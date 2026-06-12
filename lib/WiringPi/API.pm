@@ -382,6 +382,7 @@ sub set_interrupt {
     if ($opts{auto_dispatch} && ! $_auto_dispatch) {
         my $v = $opts{auto_dispatch};
         my $sig = ($v =~ /^[A-Za-z]/) ? $v : undef;
+
         auto_dispatch_interrupts(1, $sig);
     }
 
@@ -666,7 +667,7 @@ sub background_interrupt {
 
     if (! defined $edge || ! $VALID_INT_EDGE{$edge}) {
         croak "background_interrupt() \$edge must be INT_EDGE_FALLING (1), " .
-            "INT_EDGE_RISING (2) or INT_EDGE_BOTH (3)";
+              "INT_EDGE_RISING (2) or INT_EDGE_BOTH (3)";
     }
 
     if (! defined $callback || ref $callback ne 'CODE') {
