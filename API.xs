@@ -33,6 +33,7 @@
 #include <softPwm.h>
 #include <softTone.h>
 #include <sr595.h>
+#include <pcf8574.h>
 
 // Used for interrupts (self-pipe: the wiringPi ISR thread write()s a fixed
 // event record to a pipe and never touches Perl; the Perl side reads
@@ -389,6 +390,11 @@ sr595Setup(pin_base, num_pins, data_pin, clock_pin, latch_pin)
     int data_pin
     int clock_pin
     int latch_pin
+
+int
+pcf8574Setup(pin_base, i2c_address)
+    int pin_base
+    int i2c_address
 
 void
 piLock(keyNum)

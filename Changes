@@ -10,6 +10,11 @@ Revision history for Perl extension WiringPi::API.
           guard above), t/93-arg_validation.t (shift_reg_setup/serial_gets/
           lcd_init argument croaks), and t/94-bmp180_math.t (the bmp180_temp/
           pressure unit conversions, via stubbed reads) - all HW-free
+        - Added pcf8574Setup(pin_base, i2c_address) (exported, from libwiringPi):
+          registers a PCF8574 I2C I/O-expander's 8 pins as virtual GPIOs, so the
+          existing lcd*()/digital_* functions can drive an HD44780 over an I2C
+          backpack by routing their digitalWrite() calls to the expander. Used
+          by RPi::WiringPi's lcd(i2c => ...) path
 
 3.1803     2026-06-12
         - Check both fcntl() return values in ensure_interrupt_pipe(); on

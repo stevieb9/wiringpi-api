@@ -100,9 +100,9 @@ my @wpi_c_functions = (
         serialOpen              serialDataAvail         serialFlush
         serialGetchar           serialPutchar           serialPuts
     ),
-    # Shift register
+    # Pin extensions (shift register, I2C expander)
     qw(
-        sr595Setup
+        sr595Setup              pcf8574Setup
     ),
     # Soft tone
     qw(
@@ -3679,6 +3679,30 @@ Mandatory: Integer, the GPIO pin number connected to the register's C<SHCP> pin
 
 Mandatory: Integer, the GPIO pin number connected to the register's C<STCP> pin
 (12). Can be any GPIO pin capable of output.
+
+=head2 pcf8574Setup($pin_base, $i2c_address)
+
+Registers a PCF8574 (or PCF8574A) 8-bit I2C I/O expander, mapping its eight
+pins onto virtual GPIO pin numbers starting at C<$pin_base>. After setup, the
+expander's pins work with C<digital_write>/C<digital_read> (and any function
+that takes a pin number) exactly like native GPIO - the calls are routed to the
+expander over I2C.
+
+This is what lets an HD44780 LCD on a PCF8574 backpack be driven through the
+standard C<lcd_*> functions; see L<RPi::WiringPi/lcd> (C<< i2c => $addr >>).
+
+Parameters:
+
+    $pin_base
+
+Mandatory: Integer higher than all native GPIO pins (>= 64). The expander's
+first pin (P0) becomes GPIO C<$pin_base>, P1 becomes C<$pin_base + 1>, and so
+on through P7.
+
+    $i2c_address
+
+Mandatory: Integer, the expander's I2C address (e.g. C<0x27> for a PCF8574, or
+C<0x3F> for some PCF8574A backpacks).
 
 =head1 SERIAL FUNCTIONS
 
