@@ -3,7 +3,7 @@ package WiringPi::API;
 use strict;
 use warnings;
 
-our $VERSION = '3.1803';
+our $VERSION = '3.1804';
 
 use Carp qw(croak);
 use Fcntl qw(
@@ -1247,11 +1247,17 @@ sub gpio_layout {
 sub wpi_to_gpio {
     shift if @_ == 2;
     my $pin = shift;
+    # wpiPinToGpio() indexes a 64-entry wiringPi table; guard out-of-range /
+    # non-integer input to avoid an OOB read, returning the -1 "no such pin"
+    # sentinel (mirrors phys_to_wpi()).
+    return -1 if ! defined $pin || $pin !~ /^-?\d+$/ || $pin < 0 || $pin >= 64;
     return wpiPinToGpio($pin);
 }
 sub phys_to_gpio {
     shift if @_ == 2;
     my $pin = shift;
+    # physToGpio is likewise a 64-entry table; same OOB guard as above.
+    return -1 if ! defined $pin || $pin !~ /^-?\d+$/ || $pin < 0 || $pin >= 64;
     return physPinToGpio($pin);
 }
 sub phys_to_wpi {

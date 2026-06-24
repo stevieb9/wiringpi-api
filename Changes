@@ -1,5 +1,16 @@
 Revision history for Perl extension WiringPi::API.
 
+3.1804 UNREL
+        - Fixed phys_to_gpio() and wpi_to_gpio(): they forwarded out-of-range
+          / non-integer input straight to the wiringPi library lookups (64-entry
+          tables), an out-of-bounds read; they now guard the index and return
+          the -1 "no such pin" sentinel, matching phys_to_wpi()
+        - Added t/91-spi_data.t (spi_data channel/arrayref/len + spiDataRW
+          byte-range croaks), t/92-pin_map_bounds.t (the phys/wpi_to_gpio bounds
+          guard above), t/93-arg_validation.t (shift_reg_setup/serial_gets/
+          lcd_init argument croaks), and t/94-bmp180_math.t (the bmp180_temp/
+          pressure unit conversions, via stubbed reads) - all HW-free
+
 3.1803     2026-06-12
         - Check both fcntl() return values in ensure_interrupt_pipe(); on
           failure close the pipe fds, reset them and fail arming cleanly
