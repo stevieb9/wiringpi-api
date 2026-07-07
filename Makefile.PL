@@ -4,7 +4,12 @@ use strict;
 use ExtUtils::MakeMaker;
 use version;
 
-my $min_wpi_ver = 3.18;
+# The canonical wiringPi minimum lives in RPi::Const (WIRINGPI_MIN_VERSION);
+# fall back to the literal if RPi::Const isn't installed at configure time
+my $min_wpi_ver = eval {
+    require RPi::Const;
+    RPi::Const::WIRINGPI_MIN_VERSION();
+} || 3.18;
 
 # RPI_DIST_RELEASE allows cutting release tarballs on non-Pi machines by
 # bypassing the wiringPi presence/version checks below. Without it, a
@@ -67,6 +72,6 @@ WriteMakefile(
     MIN_PERL_VERSION  => 5.006,
     LICENSE           => 'perl_5',
     PREREQ_PM         => {
-        'RPi::Const' => '1.05',
+        'RPi::Const' => '1.07',
     },
 );

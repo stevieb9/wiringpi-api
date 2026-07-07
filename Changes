@@ -15,6 +15,21 @@ Revision history for Perl extension WiringPi::API.
           existing lcd*()/digital_* functions can drive an HD44780 over an I2C
           backpack by routing their digitalWrite() calls to the expander. Used
           by RPi::WiringPi's lcd(i2c => ...) path
+        - Makefile.PL's minimum wiringPi version now comes from RPi::Const's
+          WIRINGPI_MIN_VERSION (literal 3.18 fallback when RPi::Const isn't
+          installed at configure time); RPi::Const prereq bumped to 1.07;
+          DESCRIPTION POD points at the canonical constant
+        - Added spiNoCS(channel, state) / spi_no_cs(): sets or clears the
+          kernel SPI_NO_CS flag on an open SPI channel so transactions can be
+          framed by a user-managed GPIO chip select without the hardware
+          CE0/CE1 pin strobing alongside (used by RPi::SPI's GPIO CS mode)
+        - Added spiBitBang(clk, mosi, miso, cs, data, len, mode, delay_us) /
+          spi_bit_bang(): full software SPI transaction on arbitrary GPIO
+          pins (modes 0-3, MSB-first, active-low CS, optional per-phase
+          delay) with no kernel SPI involvement; the frame loop runs
+          entirely in C. Used by RPi::SPI's new bit-bang mode
+        - Added t/95-spi_no_cs.t and t/96-spi_bit_bang.t (HW-free validation
+          croaks for the two new functions)
 
 3.1803     2026-06-12
         - Check both fcntl() return values in ensure_interrupt_pipe(); on
