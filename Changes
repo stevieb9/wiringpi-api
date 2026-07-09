@@ -30,6 +30,13 @@ Revision history for Perl extension WiringPi::API.
           entirely in C. Used by RPi::SPI's new bit-bang mode
         - Added t/95-spi_no_cs.t and t/96-spi_bit_bang.t (HW-free validation
           croaks for the two new functions)
+        - Makefile.PL: replaced the inline wiringPi presence/version guard
+          with a shim calling RPi::Const::BuildCheck::wiringpi_build_check(),
+          pulled in via CONFIGURE_REQUIRES => { 'RPi::Const' => 1.07 }; dropped
+          "use version". The check (and the canonical 3.18 minimum) now lives
+          in one place for the whole RPi:: family, and the buggy decimal
+          version compare / silent-pass-on-unparseable-gpio are gone. Falls
+          back to an NA-safe exit-0 message if RPi::Const isn't yet installed
 
 3.1803     2026-06-12
         - Check both fcntl() return values in ensure_interrupt_pipe(); on
