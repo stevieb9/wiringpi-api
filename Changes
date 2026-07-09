@@ -30,6 +30,18 @@ Revision history for Perl extension WiringPi::API.
           entirely in C. Used by RPi::SPI's new bit-bang mode
         - Added t/95-spi_no_cs.t and t/96-spi_bit_bang.t (HW-free validation
           croaks for the two new functions)
+        - Added t/78-background_interrupt_single.t: HW-free coverage of the
+          singular background_interrupt() - its pre-fork argument validation
+          croaks, and the opt-in results channel (B5) round-trip (a real fork
+          with set_interrupt()/wait_interrupts() stubbed, so the child frames a
+          return value up the pipe and the parent handle's read() drains it),
+          plus the no-results-channel fh()/read() undef case
+        - Extended t/75-interrupts.t: auto_dispatch_interrupts() now also
+          verifies that a pre-existing handler on the chosen signal is saved on
+          enable and restored (not deleted) on disable
+        - Removed a stale INT.md entry from MANIFEST (the file never existed;
+          the interrupt doc is docs/interrupt-examples.md) - it was failing
+          the manicheck / would break make dist
         - Makefile.PL: replaced the inline wiringPi presence/version guard
           with a shim calling RPi::Const::BuildCheck::wiringpi_build_check(),
           pulled in via CONFIGURE_REQUIRES => { 'RPi::Const' => 1.07 }; dropped
