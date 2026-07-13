@@ -3,7 +3,7 @@ package WiringPi::API;
 use strict;
 use warnings;
 
-our $VERSION = '3.1804';
+our $VERSION = '3.1805';
 
 use Carp qw(croak);
 use Fcntl qw(
