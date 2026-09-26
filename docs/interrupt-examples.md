@@ -361,7 +361,7 @@ keeps the pipe drained), or debounce (scenario 5) to cut the edge rate.
 it," closest to Arduino's `attachInterrupt`. The callback runs in *your* program
 (it can read/update your variables, no locking) and fires on its own while your
 code runs, with no dispatch loop. Best when a handler must touch your program's
-state. Caveat: a long non-yielding C/XS call can delay it (see `isr-migration.md`).
+state. Caveat: a long non-yielding C/XS call can delay it (see `projects/wiringpi-api/plans/done/isr-migration.md`).
 
 **Real-world:** A weather station counting anemometer/rain-gauge pulses into a
 counter your main loop reads and uploads every few seconds — the handler updates

@@ -11,7 +11,7 @@ use WiringPi::API qw(:perl);
 # are hardware-free. Exercising an accepted address (and i2c_read_word) requires
 # the standard /dev/i2c-1 bus enabled with a wired device; wiringPiI2CSetup
 # aborts the process if the bus is absent, so those are gated / deferred to the
-# downstream RPi::WiringPi i2c hardware suite (UPGRADE-3.18.md V33).
+# downstream RPi::WiringPi i2c hardware suite (projects/wiringpi-api/plans/done/UPGRADE-3.18.md V33).
 
 BEGIN {
     if (! $ENV{RPI_BOARD}){
